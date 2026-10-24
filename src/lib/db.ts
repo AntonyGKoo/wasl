@@ -32,7 +32,30 @@ export async function openDatabase(
     options.url ??
     (options.memory || options.dataDir ? undefined : process.env.DATABASE_URL);
   if (url) {
-    const pool = postgres(url, { max: 5, prepare: false, onnotice: () => {} });
+    const pool = postgres(url, {
+      max: 5,
+      prepare: false,
+      onnotice: () => {},
+      types: {
+        // Queryable accepts serialized JSON, as PGlite does. Postgres.js would
+        // otherwise JSON.stringify these parameters a second time.
+        json: {
+          to: 114,
+          from: [114, 3802],
+          serialize: (value: unknown) =>
+            typeof value === "string" ? value : JSON.stringify(value),
+          parse: (value: string) => JSON.parse(value),
+        },
+        // Preserve calendar dates; converting them to Date objects can shift
+        // the day in another timezone and breaks form/recall date formatting.
+        date: {
+          to: 1082,
+          from: [1082],
+          serialize: (value: string) => value,
+          parse: (value: string) => value,
+        },
+      },
+    });
     const adapter = (client: typeof pool): Queryable => ({
       async query<T>(text: string, args: unknown[] = []) {
         return (await client.unsafe(text, args as never[])) as unknown as T[];

@@ -41,6 +41,11 @@ test(
           "INSERT INTO users(id,email,name,password_hash,profile) VALUES($1,$2,$3,'unused',$4::jsonb)",
           [user.id, user.email, user.name, JSON.stringify(user.profile)],
         );
+      const [stored] = await db.query<{ profile: User["profile"] }>(
+        "SELECT profile FROM users WHERE id=$1",
+        [owner.id],
+      );
+      assert.deepEqual(stored.profile, owner.profile);
       const card = await saveCard(
         owner,
         {
@@ -53,6 +58,7 @@ test(
         db,
       );
       const token = await shareCard(owner.id, card.id, db);
+      assert.deepEqual(card.fields, ["name"]);
       assert.deepEqual((await publicCard(token, db)).profile, {
         name: "Owner",
       });
@@ -61,6 +67,8 @@ test(
         { token, event: "Career Fair", place: "Doha", met_on: "2026-10-24" },
         db,
       );
+      assert.equal(contact.met_on, "2026-10-24");
+      assert.deepEqual(contact.profile, { name: "Owner" });
       await saveNote(
         receiver.id,
         contact.id,
