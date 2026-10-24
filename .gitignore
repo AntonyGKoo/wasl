@@ -23,3 +23,9 @@ test-results/
 .idea/
 .vscode/
 
+# Persistent local database, scratch files, and build metadata
+.wasl-data/
+*.tsbuildinfo
+.npm-cache/
+work/
+
