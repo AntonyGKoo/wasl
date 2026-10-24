@@ -36,6 +36,14 @@ export async function openDatabase(
       max: 5,
       prepare: false,
       onnotice: () => {},
+      ...(process.env.DATABASE_CA_CERT
+        ? {
+            ssl: {
+              ca: process.env.DATABASE_CA_CERT.replace(/\\n/g, "\n"),
+              rejectUnauthorized: true,
+            },
+          }
+        : {}),
       types: {
         // Queryable accepts serialized JSON, as PGlite does. Postgres.js would
         // otherwise JSON.stringify these parameters a second time.

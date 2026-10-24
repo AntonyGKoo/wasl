@@ -36,7 +36,7 @@ Per-user and project-wide call limits are stored in PostgreSQL and configured in
 5. Deploy as a Next.js Node application. Build: `npm run build`; ordinary Node startup: `npm start`.
 6. Verify signup, selected-field sharing, private notes, recall, revocation, and logout using two accounts on the deployed domain.
 
-Prepared statements are disabled for transaction-pooler compatibility. Retain provider-required TLS verification. Do not add `DATABASE_URL` as a `NEXT_PUBLIC_` variable.
+Prepared statements are disabled for transaction-pooler compatibility. Use `sslmode=verify-full` on the hosted connection URL. If the provider uses a private CA, download its certificate from the provider dashboard and set `DATABASE_CA_CERT` to the PEM contents (literal `\n` sequences are also accepted). This passes the CA to the driver while keeping certificate and hostname verification enabled. Supply the same variable on the hosting platform. Do not add `DATABASE_URL` or other server configuration as a `NEXT_PUBLIC_` variable.
 
 Supabase is supported as the database host. Authentication is application-managed email/password authentication backed by PostgreSQL; Supabase Auth and LinkedIn OIDC are not implemented in this release. The restricted database role is switched transaction-locally after the server verifies a session. RLS, explicit ownership checks, and ownership-bound foreign keys protect private relationships.
 
