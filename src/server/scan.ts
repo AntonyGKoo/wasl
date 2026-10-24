@@ -4,13 +4,8 @@ import { aiAllowance } from "./recall";
 import { HttpError, limitedBody } from "./responses";
 import { blankProfile } from "../lib/types";
 import { profileSchema } from "../lib/validation";
-export function parseCardText(text: string) {
-  const lines = text.split(/[\n\r]+/).map(l=>l.trim()).filter(Boolean);
-  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
-  const phone = text.match(/(?:\+\d[\d ()-]{7,}\d|\b\d[\d ()-]{8,}\d\b)/)?.[0] || "";
-  const website = text.match(/https?:\/\/[^\s<>]+/i)?.[0] || "";
-  return {...blankProfile,name:lines.find(l=>!l.includes("@") && !/https?:|^\+?\d/.test(l))?.slice(0,100) || "",email,phone,website};
-}
+import { parseCardText } from "../lib/card-text";
+export { parseCardText } from "../lib/card-text";
 export async function scanCard(request: Request, userId: string) {
   if (!process.env.GOOGLE_CLOUD_VISION_API_KEY) throw new HttpError(503,"Photo scanning is not configured yet. Paste the card text or add the contact manually.");
   const body=await limitedBody(request,7*1024*1024);
