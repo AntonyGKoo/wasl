@@ -1,12 +1,190 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, Check, Download, LoaderCircle, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Download,
+  LoaderCircle,
+  ShieldCheck,
+} from "lucide-react";
 import { api, today } from "@/lib/client";
 import type { PublicCard, User } from "@/lib/types";
 import { Avatar, Brand, Button, Notice, ProfileLinks } from "./ui";
-export function PublicShare({token}:{token:string}){
-  const[card,setCard]=useState<PublicCard|null>(null);const[user,setUser]=useState<User|null>(null);const[loading,setLoading]=useState(true);const[error,setError]=useState("");const[event,setEvent]=useState("");const[place,setPlace]=useState("");const[date,setDate]=useState(today());const[busy,setBusy]=useState(false);const[saved,setSaved]=useState(false);
-  useEffect(()=>{let active=true;Promise.all([api<{card:PublicCard}>(`share/${token}`),api<{user:User|null}>("session")]).then(([a,b])=>{if(active){setCard(a.card);setUser(b.user);}}).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[token]);
-  async function save(e:FormEvent){e.preventDefault();if(!user){window.location.assign(`/?returnTo=${encodeURIComponent(`/c/${token}`)}`);return;}setBusy(true);setError("");try{await api("connections/import","POST",{token,event,place,met_on:date});setSaved(true);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
-  return <div className="public-page"><a className="public-brand" href="/"><Brand/></a>{loading?<div className="loading"><LoaderCircle className="spin"/> Opening card…</div>:!card?<div className="public-card-shell"><h2>This card is no longer available.</h2><p className="muted">{error||"Ask its owner for a new sharing link."}</p><a href="/" className="button secondary">Open Wasl</a></div>:<div className="public-card-shell"><div className={`public-card-cover ${card.color}`}><span>{card.label}</span><ShieldCheck size={20}/></div><div className="public-card-content"><Avatar name={card.profile.name||"Contact"} size="large"/><h1>{card.profile.name}</h1><p className="public-role">{[card.profile.title,card.profile.company,card.profile.university].filter(Boolean).join(" · ")}</p>{card.profile.bio?<p className="bio">{card.profile.bio}</p>:null}<ProfileLinks profile={card.profile}/><a className="button secondary full" href={`/api/share/${token}/vcard`}><Download size={16}/> Save contact to phone</a><div className="form-divider">KEEP THE CONNECTION IN WASL</div>{saved?<div className="saved-connection"><span><Check size={24}/></span><h3>A new connection. A story to keep.</h3><p>Your contact is saved. Add a private note about your conversation.</p><a href="/" className="button primary">Open your network <ArrowRight size={15}/></a></div>:<form onSubmit={save}>{user?<><label><span>Where did you meet?</span><input value={event} onChange={e=>setEvent(e.target.value)} placeholder="Event or occasion" maxLength={200}/></label><div className="form-grid"><label><span>Place</span><input value={place} onChange={e=>setPlace(e.target.value)} maxLength={200} placeholder="City or venue"/></label><label><span>Meeting date</span><input type="date" value={date} required onChange={e=>setDate(e.target.value)}/></label></div></>:<p className="muted small-copy">Save this person with the context of how you met. Sign in or create an account to start.</p>}{error?<Notice error>{error}</Notice>:null}<Button className="full" type="submit" busy={busy}>{user?"Save to my Wasl network":"Sign in to save this connection"}<ArrowRight size={16}/></Button></form>}<p className="public-privacy"><ShieldCheck size={13}/> This card only includes details its owner chose to share.</p></div></div>}<footer className="public-footer">Never forget who you met, or why it mattered.</footer></div>;
+export function PublicShare({ token }: { token: string }) {
+  const [card, setCard] = useState<PublicCard | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [event, setEvent] = useState("");
+  const [place, setPlace] = useState("");
+  const [date, setDate] = useState(today());
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      api<{ card: PublicCard }>(`share/${token}`),
+      api<{ user: User | null }>("session"),
+    ])
+      .then(([a, b]) => {
+        if (active) {
+          setCard(a.card);
+          setUser(b.user);
+        }
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [token]);
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    if (!user) {
+      window.location.assign(`/?returnTo=${encodeURIComponent(`/c/${token}`)}`);
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await api("connections/import", "POST", {
+        token,
+        event,
+        place,
+        met_on: date,
+      });
+      setSaved(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="public-page">
+      <a className="public-brand" href="/">
+        <Brand />
+      </a>
+      {loading ? (
+        <div className="loading">
+          <LoaderCircle className="spin" /> Opening card…
+        </div>
+      ) : !card ? (
+        <div className="public-card-shell">
+          <h2>This card is no longer available.</h2>
+          <p className="muted">
+            {error || "Ask its owner for a new sharing link."}
+          </p>
+          <a href="/" className="button secondary">
+            Open Wasl
+          </a>
+        </div>
+      ) : (
+        <div className="public-card-shell">
+          <div className={`public-card-cover ${card.color}`}>
+            <span>{card.label}</span>
+            <ShieldCheck size={20} />
+          </div>
+          <div className="public-card-content">
+            <Avatar name={card.profile.name || "Contact"} size="large" />
+            <h1>{card.profile.name}</h1>
+            <p className="public-role">
+              {[
+                card.profile.title,
+                card.profile.company,
+                card.profile.university,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+            {card.profile.bio ? (
+              <p className="bio">{card.profile.bio}</p>
+            ) : null}
+            <ProfileLinks profile={card.profile} />
+            <a
+              className="button secondary full"
+              href={`/api/share/${token}/vcard`}
+            >
+              <Download size={16} /> Save contact to phone
+            </a>
+            <div className="form-divider">KEEP THE CONNECTION IN WASL</div>
+            {saved ? (
+              <div className="saved-connection">
+                <span>
+                  <Check size={24} />
+                </span>
+                <h3>A new connection. A story to keep.</h3>
+                <p>
+                  Your contact is saved. Add a private note about your
+                  conversation.
+                </p>
+                <a href="/" className="button primary">
+                  Open your network <ArrowRight size={15} />
+                </a>
+              </div>
+            ) : (
+              <form onSubmit={save}>
+                {user ? (
+                  <>
+                    <label>
+                      <span>Where did you meet?</span>
+                      <input
+                        value={event}
+                        onChange={(e) => setEvent(e.target.value)}
+                        placeholder="Event or occasion"
+                        maxLength={200}
+                      />
+                    </label>
+                    <div className="form-grid">
+                      <label>
+                        <span>Place</span>
+                        <input
+                          value={place}
+                          onChange={(e) => setPlace(e.target.value)}
+                          maxLength={200}
+                          placeholder="City or venue"
+                        />
+                      </label>
+                      <label>
+                        <span>Meeting date</span>
+                        <input
+                          type="date"
+                          value={date}
+                          required
+                          onChange={(e) => setDate(e.target.value)}
+                        />
+                      </label>
+                    </div>
+                  </>
+                ) : (
+                  <p className="muted small-copy">
+                    Save this person with the context of how you met. Sign in or
+                    create an account to start.
+                  </p>
+                )}
+                {error ? <Notice error>{error}</Notice> : null}
+                <Button className="full" type="submit" busy={busy}>
+                  {user
+                    ? "Save to my Wasl network"
+                    : "Sign in to save this connection"}
+                  <ArrowRight size={16} />
+                </Button>
+              </form>
+            )}
+            <p className="public-privacy">
+              <ShieldCheck size={13} /> This card only includes details its
+              owner chose to share.
+            </p>
+          </div>
+        </div>
+      )}
+      <footer className="public-footer">
+        Never forget who you met, or why it mattered.
+      </footer>
+    </div>
+  );
 }
