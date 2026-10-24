@@ -48,10 +48,11 @@ npm audit --omit=dev
 Tests cover account isolation, HTTP flows, sharing projections, private notes, deletion, recall evidence, and disk persistence. GitHub Actions additionally runs real PostgreSQL/pgvector integration tests and desktop/mobile Playwright flows.
 
 ```sh
+npm run build
 npx playwright install chromium
 npm run test:e2e
 ```
 
-Browser tests use a separate server and database, with paid integrations disabled.
+Browser tests exercise the production build with a separate server and database, with paid integrations disabled.
 
 Brand artwork was supplied with the project context. Synthetic contacts exist only in tests or a developer test account, never in a new account. See [CONTRIBUTING.md](CONTRIBUTING.md) for the review workflow and [the original plan](docs/TECHNICAL_PLAN.md) for scope.

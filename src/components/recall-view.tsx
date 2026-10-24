@@ -294,9 +294,13 @@ export function ScanModal({
             )}
           </>
         ) : (
-          <label>
-            <span>Text from a business card, badge or profile</span>
+          <div>
+            <label htmlFor="card-text">
+              Text from a business card, badge or profile
+            </label>
             <textarea
+              id="card-text"
+              aria-describedby="card-text-help"
               value={text}
               onChange={(e) => setText(e.target.value)}
               maxLength={16000}
@@ -304,11 +308,11 @@ export function ScanModal({
               placeholder={"Sara Smith\nsara@example.com\n+974 5555 1234"}
               rows={7}
             />
-            <small className="muted">
+            <small id="card-text-help" className="muted">
               This option runs locally. You can add missing details on the next
               screen.
             </small>
-          </label>
+          </div>
         )}
         {error ? <Notice error>{error}</Notice> : null}
         <div className="form-actions">

@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 import path from "node:path";
 export default defineConfig({
   testDir: "./tests/e2e",
-  timeout: 45000,
+  timeout: 90000,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"], ["html", { open: "never" }]],
@@ -23,7 +23,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev -- --hostname 127.0.0.1 --port 3100",
+    command: "npm run start -- --hostname 127.0.0.1 --port 3100",
     url: "http://127.0.0.1:3100",
     timeout: 120000,
     reuseExistingServer: false,

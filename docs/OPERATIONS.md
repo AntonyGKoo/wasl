@@ -62,7 +62,7 @@ This release is for a controlled MVP pilot. Before an unrestricted public launch
 
 ## Verification and CI
 
-`npm test` uses real PostgreSQL semantics through isolated PGlite databases, including RLS and disk persistence. `tests/api.test.ts` calls the actual HTTP handlers with two accounts. Browser tests start their own server on port 3100, isolated disk storage, and disabled provider keys; they never reuse a normal local server.
+`npm test` uses real PostgreSQL semantics through isolated PGlite databases, including RLS and disk persistence. `tests/api.test.ts` calls the actual HTTP handlers with two accounts. Run `npm run build` before `npm run test:e2e`: browser tests start the production build on port 3100, with isolated disk storage and disabled provider keys; they never reuse a normal local server.
 
 GitHub Actions provisions `pgvector/pgvector:pg17` and also checks the ordinary PostgreSQL driver:
 
