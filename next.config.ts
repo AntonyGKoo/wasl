@@ -6,6 +6,7 @@ const config: NextConfig = {
     "postgres",
   ],
   poweredByHeader: false,
+  devIndicators: false,
   outputFileTracingRoot: process.cwd(),
   outputFileTracingIncludes: { "/api/*": ["./db/*.sql"] },
   outputFileTracingExcludes: { "*": ["./.wasl-data/**/*"] },
@@ -26,6 +27,10 @@ const config: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "same-origin" },
           { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Content-Security-Policy",
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'${process.env.NODE_ENV === "development" ? " ws: wss:" : ""}; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'`,
+          },
           {
             key: "Permissions-Policy",
             value: "camera=(self), microphone=(), geolocation=()",

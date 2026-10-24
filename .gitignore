@@ -24,7 +24,7 @@ test-results/
 .vscode/
 
 # Persistent local database, scratch files, and build metadata
-.wasl-data/
+.wasl-data*/
 *.tsbuildinfo
 .npm-cache/
 work/

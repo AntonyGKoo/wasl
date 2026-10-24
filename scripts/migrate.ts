@@ -1,4 +1,6 @@
 import { openDatabase, migrate } from "../src/lib/db";
+import nextEnv from "@next/env";
+nextEnv.loadEnvConfig(process.cwd());
 const db = await openDatabase();
 try {
   await migrate(db);

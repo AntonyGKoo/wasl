@@ -1,8 +1,7 @@
 import OpenAI from "openai";
-import { createHash } from "node:crypto";
 import { asUser, type Database } from "../lib/db";
 import { consumeLimit } from "../lib/auth";
-import type { Connection, Interaction, SearchHit } from "../lib/types";
+import type { Connection, SearchHit } from "../lib/types";
 import { HttpError } from "./responses";
 const stop = new Set(
   "who was is the a an person someone i me my met at in on of for to with and or that do know did we us can help looking find about from last this works working talked remember please".split(

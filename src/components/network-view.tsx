@@ -55,8 +55,10 @@ export function NetworkView({
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   const recent = contacts.filter(
-    (c) => Date.now() - new Date(c.created_at).getTime() < 30 * 86400000,
+    (c) => new Date(c.created_at).getTime() >= monthStart,
   ).length;
   return (
     <>
