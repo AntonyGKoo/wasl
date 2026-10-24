@@ -1,5 +1,7 @@
 # Technical plan
 
+Implementation update (24 October 2026): the core workflow is implemented on `feature/working-mvp`. See the root README for running it and [OPERATIONS.md](OPERATIONS.md) for hosting and integration setup. The original stages below remain the scope reference. Hosted PostgreSQL is supported, with persistent local PostgreSQL for development. Authentication is currently application-managed, not Supabase Auth. Saved shared cards use refreshable snapshots rather than automatic updates inside another user's private contacts.
+
 ## First version
 
 Wasl should begin as a responsive web application. The first version includes accounts, professional and personal cards, selected-field sharing, card links and QR codes, saved contacts, categories, private notes, events, meeting dates, and interaction history.
@@ -37,4 +39,3 @@ An example acceptance query is: "Who was the cybersecurity person I met at the e
 ## Deferred scope
 
 Conversation recording, nearby-contact discovery, NFC, and phone-wallet integration should wait until the core workflow is reliable.
-

@@ -26,10 +26,11 @@ function localAdapter(client: Pick<PGlite, "query" | "exec">): Queryable {
   };
 }
 export async function openDatabase(
-  options: { memory?: boolean; url?: string } = {},
+  options: { memory?: boolean; url?: string; dataDir?: string } = {},
 ): Promise<Database> {
   const url =
-    options.url ?? (options.memory ? undefined : process.env.DATABASE_URL);
+    options.url ??
+    (options.memory || options.dataDir ? undefined : process.env.DATABASE_URL);
   if (url) {
     const pool = postgres(url, { max: 5, prepare: false, onnotice: () => {} });
     const adapter = (client: typeof pool): Queryable => ({
@@ -55,7 +56,9 @@ export async function openDatabase(
     );
   const dir = options.memory
     ? "memory://"
-    : path.resolve(process.env.WASL_DATA_DIR || ".wasl-data");
+    : path.resolve(
+        options.dataDir || process.env.WASL_DATA_DIR || ".wasl-data",
+      );
   if (!options.memory) await mkdir(dir, { recursive: true, mode: 0o700 });
   const pg = await PGlite.create(dir, { extensions: { vector } });
   return {
