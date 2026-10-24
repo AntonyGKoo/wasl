@@ -16,7 +16,7 @@ export const cardSchema = z.object({
 });
 const date = z.iso.date();
 export const connectionSchema = z.object({
-  profile: profileSchema, tags: z.array(text(40).min(1)).max(20).transform(v => [...new Set(v)]),
+  profile: profileSchema.refine(p => p.name.length > 0, "Please enter a contact name."), tags: z.array(text(40).min(1)).max(20).transform(v => [...new Set(v)]),
   event: text(), place: text(), met_on: date, favorite: z.boolean().default(false),
 });
 export const noteSchema = z.object({ body: text(5000).min(1), happened_on: date });
