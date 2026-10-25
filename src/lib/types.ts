@@ -83,6 +83,7 @@ export type PublicCard = {
   token: string;
 };
 export type Capabilities = {
+  presentation?: boolean;
   ai: boolean;
   ocr: boolean;
   database: "postgres" | "local";

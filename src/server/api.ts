@@ -59,6 +59,10 @@ export async function handleApi(request: Request): Promise<Response> {
           ? { ...user, profile: { ...blankProfile, ...user.profile } }
           : null,
         capabilities: {
+          presentation:
+            process.env.WASL_PRESENTATION_MODE === "true" &&
+            !process.env.DATABASE_URL &&
+            !process.env.VERCEL,
           ai: !!process.env.OPENAI_API_KEY,
           ocr: !!process.env.GOOGLE_CLOUD_VISION_API_KEY,
           database: process.env.DATABASE_URL ? "postgres" : "local",

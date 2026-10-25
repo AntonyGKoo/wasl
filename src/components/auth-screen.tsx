@@ -4,12 +4,15 @@ import { ArrowRight, Check, Layers, LockKeyhole, Sparkles } from "lucide-react";
 import { api } from "@/lib/client";
 import type { User } from "@/lib/types";
 import { Brand, Button, Notice } from "./ui";
+import { presentationAccount } from "@/lib/presentation";
 export function AuthScreen({
   onSignIn,
   returnTo,
+  presentation = false,
 }: {
   onSignIn: (user: User) => void;
   returnTo?: string;
+  presentation?: boolean;
 }) {
   const [mode, setMode] = useState<"register" | "login">("register");
   const [name, setName] = useState("");
@@ -17,6 +20,23 @@ export function AuthScreen({
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  async function openPresentation() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api<{ user: User }>(
+        "auth/login",
+        "POST",
+        presentationAccount,
+      );
+      if (returnTo) window.location.assign(returnTo);
+      else onSignIn(result.user);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -107,6 +127,16 @@ export function AuthScreen({
               Sign in
             </button>
           </div>
+          {presentation ? (
+            <div className="presentation-entry">
+              <Button className="full" busy={busy} onClick={openPresentation}>
+                Open presentation demo <ArrowRight size={18} />
+              </Button>
+              <p className="muted small-copy">
+                Try the full flow with fictional profiles.
+              </p>
+            </div>
+          ) : null}
           <form onSubmit={submit}>
             {mode === "register" ? (
               <label>

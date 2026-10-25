@@ -24,6 +24,7 @@ import { Avatar, Brand, Button, Notice } from "./ui";
 import { ConnectionDetail, ConnectionForm, NetworkView } from "./network-view";
 import { ProfileView, WalletView } from "./wallet-view";
 import { RecallView, ScanModal } from "./recall-view";
+import { presentationCardToken } from "@/lib/presentation";
 type View = "network" | "wallet" | "recall" | "profile" | "settings";
 const navigation = [
   { id: "network" as View, label: "Your network", icon: LayoutGrid },
@@ -118,7 +119,11 @@ export function WaslApp() {
     );
   if (!user)
     return (
-      <AuthScreen onSignIn={() => void loadSession()} returnTo={returnTo} />
+      <AuthScreen
+        onSignIn={() => void loadSession()}
+        returnTo={returnTo}
+        presentation={capabilities.presentation}
+      />
     );
   return (
     <div className="app-shell">
@@ -190,8 +195,16 @@ export function WaslApp() {
           </div>
           <div className="row">
             <span className="workspace-private">
-              <ShieldCheck size={13} /> Private workspace
+              <ShieldCheck size={13} />{" "}
+              {capabilities.presentation
+                ? "Demo · fictional data"
+                : "Private workspace"}
             </span>
+            {capabilities.presentation ? (
+              <a className="text-button" href={`/c/${presentationCardToken}`}>
+                Open Mariam's card
+              </a>
+            ) : null}
             <button
               className="icon-button"
               onClick={() => navigate("profile")}

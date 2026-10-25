@@ -25,6 +25,7 @@ test-results/
 
 # Persistent local database, scratch files, and build metadata
 .wasl-data*/
+.wasl-demo/
 *.tsbuildinfo
 .npm-cache/
 work/

@@ -9,7 +9,9 @@ const config: NextConfig = {
   devIndicators: false,
   outputFileTracingRoot: process.cwd(),
   outputFileTracingIncludes: { "/api/*": ["./db/*.sql"] },
-  outputFileTracingExcludes: { "*": ["./.wasl-data/**/*"] },
+  outputFileTracingExcludes: {
+    "*": ["./.wasl-data*/**/*", "./.wasl-demo/**/*"],
+  },
   webpack(config, { dev }) {
     if (dev)
       config.watchOptions = {
