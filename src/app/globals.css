@@ -406,6 +406,15 @@ form > label:last-of-type {
   font-size: 10px;
   margin-top: 20px;
 }
+.presentation-entry {
+  margin-bottom: 24px;
+}
+.presentation-card-link {
+  max-width: 112px;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: right;
+}
 .modal-backdrop {
   position: fixed;
   z-index: 100;

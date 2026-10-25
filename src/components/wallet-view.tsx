@@ -374,7 +374,12 @@ function ShareModal({
   return (
     <Modal
       title={`Share ${card.label}`}
-      description="Let someone scan this code with their phone camera."
+      description={
+        url &&
+        ["localhost", "127.0.0.1", "[::1]"].includes(new URL(url).hostname)
+          ? "This local link opens on this laptop. Phone sharing needs a reachable address."
+          : "Let someone scan this code with their phone camera."
+      }
       onClose={onClose}
     >
       <div className="qr-wrap">

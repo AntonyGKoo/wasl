@@ -201,7 +201,10 @@ export function WaslApp() {
                 : "Private workspace"}
             </span>
             {capabilities.presentation ? (
-              <a className="text-button" href={`/c/${presentationCardToken}`}>
+              <a
+                className="text-button presentation-card-link"
+                href={`/c/${presentationCardToken}`}
+              >
                 Open Mariam's card
               </a>
             ) : null}

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wasl — tomorrow's prototype walkthrough</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; font: 17px/1.6 system-ui, sans-serif; color: #173646; background: #f5f7f7; }
+      header { background: #123c4c; color: white; padding: 24px max(24px, calc((100vw - 1080px)/2)); }
+      h1 { margin: 0; font-size: clamp(25px, 4vw, 38px); line-height: 1.2; }
+      header p { margin: 8px 0 20px; color: #c8e5e5; }
+      nav { display: flex; gap: 10px; flex-wrap: wrap; }
+      button, nav a { font: inherit; border: 1px solid #9ab9bd; background: white; color: #123c4c; border-radius: 9px; padding: 9px 16px; cursor: pointer; text-decoration: none; }
+      button[aria-pressed="true"] { background: #bceade; border-color: #bceade; font-weight: 700; }
+      button:focus-visible, a:focus-visible { outline: 3px solid #e9a746; outline-offset: 3px; }
+      button:disabled { opacity: .4; cursor: default; }
+      main { max-width: 1128px; margin: auto; padding: 24px; }
+      h2 { margin-top: 0; font-size: 24px; }
+      h3 { margin: 0 0 12px; font-size: 21px; }
+      p { margin: 10px 0; }
+      article, .intro, details { background: white; border: 1px solid #dce6e7; border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+      .intro { border-left: 5px solid #278b7d; }
+      .time { color: #26796f; font-size: 14px; font-weight: 750; display: block; margin-bottom: 4px; }
+      .clicks { color: #365d6d; background: #edf5f4; padding: 12px 16px; border-radius: 8px; }
+      blockquote { margin: 18px 0 0; font-size: 19px; }
+      code { background: #edf2f3; border-radius: 4px; padding: 3px 6px; overflow-wrap: anywhere; }
+      li { margin-bottom: 8px; }
+      summary { cursor: pointer; font-weight: 700; }
+      [hidden] { display: none !important; }
+      #backup { text-align: center; }
+      .backup-label { color: #576c76; margin-top: 0; }
+      .controls { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 18px 0; }
+      #screen { display: block; max-width: 100%; max-height: 65vh; width: auto; height: auto; margin: auto; border: 1px solid #dce6e7; border-radius: 10px; background: white; }
+      #caption { max-width: 850px; margin: 18px auto; }
+      .small { font-size: 14px; color: #5b737b; }
+      @media print { header nav, #backup { display: none; } body { background: white; } article { break-inside: avoid; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Wasl. Ready for the prototype check-in.</h1>
+      <p>Monday 26 October · 3–5 minutes for the whole team · aim for four minutes</p>
+      <nav aria-label="Presentation tools">
+        <button id="notes-tab" aria-pressed="true" aria-controls="notes">Presenter notes</button>
+        <button id="backup-tab" aria-pressed="false" aria-controls="backup">Backup walkthrough</button>
+        <a href="http://localhost:3000/?view=profile" target="_blank" rel="noopener">Open live demo ↗</a>
+      </nav>
+    </header>
+    <main>
+      <section id="notes">
+        <div class="intro">
+          <h2>You can present the app directly.</h2>
+          <p>The class message asks to see the interface and the complete user flow. It does not ask for a PPT. This guide includes your exact words and a six-screen offline backup.</p>
+          <p><strong>Your story:</strong> choose what to share → meet Mariam → save her → add a private memory → find her later.</p>
+        </div>
+        <article>
+          <h2>Before class</h2>
+          <ol>
+            <li>Connect your charger and check the projector. Double-click <strong>Start Wasl Demo.command</strong> in the Wasl project folder. Keep its Terminal open. Building may take a minute.</li>
+            <li>Open <strong>localhost:3000</strong>, click <strong>Open presentation demo</strong>, then <strong>Your profile</strong>. Start presenting here, already signed in.</li>
+            <li>Rehearse once. To reset, press <strong>Ctrl+C</strong> in that Terminal and start the launcher again. Re-enter the demo and return to Your profile.</li>
+            <li>Keep this guide open. If the app fails, click <strong>Backup walkthrough</strong> and keep talking. Do not debug during the presentation.</li>
+          </ol>
+          <p>The installed local demo runs without Wi-Fi or cloud API keys. It uses fictional data in its own workspace. On a new machine, install Node 24 and run <code>npm ci</code> online first.</p>
+          <p><strong>QR:</strong> show the code, then click <strong>Open Mariam's card</strong> on this laptop. A localhost link cannot open from another person's phone.</p>
+        </article>
+        <article>
+          <span class="time">0:00–0:25 · Introduce the problem</span>
+          <h3>1. Start on Your profile</h3>
+          <blockquote>“Hi everyone. This is Wasl, a networking wallet for students and people who go to events. After meeting someone, we often remember the conversation but forget their name. Wasl helps us keep the person and the context together. I’ll show the full flow using fictional profiles.”</blockquote>
+        </article>
+        <article>
+          <span class="time">0:25–1:10 · Show control over sharing</span>
+          <h3>2. Show the Event card and its QR</h3>
+          <p class="clicks">Your cards → Edit Event → point to email being off → Cancel → Event: Share card → Close dialog</p>
+          <blockquote>“I enter my details once in my profile. Then I can make different cards for different situations. For example, my professional card includes my email, but my event card only shares my name, role and university. I choose the details that leave my wallet. The card can be shared through a QR code or a link.”</blockquote>
+        </article>
+        <article>
+          <span class="time">1:10–2:00 · Capture a connection</span>
+          <h3>3. Save Mariam's card</h3>
+          <p class="clicks">Open Mariam's card → Where did you meet? <strong>Campus networking night</strong> → Place: <strong>Doha</strong> → Save to my Wasl network → Open your network → Mariam Ali</p>
+          <blockquote>“Now imagine I meet Mariam at a campus networking event. This is the card she chose to share with me. I save her to my Wasl network and add where we met. Her contact details and the event are now in one place, so I don’t have to remember everything later.”</blockquote>
+        </article>
+        <article>
+          <span class="time">2:00–2:40 · Remember the conversation</span>
+          <h3>4. Add a private note</h3>
+          <p class="clicks">In Add an interaction or something to remember, enter <strong>Offered to introduce me to her CTO.</strong> → Save memory</p>
+          <blockquote>“The important part is what happened in the conversation. Mariam offered to introduce me to her CTO, so I save that as a private note. I can add more interactions as the relationship develops. These notes stay in my own network and are never included in the card I share.”</blockquote>
+        </article>
+        <article>
+          <span class="time">2:40–3:25 · Find the person again</span>
+          <h3>5. Recall Mariam by the conversation</h3>
+          <p class="clicks">Close dialog → Recall → Search your memory: <strong>CTO</strong> → Find connections → point to Mariam and the quoted note</p>
+          <blockquote>“A few weeks later, I might forget Mariam’s name, but remember that someone mentioned their CTO. I search for ‘CTO’, and Wasl finds Mariam using the note I saved. It also shows the context, so I can check why this person appeared. This connects sharing, saving, remembering and finding someone again.”</blockquote>
+        </article>
+        <article>
+          <span class="time">3:25–4:00 · Close and invite feedback</span>
+          <h3>6. Explain what works and what comes next</h3>
+          <blockquote>“This prototype already saves profiles, cards, connections and private notes, and supports searching those saved details. The search shown today uses keywords. Our next steps are to test the flow with students and connect AI recall and photo scanning. The main thing we want to learn is whether people can save enough useful context quickly after a conversation.”</blockquote>
+          <p>Stop here. Leave room for questions. One person should control the laptop, even if several teammates speak.</p>
+        </article>
+        <details>
+          <summary>Short answers to likely questions</summary>
+          <p><strong>Does this use AI?</strong> Today’s search uses saved words and notes. AI recall and photo scanning have integration code, but live service setup is still pending.</p>
+          <p><strong>Why not a normal contacts app?</strong> We keep the event and the conversation alongside the contact, then use that context to find the person later.</p>
+          <p><strong>Is it private?</strong> A shared card exposes only selected fields. Notes belong to the person who saved them. This demo uses fictional data in a separate local workspace.</p>
+          <p><strong>LinkedIn?</strong> We support manually entered profile links. We are not importing or scraping other people’s profiles.</p>
+          <p><strong>Is it deployed?</strong> It runs locally for this check-in. A Supabase project exists; its live database connection and public hosting still need setup.</p>
+          <p><strong>What feedback do you want?</strong> Was the flow clear? Which information would you save after meeting someone? Is adding a note quick enough?</p>
+        </details>
+        <details>
+          <summary>If time is short or something goes wrong</summary>
+          <p>Skip editing the Event card and point to its field chips instead. Keep save → note → recall. If search is empty, confirm you clicked Save memory, then search exactly <strong>CTO</strong>. If the app fails, switch to the backup screens.</p>
+          <p>Manual demo login: <code>demo@wasl.example.test</code> / <code>WaslDemo2026!</code>. These are public fictional demo credentials.</p>
+        </details>
+      </section>
+      <section id="backup" hidden>
+        <p class="backup-label">Offline backup · recorded screenshots of the working demo · fictional data</p>
+        <h2 id="step-title"></h2>
+        <div class="controls">
+          <button id="previous" aria-label="Previous screen">← Previous</button>
+          <span id="counter" aria-live="polite"></span>
+          <button id="next" aria-label="Next screen">Next →</button>
+        </div>
+        <img id="screen" alt="" />
+        <p id="caption"></p>
+        <p class="small">Use the arrow keys. These are screenshots; buttons inside the images are not interactive.</p>
+      </section>
+    </main>
+    <script>
+      const steps = [
+        ["01-profile.png", "1. Enter a profile once", "Antony's profile stores the details used to build different sharing cards."],
+        ["02-selected-fields.png", "2. Choose which details to share", "The Event card includes name, role and university. Email is excluded."],
+        ["03-share-qr.png", "3. Share a card", "A QR code and link open only the selected details. The local demo link is shown on this laptop."],
+        ["04-save-connection.png", "4. Save Mariam with context", "Save her shared card and record Campus networking night in Doha."],
+        ["05-private-memory.png", "5. Remember the conversation", "Private note: Offered to introduce me to her CTO."],
+        ["06-recall.png", "6. Find the person again", "Search CTO. Mariam appears with the saved note explaining why she matched."]
+      ];
+      let current = 0;
+      const byId = id => document.getElementById(id);
+      function renderStep() {
+        const [file, title, caption] = steps[current];
+        byId("screen").src = "screens/" + file;
+        byId("screen").alt = title + ". " + caption;
+        byId("step-title").textContent = title;
+        byId("caption").textContent = caption;
+        byId("counter").textContent = `${current + 1} / ${steps.length}`;
+        byId("previous").disabled = current === 0;
+        byId("next").disabled = current === steps.length - 1;
+      }
+      function showBackup(visible) {
+        byId("notes").hidden = visible;
+        byId("backup").hidden = !visible;
+        byId("notes-tab").setAttribute("aria-pressed", String(!visible));
+        byId("backup-tab").setAttribute("aria-pressed", String(visible));
+        window.scrollTo(0, 0);
+      }
+      byId("notes-tab").onclick = () => showBackup(false);
+      byId("backup-tab").onclick = () => showBackup(true);
+      byId("previous").onclick = () => { if (current > 0) { current--; renderStep(); } };
+      byId("next").onclick = () => { if (current < steps.length - 1) { current++; renderStep(); } };
+      document.addEventListener("keydown", event => {
+        if (byId("backup").hidden || event.altKey || event.ctrlKey || event.metaKey) return;
+        if (event.key === "ArrowRight") { event.preventDefault(); byId("next").click(); }
+        if (event.key === "ArrowLeft") { event.preventDefault(); byId("previous").click(); }
+      });
+      renderStep();
+    </script>
+  </body>
+</html>

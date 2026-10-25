@@ -4,6 +4,8 @@ The memory for your network. A mobile-friendly networking wallet with selective 
 
 ## Run the MVP
 
+For the **26 October prototype check-in**, use `npm run demo` or double-click **Start Wasl Demo.command**. This starts an isolated local workspace with fictional contacts, one-click demo login, and a repeatable share → save → private note → recall flow. See [the four-minute script and setup](docs/PRESENTATION.md) and [offline backup walkthrough](docs/presentation/index.html).
+
 Use Node.js **24 LTS** (22 or newer is required).
 
 ```sh
