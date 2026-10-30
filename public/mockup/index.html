@@ -56,13 +56,14 @@ h1, h2, h3, p { margin: 0; }
 h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 
 /* ---------- stage ---------- */
+/* desktop: guide and phone both fit the window height; the guide scrolls on its own if it is taller */
 .stage {
-  min-height: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 56px;
-  padding-block: 32px;
+  padding-block: 24px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
@@ -72,6 +73,10 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-height: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 4px;
 }
 .guide-head { display: flex; align-items: center; gap: 12px; }
 .guide-head .mark { width: 44px; height: 28px; }
@@ -173,8 +178,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   flex: none;
   width: 390px;
   height: 844px;
-  max-height: calc(100vh - 64px);
-  min-height: 640px;
+  max-height: 100%;
   border-radius: 54px;
   background: var(--base);
   border: 10px solid #07090b;
@@ -197,10 +201,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .statusbar .icons { display: flex; gap: 5px; align-items: center; }
 .statusbar .icons i { display: block; background: var(--text); border-radius: 2px; }
 .screen {
-  position: absolute; inset: 0;
+  --gutter: 20px;
+  /* starts below the status bar, so scrolled content never slides under the clock and notch */
+  position: absolute; inset: 46px 0 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 54px 20px 104px;
+  padding: 8px var(--gutter) 104px;
   scrollbar-width: none;
 }
 .screen::-webkit-scrollbar { display: none; }
@@ -367,6 +373,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   border-radius: 24px;
   background: radial-gradient(circle at 50% 40%, #2a3038, #0c0e11);
   height: 330px;
+  height: clamp(230px, 40dvh, 330px);
   overflow: hidden;
   display: grid; place-items: center;
 }
@@ -393,6 +400,28 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 @keyframes scan { from { top: 50px; } to { top: 270px; } }
 .found li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); animation: enter 300ms both; }
 .found li:last-child { border-bottom: 0; }
+
+/* real scanner: live camera, capture, OCR, review */
+.viewfinder video, .viewfinder img.shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.viewfinder .cam-msg { position: relative; z-index: 1; max-width: 26ch; text-align: center; color: var(--text-2); display: grid; gap: 10px; justify-items: center; padding: 0 16px; }
+.viewfinder .cam-msg svg { width: 34px; height: 34px; color: var(--muted); }
+.viewfinder .corners, .viewfinder .scanline { z-index: 2; }
+.viewfinder.cam::after { content: ""; position: absolute; inset: 40px 30px; border-radius: 12px; box-shadow: 0 0 0 999px rgba(8, 10, 13, 0.45); z-index: 1; pointer-events: none; }
+.scan-controls { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin-top: 16px; }
+.scan-controls .file-btn { justify-self: start; }
+.shutter { width: 74px; height: 74px; border-radius: 50%; border: 4px solid var(--text); background: var(--teal); box-shadow: inset 0 0 0 4px var(--base); }
+.shutter:disabled { opacity: 0.35; cursor: default; }
+.progress { height: 8px; border-radius: 6px; background: var(--raised); overflow: hidden; margin-top: 16px; }
+.progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--teal), var(--blue)); transition: width 200ms; }
+.review { display: grid; gap: 12px; margin: 16px 0; }
+.review .thumb { width: 100%; max-height: 150px; object-fit: contain; border-radius: 14px; background: #0c0e11; }
+.fields { display: grid; gap: 2px; padding-block: 6px; }
+.fld { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.fld:last-child { border-bottom: 0; }
+.fld span { color: var(--muted); font-size: 13px; }
+.fld input { min-width: 0; background: var(--raised); border: 1px solid transparent; border-radius: 10px; color: var(--text); font: inherit; font-size: 14px; padding: 8px 10px; }
+.fld input:focus { outline: none; border-color: var(--teal); }
+.fld input::placeholder { color: var(--muted); }
 .found { list-style: none; margin: 0; padding: 0; }
 .found .k { color: var(--muted); }
 .found .v { font-weight: 600; text-align: right; min-width: 0; overflow-wrap: anywhere; }
@@ -489,7 +518,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .deck-actions .mem { color: var(--orange); }
 .deck-actions .fav { color: #ffd27a; }
 
-.albums { display: flex; gap: 12px; overflow-x: auto; padding: 4px 2px 10px; margin: 0 -20px; padding-left: 20px; padding-right: 20px; scroll-padding-inline: 20px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.albums { display: flex; gap: 12px; overflow-x: auto; padding: 4px var(--gutter) 10px; margin: 0 calc(-1 * var(--gutter)); scroll-padding-inline: var(--gutter); scroll-snap-type: x mandatory; scrollbar-width: none; }
 .albums::-webkit-scrollbar { display: none; }
 .album { flex: none; width: 140px; border: 0; background: transparent; text-align: left; padding: 0; scroll-snap-align: start; }
 .album .cover { position: relative; height: 96px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
@@ -509,7 +538,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .person .pv span { color: var(--muted); font-size: 12.5px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .person .star { color: #ffd27a; width: 16px; height: 16px; }
 .group-h { margin-top: 16px; }
-.flip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -20px; padding: 6px 20px 14px; scrollbar-width: none; }
+.flip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--gutter)); padding: 6px var(--gutter) 14px; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
 .flip::-webkit-scrollbar { display: none; }
 .flip .card { flex: none; width: 300px; scroll-snap-align: center; }
 
@@ -564,15 +593,16 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 /* mobile: phone fills the screen, guide becomes a sheet */
 .mobile-bar { display: none; }
 @media (max-width: 760px) {
-  .stage { display: block; padding: 0; min-height: 0; height: 100%; }
+  .stage { display: block; padding: 0; min-height: 0; height: 100%; height: 100dvh; }
   .device { width: 100%; height: 100%; max-height: none; min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
   .statusbar { display: none; }
+  /* the guide pill gets its own band at the top, so scrolled content never slides under it */
   .screen {
-    padding-top: 52px;
-    padding-left: max(18px, env(safe-area-inset-left, 0px));
-    padding-right: max(18px, env(safe-area-inset-right, 0px));
+    --gutter: max(18px, env(safe-area-inset-left, 0px));
+    top: calc(44px + env(safe-area-inset-top, 0px));
+    padding-top: 6px;
   }
-  .toast { top: 48px; }
+  .toast { top: calc(52px + env(safe-area-inset-top, 0px)); }
   .guide { display: none; }
   .guide.open {
     display: flex;
@@ -584,7 +614,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   }
   .mobile-bar {
     display: flex;
-    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
     z-index: 35;
     max-width: calc(100% - 32px);
     border: 1px solid var(--line);
@@ -676,6 +706,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     phone: "+974 5512 0347",
     instagram: "@antonygu",
   };
+  const DEFAULT_ME = { ...ME };
   const FIELD_META = {
     name: { label: "Name", icon: "user" },
     role: { label: "Role", icon: "briefcase" },
@@ -719,7 +750,14 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const tile = (org) =>
     org && LOGOS[org]
       ? `<div class="c-tile logo" style="color:${LOGOS[org][1]}" title="${esc(org)} logo">${LOGOS[org][0]}</div>`
-      : `<div class="c-tile">${symbol()}</div>`;
+      : org
+        ? `<div class="c-tile logo" style="color:#3f64c0" title="${esc(org)} logo">${esc(initials(org))}</div>`
+        : `<div class="c-tile">${symbol()}</div>`;
+  // a stand-in logo for companies we don't have one for: the first letters of the main words
+  function initials(org) {
+    const words = org.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w) && !/^(of|in|the|and|for|at|&)$/i.test(w));
+    return words.slice(0, 3).map((w) => w[0].toUpperCase()).join("") || org.slice(0, 2).toUpperCase();
+  }
   const TAGS = ["Hiring", "Intro offered", "Follow up", "Mentor", "Investor", "Co-founder"];
   const SUGGESTIONS = [
     "the engineer who offered me an intro to her CTO",
@@ -759,6 +797,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     query: "",
     recall: "idle", // idle | searching | done
     sheet: null,
+    scan: null, // { mode: own | their, phase: camera | reading | review | error, cam, fields, image, progress }
+    scanned: [], // people saved by scanning their paper card
     flags: {},
   });
   let S = fresh();
@@ -929,8 +969,73 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         </div>`;
     },
 
+    scanner() {
+      const sc = S.scan;
+      const own = sc.mode === "own";
+      const cancel = back(own ? "join-reset" : "exchange-reset", "Cancel");
+      const title = own ? "Scan your business card" : "Scan their paper card";
+      if (sc.phase === "review") {
+        const f = sc.fields;
+        const rows = [["name", "Name"], ["role", "Role"], ["org", own ? "University / company" : "Company"], ["email", "Email"], ["phone", "Phone"], ["web", "LinkedIn / website"]];
+        const n = rows.filter(([k]) => f[k]).length;
+        return `${cancel}
+          <h2 class="title" style="font-size:26px">Found ${n} detail${n === 1 ? "" : "s"}</h2>
+          <p class="sub">Check them before saving. Tap a field to fix anything the scan got wrong.</p>
+          <div class="review">
+            ${sc.image ? `<img class="thumb" src="${sc.image}" alt="The card you scanned">` : ""}
+            <div class="panel fields">${rows.map(([k, l]) => `<label class="fld"><span>${l}</span><input id="scan-${k}" value="${esc(f[k] || "")}" placeholder="Not found" autocomplete="off" spellcheck="false"></label>`).join("")}</div>
+          </div>
+          <button class="btn" data-act="scan-apply">${ic("check")}${own ? "Create my profile" : "Save to my network"}</button>
+          <button class="link" style="display:block;margin:8px auto 0" data-act="scan-again">Scan again</button>`;
+      }
+      if (sc.phase === "error")
+        return `${cancel}
+          <h2 class="title" style="font-size:26px">Couldn't read that card</h2>
+          <p class="sub">${esc(sc.error)}</p>
+          ${sc.image ? `<div class="review"><img class="thumb" src="${sc.image}" alt="The card you scanned"></div>` : ""}
+          <div class="stack" style="margin-top:16px">
+            <button class="btn" data-act="scan-again">${ic("camera")}Try again</button>
+            <button class="btn secondary" data-act="scan-manual">Type the details instead</button>
+          </div>`;
+      const reading = sc.phase === "reading";
+      const pct = Math.round((sc.progress || 0) * 100);
+      const camMsg = {
+        starting: [ic("camera"), "Starting the camera…"],
+        denied: [ic("camera"), "Camera access is blocked. Allow it in your browser settings, or take a photo instead."],
+        unavailable: [ic("camera"), "This browser can't show a live camera (for example inside WhatsApp). Take a photo instead, or open the link in Safari or Chrome."],
+      }[sc.cam];
+      return `${cancel}
+        <h2 class="title" style="font-size:26px">${title}</h2>
+        <p class="sub">${reading ? "Reading the text on the card…" : "Fit the card inside the frame, then tap the round button."}</p>
+        <div class="viewfinder ${reading || sc.cam === "on" ? "cam" : ""}" style="margin-top:16px">
+          ${reading ? `<img class="shot" src="${sc.image}" alt="The card you photographed">` : sc.cam === "on" ? '<video id="camVideo" playsinline muted autoplay></video>' : `<div class="cam-msg">${camMsg[0]}<span>${camMsg[1]}</span></div>`}
+          <div class="corners"><i></i><i></i><i></i><i></i></div>
+          ${reading ? '<div class="scanline"></div>' : ""}
+        </div>
+        ${reading
+          ? `<div class="progress"><i id="ocrBar" style="width:${pct}%"></i></div><p class="hint" id="ocrPct" style="margin-top:8px">${sc.status || "Reading the card…"}</p>`
+          : `<div class="scan-controls">
+              <label class="btn secondary small file-btn" for="scanFile">${ic("camera")}Photo</label>
+              <button class="shutter" data-act="scan-capture" aria-label="Take the picture" ${sc.cam === "on" ? "" : "disabled"}></button>
+              <span></span>
+            </div>
+            <input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
+            <button class="link" style="display:block;margin:10px auto 0" data-act="scan-sample">Use a sample card instead</button>`}`;
+    },
+
     exchange() {
       const kind = KIND[S.front].charAt(0) + KIND[S.front].slice(1).toLowerCase();
+      if (S.exPhase === "scanned") {
+        const p = S.scanned[0];
+        return `${back("exchange-reset", "Share")}
+          <h2 class="title" style="font-size:26px">Saved to your network</h2>
+          <p class="sub">Wasl turned the paper card into a card and invited ${esc(p.name.split(" ")[0] || "them")} to join.</p>
+          <div style="margin:18px 0">${personCard(p)}</div>
+          <div class="stack">
+            <button class="btn" data-go="network">${ic("network")}Open my network</button>
+            <button class="link" data-go="exchange-reset">Swap cards with Mariam instead</button>
+          </div>`;
+      }
       if (S.exPhase === "paper")
         return `${back("exchange-reset", "Cancel")}
           <h2 class="title" style="font-size:26px">Scan their paper card</h2>
@@ -1132,7 +1237,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       fav: S.debrief[p.id] === "fav",
     }));
     const met = S.swappedWith ? tonight : tonight.filter((p) => p.id !== "mariam");
-    return [...met, ...OLDER];
+    return [...S.scanned, ...met, ...OLDER];
   }
   function albums() {
     const list = [
@@ -1183,14 +1288,16 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const tabbar = document.getElementById("tabbar");
   const overlay = document.getElementById("overlay");
   const TABS = [["network", "Network"], ["wallet", "Cards"], ["recall", "Recall"], ["profile", "Profile"], ["settings", "Settings"]];
-  const TAB_OF = { network: "network", album: "network", debrief: "network", remember: "network", wallet: "wallet", build: "wallet", exchange: "wallet", save: "wallet", recall: "recall", profile: "profile", settings: "settings" };
+  const TAB_OF = { network: "network", album: "network", debrief: "network", remember: "network", wallet: "wallet", build: "wallet", exchange: "wallet", scanner: "wallet", save: "wallet", recall: "recall", profile: "profile", settings: "settings" };
   let lastScreen = null;
 
   function render() {
     const changed = lastScreen !== S.screen;
     screenEl.innerHTML = screens[S.screen]();
-    const noNav = S.screen === "join";
+    const noNav = S.screen === "join" || (S.screen === "scanner" && S.scan.mode === "own");
     tabbar.hidden = noNav;
+    if (S.screen === "scanner" && S.scan.phase === "camera") attachCamera();
+    else stopCamera();
     screenEl.classList.toggle("no-nav", noNav);
     if (changed) {
       screenEl.classList.remove("enter");
@@ -1273,7 +1380,44 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   }
 
   const actions = {
-    "scan-own"() { S.sheet = null; S.joinPhase = "scanning"; S.screen = "join"; render(); later(1900, () => { if (S.joinPhase === "scanning") { S.joinPhase = "found"; render(); } }); },
+    "scan-own"() { openScanner("own"); },
+    "scan-capture"() { captureFromCamera(); },
+    "scan-sample"() {
+      // the scripted demo card, for presenting without a real card
+      const own = S.scan.mode === "own";
+      S.scan = null;
+      if (own) { S.joinPhase = "scanning"; S.screen = "join"; render(); later(1900, () => { if (S.joinPhase === "scanning") { S.joinPhase = "found"; render(); } }); }
+      else { S.screen = "exchange"; S.exPhase = "paper"; render(); later(1900, () => { if (S.exPhase === "paper") { S.exPhase = "paperfound"; render(); } }); }
+    },
+    "scan-again"() { openScanner(S.scan.mode); },
+    "scan-manual"() { S.scan.phase = "review"; S.scan.fields = {}; S.scan.image = null; render(); },
+    "scan-apply"() {
+      const f = {};
+      for (const k of ["name", "role", "org", "email", "phone", "web"]) f[k] = (document.getElementById("scan-" + k)?.value || "").trim();
+      if (!f.name) { toast("Add a name before saving"); document.getElementById("scan-name")?.focus(); return; }
+      if (S.scan.mode === "own") {
+        Object.assign(ME, { name: f.name, role: f.role || ME.role, org: f.org || ME.org, email: f.email || ME.email, phone: f.phone || ME.phone, linkedin: f.web || ME.linkedin });
+        S.scan = null;
+        S.profileFilled = true;
+        S.screen = "profile";
+        render();
+        confetti();
+        xpToast("Profile created from your card", 120);
+      } else {
+        const colors = ["pro", "event", "social", "team"];
+        S.scanned.unshift({
+          id: "scan" + Date.now(), name: f.name, role: f.role, org: f.org,
+          contacts: [f.email, f.phone, f.web].filter(Boolean).slice(0, 2),
+          color: colors[S.scanned.length % 4], kind: "PAPER CARD",
+          event: "Campus networking night", tag: "Follow up", when: "Just now",
+        });
+        S.scan = null;
+        S.screen = "exchange";
+        S.exPhase = "scanned";
+        render();
+        xpToast("New connection", 30);
+      }
+    },
     "import-linkedin"() { S.joinPhase = "linkedin"; render(); later(1500, () => { if (S.joinPhase === "linkedin") { S.joinPhase = "found"; render(); } }); },
     "email-signup"() { S.sheet = "email"; render(); },
     "create-profile"() { S.profileFilled = true; S.screen = "profile"; S.joinPhase = "choose"; render(); confetti(); xpToast("Level 3 unlocked", 120); },
@@ -1318,11 +1462,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       buzz();
       later(950, () => { S.exPhase = "done"; S.swappedWith = S.front; render(); xpToast("New connection", 30); });
     },
-    "scan-paper"() {
-      S.exPhase = "paper";
-      render();
-      later(1900, () => { if (S.exPhase === "paper") { S.exPhase = "paperfound"; render(); } });
-    },
+    "scan-paper"() { openScanner("their"); },
     "paper-save"() {
       if (!S.profileFilled) S.profileFilled = true;
       S.swappedWith = "paper";
@@ -1363,8 +1503,218 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   function resetAll() {
     timers.forEach(clearTimeout); timers = [];
     clearInterval(recTimer);
+    stopCamera();
+    Object.assign(ME, DEFAULT_ME);
     S = fresh();
     lastScreen = null;
+  }
+
+  // ---------- real card scanning: camera → photo → OCR (Tesseract.js, runs in the browser) → review ----------
+  let camStream = null;
+  let ocrWorker = null;
+  let ocrWorkerPromise = null;
+
+  function openScanner(mode) {
+    S.sheet = null;
+    S.scan = { mode, phase: "camera", cam: "starting", fields: {}, progress: 0 };
+    S.screen = "scanner";
+    render();
+    startCamera();
+    getOcrWorker().catch(() => {}); // start downloading the text reader while the person lines up the card
+  }
+  async function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { setCam("unavailable"); return; }
+    try {
+      if (!camStream) {
+        camStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
+        });
+      }
+      if (S.screen !== "scanner" || !S.scan || S.scan.phase !== "camera") { stopCamera(); return; }
+      setCam("on");
+    } catch (err) {
+      setCam(err && (err.name === "NotAllowedError" || err.name === "SecurityError") ? "denied" : "unavailable");
+    }
+  }
+  function setCam(state) {
+    if (!S.scan) return;
+    S.scan.cam = state;
+    render();
+  }
+  function attachCamera() {
+    const v = document.getElementById("camVideo");
+    if (v && camStream && v.srcObject !== camStream) {
+      v.srcObject = camStream;
+      v.play().catch(() => {});
+    }
+  }
+  function stopCamera() {
+    if (camStream) camStream.getTracks().forEach((t) => t.stop());
+    camStream = null;
+  }
+
+  function loadTesseract() {
+    if (window.Tesseract) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("The text reader could not be downloaded."));
+      document.head.appendChild(s);
+    });
+  }
+  function getOcrWorker() {
+    if (ocrWorker) return Promise.resolve(ocrWorker);
+    if (!ocrWorkerPromise) {
+      ocrWorkerPromise = loadTesseract()
+        .then(() => window.Tesseract.createWorker("eng", 1, {
+          logger: (m) => {
+            if (!S.scan || S.scan.phase !== "reading") return;
+            if (m.status === "recognizing text") { S.scan.progress = 0.15 + m.progress * 0.85; S.scan.status = "Reading the card…"; }
+            else if (/loading|initializ/.test(m.status)) { S.scan.progress = Math.min(0.15, (m.progress || 0) * 0.15); S.scan.status = "Getting the text reader ready (first time only)…"; }
+            const bar = document.getElementById("ocrBar");
+            const label = document.getElementById("ocrPct");
+            if (bar) bar.style.width = Math.round(S.scan.progress * 100) + "%";
+            if (label) label.textContent = `${S.scan.status} ${Math.round(S.scan.progress * 100)}%`;
+          },
+        }))
+        // "sparse text" finds text scattered around a card; the default single-block mode can skip the big name line
+        .then((w) => w.setParameters({ tessedit_pageseg_mode: "11" }).then(() => w))
+        .then((w) => (ocrWorker = w))
+        .catch((e) => { ocrWorkerPromise = null; throw e; });
+    }
+    return ocrWorkerPromise;
+  }
+
+  function captureFromCamera() {
+    const v = document.getElementById("camVideo");
+    if (!v || !v.videoWidth) { toast("The camera isn't ready yet"); return; }
+    // crop to the frame drawn on screen (the video is shown with object-fit: cover)
+    const r = v.getBoundingClientRect();
+    const scale = Math.max(r.width / v.videoWidth, r.height / v.videoHeight);
+    const offX = (r.width - v.videoWidth * scale) / 2;
+    const offY = (r.height - v.videoHeight * scale) / 2;
+    const pad = 12;
+    const fx = 30 - pad, fy = 40 - pad, fw = r.width - 60 + pad * 2, fh = r.height - 80 + pad * 2;
+    const sx = Math.max(0, (fx - offX) / scale), sy = Math.max(0, (fy - offY) / scale);
+    const sw = Math.min(v.videoWidth - sx, fw / scale), sh = Math.min(v.videoHeight - sy, fh / scale);
+    const canvas = document.createElement("canvas");
+    const up = Math.max(1, 1600 / sw);
+    canvas.width = Math.round(sw * up);
+    canvas.height = Math.round(sh * up);
+    canvas.getContext("2d").drawImage(v, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    buzz();
+    readCard(canvas);
+  }
+  function readUploadedPhoto(file) {
+    if (!file) return;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      readCard(canvas);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); S.scan.phase = "error"; S.scan.error = "That file isn't a photo Wasl can open. Try a JPG or PNG."; render(); };
+    img.src = url;
+  }
+  async function readCard(canvas) {
+    const sc = S.scan;
+    stopCamera();
+    sc.image = canvas.toDataURL("image/jpeg", 0.85);
+    sc.phase = "reading";
+    sc.progress = 0.02;
+    sc.status = "Getting the text reader ready…";
+    render();
+    try {
+      const worker = await getOcrWorker();
+      const { data } = await worker.recognize(grayscale(canvas));
+      if (S.scan !== sc) return; // the person left the scanner meanwhile
+      sc.raw = data.text;
+      sc.fields = parseCard(data.text, data.lines);
+      if (!sc.fields.name && !sc.fields.email && !sc.fields.phone) {
+        sc.phase = "error";
+        sc.error = "Wasl couldn't find a name, email or phone number. Try again with the card flat, in good light, filling the frame.";
+      } else sc.phase = "review";
+    } catch (e) {
+      if (S.scan !== sc) return;
+      sc.phase = "error";
+      sc.error = "The text reader didn't load. Check the internet connection and try again.";
+    }
+    render();
+  }
+  function grayscale(src) {
+    const c = document.createElement("canvas");
+    c.width = src.width; c.height = src.height;
+    const ctx = c.getContext("2d");
+    ctx.drawImage(src, 0, 0);
+    const img = ctx.getImageData(0, 0, c.width, c.height);
+    const d = img.data;
+    let lo = 255, hi = 0;
+    for (let i = 0; i < d.length; i += 4) { const y = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114; d[i] = y; if (y < lo) lo = y; if (y > hi) hi = y; }
+    const span = Math.max(1, hi - lo);
+    for (let i = 0; i < d.length; i += 4) { const y = ((d[i] - lo) / span) * 255; d[i] = d[i + 1] = d[i + 2] = y; }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  }
+
+  // Turn the text of a business card into fields. Cards vary a lot, so this is a best guess
+  // that the person reviews before saving.
+  function parseCard(text, ocrLines = []) {
+    const f = {};
+    // how tall each line was printed: the name is usually the biggest text on a card
+    const key = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const heights = new Map((ocrLines || []).map((l) => [key(l.text || ""), l.bbox ? l.bbox.y1 - l.bbox.y0 : 0]));
+    const lines = text.split(/\n+/).map((l) => l.replace(/[|_~`“”‘’«»]+/g, " ").replace(/\s+/g, " ").trim()).filter((l) => l.replace(/[^A-Za-z0-9]/g, "").length >= 2);
+    // OCR sometimes breaks a phone number over two lines ("+974 3" / "300 1122"): join them back
+    for (let i = 0; i < lines.length - 1; i++) {
+      if (/\+?\d[\d\s-]*$/.test(lines[i]) && /^\d[\d\s-]{3,}/.test(lines[i + 1]) && !/@/.test(lines[i + 1])) {
+        lines[i] = lines[i] + lines[i + 1].match(/^\d[\d\s-]*/)[0];
+        lines[i + 1] = lines[i + 1].replace(/^\d[\d\s-]*/, "").trim();
+      }
+    }
+    const used = new Set();
+    const take = (re, key, clean = (x) => x) => {
+      for (let i = 0; i < lines.length; i++) {
+        // OCR often adds spaces inside emails ("name @ site. com"): close them up before matching
+        let line = /@/.test(lines[i]) ? lines[i].replace(/\s*([@.])\s*/g, "$1") : lines[i];
+        if (key === "web") line = line.replace(/\S+@\S+/g, " "); // a website is never the part after an email's @
+        const m = line.match(re);
+        if (m) { f[key] = clean(m[0]); used.add(i); return i; }
+      }
+      return -1;
+    };
+    take(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i, "email", (x) => x.toLowerCase());
+    take(/(l?inkedin\.com\/in\/[A-Za-z0-9_-]+)/i, "web", (x) => x.toLowerCase().replace(/^inkedin/, "linkedin"));
+    take(/(\+?\(?\d[\d\s().-]{6,}\d)/, "phone", (x) => x.replace(/\s+/g, " ").trim());
+    if (!f.web) take(/\b((https?:\/\/)?(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)*\.(com|net|org|io|co|qa|edu|ai|app|dev|me|example)(\/\S*)?)\b/i, "web", (x) => x.toLowerCase().replace(/^https?:\/\//, ""));
+    // lines that only held contact details or labels are done; the rest are name, role, company
+    const rest = lines.map((l, i) => ({ l: l.replace(/^(tel|phone|mobile|mob|email|e-mail|web|www)\s*[:.]?\s*/i, ""), i })).filter(({ l, i }) => !used.has(i) && !/@|\d{4,}|https?:|www\./i.test(l));
+    const roleRe = /\b(engineer|developer|designer|manager|director|founder|co-founder|ceo|cto|cfo|coo|cmo|chief|officer|student|intern|analyst|consultant|scientist|professor|lecturer|partner|lead|head|president|specialist|coordinator|associate|researcher|architect|marketing|sales|product|recruiter|advisor|owner|freelance|photographer|writer|artist|teacher|doctor|nurse|lawyer|accountant|chef|trainer|coach|editor|producer|journalist|executive|assistant|technician)\b/i;
+    const orgRe = /\b(inc|llc|ltd|labs?|university|college|school|group|company|co\.|corp|corporation|studio|capital|ventures|technologies|technology|tech|solutions|systems|bank|foundation|institute|analytics|robotics|consulting|agency|partners|holdings|media|qatar|global|international|hub|fintech|center|centre|association|council|ministry|authority|airways|hospital|clinic|hotel|academy|network)\b/i;
+    const isName = (l) => /^[A-Za-z][A-Za-z.'-]+(\s[A-Za-z][A-Za-z.'-]+){1,3}$/.test(l) && !roleRe.test(l) && !orgRe.test(l);
+    const pick = (test) => { const x = rest.find((r) => !r.taken && test(r.l)); if (x) x.taken = true; return x ? x.l : ""; };
+    for (const r of rest) r.h = heights.get(key(lines[r.i])) || 0;
+    const names = rest.filter((r) => isName(r.l)).sort((a, b) => b.h - a.h);
+    if (names[0]) { names[0].taken = true; f.name = names[0].l; }
+    f.role = pick((l) => roleRe.test(l));
+    // a company often appears twice (logo text in capitals, then the full name): prefer the fuller one
+    const orgs = rest.filter((r) => !r.taken && orgRe.test(r.l)).sort((a, b) => (a.l === a.l.toUpperCase()) - (b.l === b.l.toUpperCase()) || b.l.length - a.l.length);
+    if (orgs[0]) { orgs[0].taken = true; f.org = orgs[0].l; }
+    if (!f.org) {
+      const domain = (f.email || "").split("@")[1] || (f.web && !/linkedin/.test(f.web) ? f.web.replace(/^www\./, "") : "");
+      const base = domain.split(".")[0];
+      if (base && !/^(gmail|hotmail|outlook|yahoo|icloud|mail)$/.test(base)) f.org = base.charAt(0).toUpperCase() + base.slice(1);
+    }
+    if (!f.name) f.name = pick(() => true);
+    const titleCase = (s) => (s && s === s.toUpperCase() ? s.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()) : s);
+    f.name = titleCase(f.name);
+    return f;
   }
 
   function typeQuery(text) {
@@ -1483,6 +1833,9 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     const a = e.target.closest("[data-act]");
     if (a && actions[a.dataset.act]) { e.preventDefault(); actions[a.dataset.act](a); }
   });
+  screenEl.addEventListener("change", (e) => {
+    if (e.target.id === "scanFile" && S.scan) readUploadedPhoto(e.target.files && e.target.files[0]);
+  });
   screenEl.addEventListener("submit", (e) => {
     if (e.target.id === "recallForm") { e.preventDefault(); submitRecall(document.getElementById("recallInput").value); }
   });
@@ -1500,6 +1853,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   ];
   const WOW = { 1: "WOW 1", 2: "WOW 2", 3: "WOW 3" };
   const STEP_OF = { join: 0, profile: 0, build: 1, wallet: 2, exchange: 2, save: 3, remember: 4, debrief: 5, network: 6, album: 6, recall: 7, settings: -1 };
+  const stepOf = () => (S.screen === "scanner" ? (S.scan.mode === "own" ? 0 : 2) : STEP_OF[S.screen]);
 
   function setupTo(i) {
     // start clean, then make every earlier step "done" so any step opens the same way each time
@@ -1533,7 +1887,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       <div class="seg" role="group" aria-label="Mode"><button data-g="walk" aria-pressed="${T.mode === "walk"}">Walkthrough</button><button data-g="test" aria-pressed="${T.mode === "test"}">User test</button></div>`;
     let body = "";
     if (T.mode === "walk") {
-      const cur = STEP_OF[S.screen];
+      const cur = stepOf();
       body = `<ol class="steps">${STEPS.map((s, i) => `<li><button data-g="step" data-i="${i}" ${cur === i ? 'aria-current="step"' : ""} class="${cur > i ? "done" : ""}"><span class="num">${s.n}</span><span><span class="t">${s.t}</span><span class="h">${s.h}</span></span><span class="wow w${s.wow}">${WOW[s.wow]}</span></button></li>`).join("")}</ol>
         <p class="guide-note"><b>WOW 1</b> Share the right you · <b>WOW 2</b> Every connection keeps its story · <b>WOW 3</b> Find people by memory</p>
         <div class="guide-actions"><button class="ghost" data-g="restart">Restart</button></div>`;
@@ -1555,7 +1909,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     // mobile bar
     if (T.mode === "test" && T.running) mobileBar.innerHTML = `<b>Task ${T.idx + 1}</b> ${esc(TASKS[T.idx].text)}`;
     else if (T.mode === "test") mobileBar.innerHTML = `<b>User test</b> Open the guide to start`;
-    else { const cur = STEP_OF[S.screen]; mobileBar.innerHTML = cur >= 0 ? `<b>Step ${STEPS[cur].n}</b> ${STEPS[cur].t} · ${WOW[STEPS[cur].wow]}` : "<b>Guide</b>"; }
+    else { const cur = stepOf(); mobileBar.innerHTML = cur >= 0 ? `<b>Step ${STEPS[cur].n}</b> ${STEPS[cur].t} · ${WOW[STEPS[cur].wow]}` : "<b>Guide</b>"; }
   }
   function checkTask() {
     if (T.mode !== "test" || !T.running) return;

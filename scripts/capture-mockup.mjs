@@ -1,8 +1,12 @@
 // Captures phone-size screenshots of every step of the clickable mockup (public/mockup/index.html)
 // into docs/presentation/mockup-screens, for slides and the user-testing handout.
+// The phone camera is fed docs/presentation/sample-business-card.jpg (needs ffmpeg), so the
+// paper-card screenshots show a real scan.
 import { chromium } from "@playwright/test";
 import { createServer } from "node:http";
-import { readFile, mkdir } from "node:fs/promises";
+import { readFile, mkdir, rm } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,7 +19,7 @@ const server = createServer(async (_req, res) => {
   res.end(await readFile(page));
 });
 await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-const base = `http://127.0.0.1:${server.address().port}/`;
+const base = `http://localhost:${server.address().port}/`;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const click = (p, selector) => p.locator(selector).first().click();
@@ -28,6 +32,7 @@ const shots = [
     "#step-1",
     async (p) => {
       await click(p, '[data-act="scan-own"]');
+      await click(p, '[data-act="scan-sample"]');
       await sleep(2300);
       await click(p, '[data-act="create-profile"]');
       await sleep(2600);
@@ -58,7 +63,26 @@ const shots = [
       await click(p, '[data-act="share"]');
       await sleep(300);
       await click(p, '[data-act="scan-paper"]');
-      await sleep(900);
+      await p.waitForFunction(
+        () => document.getElementById("camVideo")?.videoWidth > 0,
+      );
+      await sleep(1200);
+    },
+  ],
+  [
+    "05c-scan-review",
+    "#step-3",
+    async (p) => {
+      await click(p, '[data-act="share"]');
+      await sleep(300);
+      await click(p, '[data-act="scan-paper"]');
+      await p.waitForFunction(
+        () => document.getElementById("camVideo")?.videoWidth > 0,
+      );
+      await sleep(800);
+      await click(p, '[data-act="scan-capture"]');
+      await p.waitForSelector("#scan-name", { timeout: 90000 });
+      await sleep(600);
     },
   ],
   [
@@ -100,20 +124,51 @@ const shots = [
 ];
 
 await mkdir(outDir, { recursive: true });
+const tmp = path.join(os.tmpdir(), `wasl-capture-${process.pid}`);
+await mkdir(tmp, { recursive: true });
+const camera = path.join(tmp, "camera.y4m");
+execFileSync("ffmpeg", [
+  "-v",
+  "error",
+  "-y",
+  "-loop",
+  "1",
+  "-i",
+  path.join(root, "docs/presentation/sample-business-card.jpg"),
+  "-t",
+  "2",
+  "-r",
+  "10",
+  "-vf",
+  "scale=1280:720",
+  "-pix_fmt",
+  "yuv420p",
+  camera,
+]);
+const args = [
+  "--use-fake-ui-for-media-stream",
+  "--use-fake-device-for-media-stream",
+  `--use-file-for-fake-video-capture=${camera}`,
+];
 // Prefer Playwright's own Chromium; fall back to the installed Chrome when its download is missing.
 const browser = await chromium
-  .launch()
-  .catch(() => chromium.launch({ channel: "chrome" }));
+  .launch({ args })
+  .catch(() => chromium.launch({ channel: "chrome", args }));
 const context = await browser.newContext({
   viewport: { width: 390, height: 844 },
   deviceScaleFactor: 3,
   isMobile: true,
   hasTouch: true,
+  permissions: ["camera"],
 });
 for (const [name, hash, act] of shots) {
   const p = await context.newPage();
   await p.goto(base + hash);
-  await p.addStyleTag({ content: ".mobile-bar { display: none !important; }" });
+  // hide the guide pill and its band: the screenshots show only the app
+  await p.addStyleTag({
+    content:
+      ".mobile-bar { display: none !important; } .screen { top: 0 !important; padding-top: 20px !important; }",
+  });
   await p.evaluate(() => document.fonts.ready);
   await sleep(500);
   await act(p);
@@ -124,3 +179,4 @@ for (const [name, hash, act] of shots) {
 }
 await browser.close();
 server.close();
+await rm(tmp, { recursive: true, force: true });
