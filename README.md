@@ -8,6 +8,8 @@ For the **26 October prototype check-in**, use `npm run demo` or double-click **
 
 For teammates on other devices, see [the shared demo and team message](docs/TEAM_DEMO.md). `npm run demo:share` opens a temporary HTTPS link using a separate fictional workspace; the laptop must stay online. The local presentation remains independent.
 
+For the **2 November prototype check-in**, open the [clickable mockup](public/mockup/index.html) (served at `/mockup/index.html`). It covers all seven steps of the gamified flow with sample data and has a timed user-test mode. [The technical solution](docs/TECHNICAL_SOLUTION.md) explains how each step works and what is built versus mocked. Slide screenshots are in `docs/presentation/mockup-screens/`.
+
 For a phone-format presentation, see [the mobile presentation kit](docs/MOBILE_PRESENTATION.md): an 80-second portrait walkthrough, 12 phone screenshots, and optional narration.
 
 Use Node.js **24 LTS** (22 or newer is required).
