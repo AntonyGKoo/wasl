@@ -89,6 +89,14 @@ const shots = [
       await sleep(3200);
     },
   ],
+  [
+    "11-recall-who-is-going",
+    "#step-7",
+    async (p) => {
+      await click(p, '[data-act="suggest"]:last-child');
+      await sleep(3600);
+    },
+  ],
 ];
 
 await mkdir(outDir, { recursive: true });
