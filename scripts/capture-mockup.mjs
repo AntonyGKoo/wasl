@@ -52,6 +52,16 @@ const shots = [
     },
   ],
   [
+    "05b-scan-paper-card",
+    "#step-3",
+    async (p) => {
+      await click(p, '[data-act="share"]');
+      await sleep(300);
+      await click(p, '[data-act="scan-paper"]');
+      await sleep(900);
+    },
+  ],
+  [
     "06-save-context-and-tag",
     "#step-4",
     async (p) => {

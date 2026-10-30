@@ -296,10 +296,11 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .card {
   position: relative;
   border-radius: 22px;
-  padding: 18px 20px;
+  padding: 16px 18px;
   color: var(--card-text);
   overflow: hidden;
   aspect-ratio: 1.6 / 1;
+  min-height: 0;
   max-width: 100%;
   display: flex; flex-direction: column;
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -323,12 +324,22 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .card .c-top { display: flex; justify-content: space-between; align-items: center; }
 .card .c-word { font-family: var(--display); font-weight: 800; font-size: 21px; letter-spacing: -0.4px; }
 .card .c-kind { font-family: var(--display); font-weight: 800; font-size: 11.5px; letter-spacing: 0.22em; }
-.card .c-tile { width: 42px; height: 34px; border-radius: 9px; background: rgba(15, 18, 24, 0.28); display: grid; place-items: center; margin-top: 12px; }
-.card .c-tile svg { width: 30px; height: 19px; }
-.card .c-name { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -0.4px; margin-top: auto; line-height: 1.15; }
-.card .c-line { font-size: 13.5px; font-weight: 600; opacity: 0.92; line-height: 1.35; }
-.card .c-foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; gap: 8px; }
-.card .c-mono { font-family: var(--mono); font-size: 11.5px; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .c-tile { width: 36px; height: 28px; border-radius: 8px; background: rgba(15, 18, 24, 0.28); display: grid; place-items: center; margin-top: 8px; flex: none; }
+.card .c-tile svg { width: 26px; height: 16px; }
+.card .c-name { font-family: var(--display); font-weight: 800; font-size: 21px; letter-spacing: -0.4px; margin-top: auto; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .c-line { font-size: 12.5px; font-weight: 600; opacity: 0.92; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .c-foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; gap: 8px; }
+.card .c-contacts { display: flex; flex-direction: column; min-width: 0; }
+.card .c-mono { font-family: var(--mono); font-size: 11px; line-height: 1.4; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* small cards fanned out on the welcome screen: fixed size so long text can never stretch them */
+.card.mini { width: 196px; height: 122px; aspect-ratio: auto; padding: 12px 14px; border-radius: 16px; }
+.card.mini .c-word { font-size: 16px; }
+.card.mini .c-kind { font-size: 9px; letter-spacing: 0.18em; }
+.card.mini .c-tile { width: 28px; height: 22px; margin-top: 6px; }
+.card.mini .c-tile svg { width: 20px; height: 13px; }
+.card.mini .c-name { font-size: 16px; }
+.card.mini .c-line { font-size: 10.5px; }
+.card.mini .c-foot { display: none; }
 .card .c-qr { width: 24px; height: 24px; flex: none; opacity: 0.9; }
 .card .f { border-radius: 6px; transition: background 120ms; }
 .card.editing .f { cursor: pointer; outline: 1px dashed rgba(255, 255, 255, 0.35); outline-offset: 2px; padding: 0 3px; margin-left: -3px; }
@@ -347,8 +358,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .join-hero svg.big { width: 128px; height: 82px; }
 .join-hero .wm { font-family: var(--display); font-weight: 800; font-size: 44px; letter-spacing: -1.2px; line-height: 1; }
 .join-hero p { color: var(--text-2); max-width: 26ch; }
-.fan { position: relative; height: 170px; margin: 18px 0 8px; }
-.fan .card { position: absolute; width: 210px; left: 50%; top: 10px; }
+.fan { position: relative; height: 160px; margin: 18px 0 8px; }
+.fan .card { position: absolute; left: 50%; top: 14px; }
 .viewfinder {
   position: relative;
   border-radius: 24px;
@@ -675,16 +686,17 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const KIND = { pro: "PROFESSIONAL", event: "EVENT", social: "SOCIAL", team: "TEAM WASL" };
   const COLOR_NAME = { pro: "Deep teal", event: "Deep violet", social: "Copper", team: "Deep blue" };
 
+  // Each person shares a different set of details, the way real cards differ.
   const MARIAM = {
     id: "mariam", name: "Mariam Ali", role: "Software engineer", org: "Pearl Labs",
-    mono: "mariam@pearllabs.example", color: "team", kind: "PROFESSIONAL",
+    contacts: ["mariam@pearllabs.example", "linkedin.com/in/mariamali"], color: "team", kind: "PROFESSIONAL",
   };
   const TONIGHT = [
     MARIAM,
-    { id: "omar", name: "Omar Haddad", role: "Product designer", org: "Dhow Design Studio", mono: "@omar.designs", color: "social", kind: "SOCIAL", note: "Showed his portfolio app" },
-    { id: "lina", name: "Lina Farouk", role: "Data scientist", org: "Falcon Analytics", mono: "lina@falcon.example", color: "pro", kind: "PROFESSIONAL", note: "Talked about her NLP research" },
-    { id: "yousef", name: "Yousef Al-Kuwari", role: "Founder", org: "Najm Robotics", mono: "yousef@najm.example", color: "event", kind: "EVENT", note: "Looking for a first engineer" },
-    { id: "sara", name: "Sara Nasser", role: "Talent partner", org: "Corniche Capital", mono: "sara@corniche.example", color: "team", kind: "PROFESSIONAL", note: "Runs their internship program" },
+    { id: "omar", name: "Omar Haddad", contacts: ["@omar.designs", "omar.haddad@mail.example"], color: "social", kind: "SOCIAL", role: "Product designer", org: "Dhow Design Studio", hideWork: true, note: "Showed his portfolio app" },
+    { id: "lina", name: "Lina Farouk", role: "Data scientist", org: "Falcon Analytics", contacts: ["lina@falcon.example", "linkedin.com/in/linafarouk"], color: "pro", kind: "PROFESSIONAL", note: "Talked about her NLP research" },
+    { id: "yousef", name: "Yousef Al-Kuwari", role: "Founder", org: "Najm Robotics", contacts: ["+974 5530 1188"], color: "event", kind: "EVENT", note: "Looking for a first engineer" },
+    { id: "sara", name: "Sara Nasser", role: "Talent partner", org: "Corniche Capital", contacts: ["sara@corniche.example"], color: "team", kind: "PROFESSIONAL", note: "Runs their internship program" },
   ];
   const OLDER = [
     { name: "Hamad Al-Thani", role: "Mentor, venture studio", org: "Bayt Ventures", event: "Web Summit Qatar", tag: "Mentor", color: "pro", when: "Oct 12" },
@@ -707,10 +719,10 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     profileFilled: false,
     extra: { instagram: false, photo: false },
     cards: {
-      pro: { color: "pro", fields: ["name", "role", "org", "email"] },
+      pro: { color: "pro", fields: ["name", "role", "org", "email", "linkedin"] },
       event: { color: "event", fields: ["name", "role", "org"] },
-      social: { color: "social", fields: ["name", "org", "instagram"] },
-      team: { color: "team", fields: ["name", "role", "email"] },
+      social: { color: "social", fields: ["name", "email", "instagram"] },
+      team: { color: "team", fields: ["name", "role", "phone"] },
     },
     order: ["social", "team", "pro", "event"],
     front: "event",
@@ -750,32 +762,34 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     const c = opts.data || S.cards[id];
     const fields = c.fields;
     const isEdit = !!opts.edit;
-    const body = ["name", "role", "org"].filter((f) => fields.includes(f));
+    const mini = !!opts.mini;
+    const body = ["name", "role", "org"].filter((f) => fields.includes(f) && !(mini && f === "org"));
     const contact = fields.filter((f) => !["name", "role", "org"].includes(f));
     const fEl = (f, cls, text) =>
       isEdit && f !== "name"
         ? `<span class="f ${cls}" data-act="hide-field" data-f="${f}" role="button" tabindex="0" aria-label="Hide ${FIELD_META[f].label}">${esc(text)}</span>`
         : `<span class="f ${cls} ${isEdit ? "locked" : ""}">${esc(text)}</span>`;
-    return `<${opts.tag || "div"} class="card ${c.color} ${isEdit ? "editing" : ""} ${opts.cls || ""}" ${opts.attrs || ""}>
+    return `<${opts.tag || "div"} class="card ${c.color} ${isEdit ? "editing" : ""} ${mini ? "mini" : ""} ${opts.cls || ""}" ${opts.attrs || ""}>
       <div class="c-top"><span class="c-word">wasl</span><span class="c-kind">${KIND[id] || ""}</span></div>
       <div class="c-tile">${symbol()}</div>
       ${body.includes("name") ? `<div class="c-name">${fEl("name", "", ME.name)}</div>` : ""}
       ${body.filter((f) => f !== "name").map((f) => `<div class="c-line">${fEl(f, "", fieldValue(f))}</div>`).join("")}
       <div class="c-foot">
-        <span class="c-mono">${contact.length ? contact.map((f) => fEl(f, "", fieldValue(f))).join(" · ") : body.map((f) => FIELD_META[f].label).join(" · ")}</span>
+        <span class="c-contacts">${contact.length ? contact.map((f) => `<span class="c-mono">${fEl(f, "", fieldValue(f))}</span>`).join("") : `<span class="c-mono">${body.map((f) => FIELD_META[f].label).join(" · ")}</span>`}</span>
         <span class="c-qr">${ic("qr")}</span>
       </div>
     </${opts.tag || "div"}>`;
   }
   function personCard(p, opts = {}) {
+    const lines = p.hideWork ? [] : [p.role, p.org].filter(Boolean);
+    const contacts = opts.foot ? [opts.foot] : p.contacts || [];
     return `<div class="card ${p.color} ${opts.cls || ""}" ${opts.attrs || ""}>
       <div class="c-top"><span class="c-word">wasl</span><span class="c-kind">${p.kind || "PROFESSIONAL"}</span></div>
       <div class="c-tile">${symbol()}</div>
       <div class="c-name">${esc(p.name)}</div>
-      <div class="c-line">${esc(p.role)}</div>
-      <div class="c-line">${esc(p.org)}</div>
+      ${lines.map((l) => `<div class="c-line">${esc(l)}</div>`).join("")}
       ${opts.note ? `<div class="note">${esc(opts.note)}</div>` : ""}
-      <div class="c-foot"><span class="c-mono">${esc(p.mono || "")}</span><span class="c-qr">${ic("qr")}</span></div>
+      <div class="c-foot"><span class="c-contacts">${contacts.map((x) => `<span class="c-mono">${esc(x)}</span>`).join("")}</span><span class="c-qr">${ic("qr")}</span></div>
       ${opts.stamps ? '<span class="stamp fav">FAVORITE</span><span class="stamp keep">CONTACT</span>' : ""}
     </div>`;
   }
@@ -825,9 +839,9 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           <p>Never forget who you met, or why it mattered.</p>
         </div>
         <div class="fan" aria-hidden="true">
-          ${card("social", { cls: "", attrs: 'style="transform:translateX(-82%) rotate(-12deg) scale(.9)"' })}
-          ${card("event", { attrs: 'style="transform:translateX(-18%) rotate(10deg) scale(.9)"' })}
-          ${card("pro", { attrs: 'style="transform:translateX(-50%) rotate(-1deg) scale(.95);top:18px"' })}
+          ${card("social", { mini: true, attrs: 'style="transform:translateX(-88%) rotate(-12deg) scale(.9)"' })}
+          ${card("event", { mini: true, attrs: 'style="transform:translateX(-12%) rotate(10deg) scale(.9)"' })}
+          ${card("pro", { mini: true, attrs: 'style="transform:translateX(-50%) rotate(-2deg);top:24px"' })}
         </div>
         <div class="stack" style="margin-top:22px">
           <button class="btn" data-act="scan-own">${ic("scan")}Scan my business card</button>
@@ -901,10 +915,29 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 
     exchange() {
       const kind = KIND[S.front].charAt(0) + KIND[S.front].slice(1).toLowerCase();
+      if (S.exPhase === "paper")
+        return `${back("exchange-reset", "Cancel")}
+          <h2 class="title" style="font-size:26px">Scan their paper card</h2>
+          <p class="sub">No Wasl? Hold their business card inside the frame.</p>
+          <div class="viewfinder" style="margin-top:18px">
+            <div class="paper"><b>Mariam Ali</b><span>Software engineer</span><span>Pearl Labs</span><span class="m">mariam@pearllabs.example<br>+974 5571 2290 · pearllabs.example</span></div>
+            <div class="corners"><i></i><i></i><i></i><i></i></div><div class="scanline"></div>
+          </div>
+          <p class="hint" style="margin-top:14px">Reading the card…</p>`;
+      if (S.exPhase === "paperfound") {
+        const rows = [["Name", "Mariam Ali"], ["Role", "Software engineer"], ["Company", "Pearl Labs"], ["Email", "mariam@pearllabs.example"], ["Phone", "+974 5571 2290"]];
+        return `${back("exchange-reset", "Start over")}
+          <h2 class="title" style="font-size:26px">Found 5 details</h2>
+          <p class="sub">Check them before saving. Wasl sends Mariam an invite to get her own card.</p>
+          <div class="panel" style="margin:18px 0">
+            <ul class="found">${rows.map(([k, v], i) => `<li style="animation-delay:${i * 110}ms"><span class="k">${k}</span><span class="v">${esc(v)}</span></li>`).join("")}</ul>
+          </div>
+          <button class="btn" data-act="paper-save">${ic("check")}Save Mariam</button>`;
+      }
       if (S.exPhase === "done")
         return `${back("wallet", "Cards")}
-          <h2 class="title" style="font-size:26px">You swapped cards with Mariam</h2>
-          <p class="sub">She has your ${kind} card. Hers is now in your wallet.</p>
+          <h2 class="title" style="font-size:26px">${S.swappedWith === "paper" ? "Mariam's paper card is saved" : "You swapped cards with Mariam"}</h2>
+          <p class="sub">${S.swappedWith === "paper" ? "Wasl turned it into a card and invited her to join." : `She has your ${kind} card. Hers is now in your wallet.`}</p>
           <div style="margin:18px 0">${personCard(MARIAM)}</div>
           <button class="btn" data-go="save">${ic("check")}Save Mariam</button>`;
       return `${back("wallet", "Cards")}
@@ -918,7 +951,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         <div class="row" style="margin-top:12px">
           <div style="width:72px;height:72px;flex:none">${qrSvg(7)}</div>
           <button class="btn" data-act="do-swap" ${S.exPhase === "swapping" ? "disabled" : ""}>${ic("scan")}Scan Mariam's code</button>
-        </div>`;
+        </div>
+        <button class="link" style="display:block;margin:10px auto 0" data-act="scan-paper">No Wasl? Scan their paper card</button>`;
     },
 
     save() {
@@ -1031,7 +1065,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       return `${back("network", "Network")}
         <h2 class="title" style="font-size:26px">${esc(a.name)}</h2>
         <p class="sub">${ps.length} cards · swipe to flip through</p>
-        <div class="flip" style="margin-top:14px">${ps.map((p) => personCard({ ...p, mono: p.when ? "Met " + p.when : "" })).join("")}</div>
+        <div class="flip" style="margin-top:14px">${ps.map((p) => personCard(p, { foot: p.when ? "Met " + p.when : "" })).join("")}</div>
         <ul class="people">${ps.map(personRow).join("")}</ul>`;
     },
 
@@ -1044,7 +1078,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         results = r.length
           ? r.map((m, i) => `<div style="margin-top:${i ? 18 : 16}px">
               <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">${i ? "Also possible" : "Best match"}</span><span class="match">${m.score}% match</span></div>
-              ${personCard(m.p, { cls: "", attrs: `style="${i ? "aspect-ratio:2.4/1" : ""}"` })}
+              ${personCard(m.p)}
               <div class="panel why" style="margin-top:10px"><span class="label" style="color:var(--violet)">Why it matched</span><q>${esc(m.why)}</q><span class="src" style="color:var(--muted);font-size:12px;display:block;margin-top:6px">${esc(m.src)}</span></div>
             </div>`).join("")
           : `<div class="panel stack" style="margin-top:16px"><b>No one matched that</b><p class="sub">Try what they did, where you met, or what you talked about.</p></div>`;
@@ -1100,7 +1134,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   function personRow(p) {
     const initials = p.name.split(" ").map((w) => w[0]).slice(0, 2).join("");
     const act = p.id === "mariam" ? 'data-go="remember"' : "";
-    return `<li><button class="person" ${act}><span class="mini" style="background:var(--card-${p.color})">${initials}</span><span class="pv"><b>${esc(p.name)}</b><span>${esc(p.role)} · ${esc(p.org)}</span></span>${p.fav ? ic("star", 'class="star"') : ""}<span class="label" style="flex:none">${esc(p.when)}</span></button></li>`;
+    return `<li><button class="person" ${act}><span class="mini" style="background:var(--card-${p.color})">${initials}</span><span class="pv"><b>${esc(p.name)}</b><span>${esc(p.hideWork ? p.contacts.join(" · ") : `${p.role} · ${p.org}`)}</span></span>${p.fav ? ic("star", 'class="star"') : ""}<span class="label" style="flex:none">${esc(p.when)}</span></button></li>`;
   }
   function recallMatch(q) {
     const t = q.toLowerCase();
@@ -1109,7 +1143,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     const out = [];
     if (has("cto", "intro", "engineer", "pearl", "payments")) {
       out.push({ p: m[0], score: 94, why: S.summary ? "Offered an intro to her CTO" : "Software engineer at Pearl Labs", src: S.summary ? "Your chat summary · Campus networking night, tonight" : "Her card · Campus networking night, tonight" });
-      if (has("intro")) out.push({ p: { ...OLDER[2], mono: "Met Sep 28", kind: "PROFESSIONAL" }, score: 61, why: "Tagged Intro offered", src: "Your tag · CMU-Q alumni mixer, Sep 28" });
+      if (has("intro")) out.push({ p: { ...OLDER[2], contacts: ["daniel@pearllabs.example"], kind: "PROFESSIONAL" }, score: 61, why: "Tagged Intro offered", src: "Your tag · CMU-Q alumni mixer, Sep 28" });
     } else if (has("design", "portfolio")) {
       out.push({ p: m[1], score: 91, why: "Showed his portfolio app", src: "Your memory · Campus networking night, tonight" });
     } else if (has("hiring", "intern", "job", "recruit")) {
@@ -1209,6 +1243,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   // ---------- actions ----------
   function go(to) {
     if (to === "join-reset") { S.joinPhase = "choose"; S.screen = "join"; }
+    else if (to === "exchange-reset") { S.exPhase = "ready"; S.screen = "exchange"; }
     else if (to === "save" && !S.swappedWith) { setupTo(3); }
     else if (to === "remember" && !S.swappedWith) { setupTo(4); }
     else S.screen = to;
@@ -1261,6 +1296,19 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       render();
       buzz();
       later(950, () => { S.exPhase = "done"; S.swappedWith = S.front; render(); xpToast("New connection", 30); });
+    },
+    "scan-paper"() {
+      S.exPhase = "paper";
+      render();
+      later(1900, () => { if (S.exPhase === "paper") { S.exPhase = "paperfound"; render(); } });
+    },
+    "paper-save"() {
+      if (!S.profileFilled) S.profileFilled = true;
+      S.swappedWith = "paper";
+      S.exPhase = "done";
+      S.screen = "save";
+      render();
+      xpToast("New connection", 30);
     },
     "confirm-ctx"() { S.ctxConfirmed = true; S.mariamSaved = true; render(); xpToast("Story saved", 10); },
     "change-ctx"() { toast("You can pick another event or place here"); },
@@ -1422,7 +1470,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const STEPS = [
     { n: "1", t: "Join", wow: 1, h: "Scan your card. Your profile fills itself.", screen: "join" },
     { n: "2", t: "Build", wow: 1, h: "Tap details on the card to hide them. Pick a color.", screen: "build" },
-    { n: "3", t: "Share", wow: 1, h: "Pick a card from the wallet and swap with Mariam.", screen: "wallet" },
+    { n: "3", t: "Share", wow: 1, h: "Swap cards with Mariam, or scan her paper card.", screen: "wallet" },
     { n: "4", t: "Save", wow: 2, h: "Confirm where you met. Add a tag.", screen: "save" },
     { n: "5", t: "Remember", wow: 2, h: "Hold the mic. AI keeps only what mattered.", screen: "remember" },
     { n: "+", t: "Debrief", wow: 2, h: "Bonus: swipe through tonight's people.", screen: "debrief" },
