@@ -218,8 +218,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   position: absolute; inset: auto 0 0;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  padding: 10px 6px calc(22px + env(safe-area-inset-bottom, 0px));
-  background: rgba(22, 25, 30, 0.94);
+  padding: 8px 6px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: rgba(22, 25, 30, 0.96);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--line);
   z-index: 20;
@@ -228,12 +228,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .tabbar button {
   border: 0; background: transparent;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
-  font-size: 11.5px; font-weight: 600;
-  color: var(--muted);
+  font-size: 13px; font-weight: 700;
+  color: var(--text-2);
   padding: 4px 0;
 }
 .tabbar button[aria-current="page"] { color: var(--teal); }
-.tabbar svg { width: 22px; height: 22px; }
+.tabbar svg { width: 25px; height: 25px; }
 
 /* ---------- common app parts ---------- */
 .topline { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
@@ -354,19 +354,29 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .card.editing .f:hover { background: rgba(255, 255, 255, 0.12); }
 .card.editing .f.locked { outline: 0; cursor: default; }
 
-/* wallet stack */
-.wallet { position: relative; margin-top: 14px; }
+/* wallet stack: the cards behind show a strip with what they share; the front card sits in the flow, so the page always makes room for it */
+.wallet { --band: 56px; position: relative; margin-top: 12px; }
 .wallet .card { position: absolute; left: 0; right: 0; width: 100%; transition: transform 200ms; }
+.wallet .card:last-child { position: relative; top: 0 !important; }
+.wallet .card.behind .c-tile { visibility: hidden; }
+.card .c-peek { font-family: var(--mono); font-size: 11px; font-weight: 500; opacity: 0.92; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-about { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.card-about b { font-size: 14px; }
+.card-about span { color: var(--text-2); font-size: 13px; }
 .wallet .card.behind:hover { transform: translateY(-4px); }
 .wallet .card.front { animation: lift 320ms ease-out; }
 @keyframes lift { from { transform: translateY(-26px); } to { transform: none; } }
 
 /* ---------- screen specifics ---------- */
-.join-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding-top: 40px; }
-.join-hero svg.big { width: 128px; height: 82px; }
-.join-hero .wm { font-family: var(--display); font-weight: 800; font-size: 44px; letter-spacing: -1.2px; line-height: 1; }
-.join-hero p { color: var(--text-2); max-width: 26ch; }
-.fan { position: relative; height: 160px; margin: 18px 0 8px; }
+.join-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding-top: 16px; }
+.join-hero svg.big { width: 96px; height: 62px; }
+.join-hero .wm { font-family: var(--display); font-weight: 800; font-size: 40px; letter-spacing: -1.2px; line-height: 1; }
+.join-hero p { color: var(--text-2); max-width: 30ch; }
+.fan { position: relative; height: 150px; margin: 10px 0 4px; }
+.what { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.what li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; color: var(--text-2); }
+.what li svg { width: 20px; height: 20px; color: var(--teal); flex: none; }
+.what b { color: var(--text); }
 .fan .card { position: absolute; left: 50%; top: 14px; }
 .viewfinder {
   position: relative;
@@ -467,13 +477,21 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .swatch.social { background: var(--card-social); }
 .swatch.team { background: var(--card-team); }
 
-.exchange { position: relative; height: 470px; margin-top: 8px; }
-.exchange .slot { position: absolute; left: 0; right: 0; transition: transform 700ms cubic-bezier(.6, -0.2, .3, 1.3), opacity 300ms; }
-.exchange .theirs { top: 0; }
-.exchange .yours { bottom: 0; }
+/* the two cards sit in the flow, so the labels can never land on a card at any screen size */
+.exchange { position: relative; display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+.exchange .slot { position: relative; width: 100%; max-width: 300px; margin-inline: auto; transition: transform 700ms cubic-bezier(.6, -0.2, .3, 1.3), opacity 300ms; }
 .exchange .slot .who { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
-.exchange.swapping .theirs { transform: translateY(258px) rotate(-3deg); }
-.exchange.swapping .yours { transform: translateY(-258px) rotate(3deg); }
+.exchange.swapping .theirs { transform: translateY(calc(100% + 14px)) rotate(-3deg); }
+.exchange.swapping .yours { transform: translateY(calc(-100% - 14px)) rotate(3deg); }
+.choice { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 18px; padding: 16px; }
+.choice .ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; flex: none; background: rgba(92, 196, 184, 0.16); color: var(--teal); }
+.choice .ic svg { width: 22px; height: 22px; }
+.choice.no-wasl .ic { background: rgba(239, 160, 102, 0.16); color: var(--orange); }
+.choice b { display: block; font-size: 17px; }
+.choice span span { color: var(--text-2); font-size: 13.5px; }
+.choice > svg { width: 18px; height: 18px; color: var(--muted); margin-left: auto; flex: none; }
+.sharing { margin-top: 22px; }
+.sharing .card { max-width: 300px; margin: 8px auto 0; }
 .exchange .pulse { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px; border-radius: 50%; display: grid; place-items: center; background: var(--raised); color: var(--teal); z-index: 2; }
 .exchange .pulse svg { width: 28px; height: 28px; }
 .exchange.swapping .pulse { animation: buzz 120ms linear 6; }
@@ -731,7 +749,15 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     phone: { label: "Phone", icon: "phone" },
     instagram: { label: "Instagram", icon: "insta" },
   };
-  const KIND = { pro: "PROFESSIONAL", event: "EVENT", social: "SOCIAL", team: "TEAM WASL" };
+  const KIND = { pro: "PROFESSIONAL", event: "EVENT", social: "SOCIAL", team: "TEAM" };
+  // what each card is for, said plainly (testers didn't know what "Event" or "Team" meant)
+  const KIND_FOR = {
+    pro: "For work contacts and recruiters.",
+    event: "For people you meet at events. Shares the basics only.",
+    social: "For friends and people you meet socially.",
+    team: "For your teammates and classmates.",
+  };
+  const kindName = (id) => KIND[id].charAt(0) + KIND[id].slice(1).toLowerCase();
   const COLOR_NAME = { pro: "Deep teal", event: "Deep violet", social: "Copper", team: "Deep blue" };
 
   // Each person shares a different set of details, the way real cards differ.
@@ -797,7 +823,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     front: "event",
     editId: "event",
     draft: null,
-    exPhase: "ready",
+    exPhase: "ask", // ask | ready | swapping | done | paper | paperfound | scanned
     swappedWith: null,
     mariamSaved: false,
     ctxConfirmed: false,
@@ -834,9 +860,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 
   // ---------- rendering helpers ----------
   const fieldValue = (f) => ME[f];
+  const sharesList = (fields) => fields.map((f) => FIELD_META[f].short || FIELD_META[f].label).join(" · ");
+  const cardFields = (id) => S.cards[id].fields.filter((f) => f !== "instagram" || S.extra.instagram);
   function card(id, opts = {}) {
     const c = opts.data || S.cards[id];
-    const fields = c.fields;
+    // Instagram appears only after the person adds their own handle
+    const fields = c.fields.filter((f) => f !== "instagram" || S.extra.instagram);
     const isEdit = !!opts.edit;
     const mini = !!opts.mini;
     const body = ["name", "role", "org"].filter((f) => fields.includes(f) && !(mini && f === "org"));
@@ -846,7 +875,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         ? `<span class="f ${cls}" data-act="hide-field" data-f="${f}" role="button" tabindex="0" aria-label="Hide ${FIELD_META[f].label}">${esc(text)}</span>`
         : `<span class="f ${cls} ${isEdit ? "locked" : ""}">${esc(text)}</span>`;
     return `<${opts.tag || "div"} class="card ${c.color} ${isEdit ? "editing" : ""} ${mini ? "mini" : ""} ${opts.cls || ""}" ${opts.attrs || ""}>
-      <div class="c-top"><span class="c-word">wasl</span><span class="c-kind">${KIND[id] || ""}</span></div>
+      <div class="c-top">${opts.peek ? `<span class="c-peek">${esc(sharesList(fields))}</span>` : '<span class="c-word">wasl</span>'}<span class="c-kind">${KIND[id] || ""}</span></div>
       ${tile(!mini && fields.includes("org") ? ME.org : null)}
       ${body.includes("name") ? `<div class="c-name">${fEl("name", "", ME.name)}</div>` : ""}
       ${body.filter((f) => f !== "name").map((f) => `<div class="c-line">${fEl(f, "", fieldValue(f))}</div>`).join("")}
@@ -912,14 +941,20 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       return `<div class="join-hero">
           ${symbol("big")}
           <div class="wm">wasl</div>
-          <p>Never forget who you met, or why it mattered.</p>
+          <p>Your business cards on your phone. Never forget who you met, or why it mattered.</p>
         </div>
         <div class="fan" aria-hidden="true">
           ${card("social", { mini: true, attrs: 'style="transform:translateX(-88%) rotate(-12deg) scale(.9)"' })}
           ${card("event", { mini: true, attrs: 'style="transform:translateX(-12%) rotate(10deg) scale(.9)"' })}
           ${card("pro", { mini: true, attrs: 'style="transform:translateX(-50%) rotate(-2deg);top:24px"' })}
         </div>
-        <div class="stack" style="margin-top:22px">
+        <ul class="what">
+          <li>${ic("cards")}<span><b>Share</b> a digital business card with one scan</span></li>
+          <li>${ic("pin")}<span><b>Remember</b> where you met and what you talked about</span></li>
+          <li>${ic("search")}<span><b>Find</b> people later by what you remember</span></li>
+        </ul>
+        <div class="stack" style="margin-top:18px">
+          <p class="hint" style="margin:0">Start by scanning your own business card</p>
           <button class="btn" data-act="scan-own">${ic("scan")}Scan my business card</button>
           <button class="btn blue" data-act="import-linkedin">${ic("linkedin")}Import from LinkedIn</button>
           <button class="link" data-act="email-signup">Sign up with email instead</button>
@@ -972,10 +1007,10 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     build() {
       const d = S.draft;
       const allContact = ["role", "org", "email", "linkedin", "phone", "instagram"];
-      const hidden = allContact.filter((f) => !d.fields.includes(f));
+      const hidden = allContact.filter((f) => !d.fields.includes(f) && (f !== "instagram" || S.extra.instagram));
       return `${back("wallet", "Cards")}
-        <h2 class="title" style="font-size:26px">Edit ${KIND[S.editId].toLowerCase().replace(/^\w/, (c) => c.toUpperCase())} card</h2>
-        <p class="sub">Tap a detail on the card to hide it.</p>
+        <h2 class="title" style="font-size:26px">Edit ${kindName(S.editId)} card</h2>
+        <p class="sub">${KIND_FOR[S.editId]} Tap a detail on the card to hide it, like your email.</p>
         <div style="margin:16px 0 18px">${card(S.editId, { data: d, edit: true })}</div>
         <div class="stack">
           <div class="label">Add from your profile</div>
@@ -987,18 +1022,14 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     },
 
     wallet() {
-      const band = 66;
-      const cardH = 216;
       const order = S.order;
-      const h = band * (order.length - 1) + cardH;
-      return `<div class="topline"><span class="wordmark">${symbol()}wasl</span><button class="round" data-act="edit-front" aria-label="Edit the front card">${ic("plus")}</button></div>
-        <h2 class="title">My cards</h2>
-        <div class="wallet" style="height:${h}px">
-          ${order.map((id, i) => card(id, { cls: id === S.front ? "front" : "behind", attrs: `style="top:${i * band}px;z-index:${i + 1}" data-act="front" data-id="${id}" role="button" tabindex="0" aria-label="${KIND[id]} card"` })).join("")}
+      return `<div class="topline"><h2 class="title">My cards</h2><button class="round" data-act="edit-front" aria-label="Edit the front card">${ic("pencil")}</button></div>
+        <div class="wallet" style="padding-top:calc(var(--band) * ${order.length - 1})">
+          ${order.map((id, i) => card(id, { peek: id !== S.front, cls: id === S.front ? "front" : "behind", attrs: `style="top:calc(var(--band) * ${i});z-index:${i + 1}" data-act="front" data-id="${id}" role="button" tabindex="0" aria-label="${kindName(id)} card: ${sharesList(cardFields(id))}"` })).join("")}
         </div>
-        <div class="stack" style="margin-top:16px">
-          <button class="btn" data-act="share">${ic("qr")}Share ${KIND[S.front].charAt(0) + KIND[S.front].slice(1).toLowerCase()}</button>
-          <div class="row" style="justify-content:center;gap:4px"><p class="hint">Tap a card to bring it forward ·</p><button class="link" style="font-size:13px" data-act="edit-front">Edit this card</button></div>
+        <div class="stack" style="margin-top:12px;gap:10px">
+          <button class="btn" data-act="share">${ic("qr")}Share card</button>
+          <div class="card-about"><b>${kindName(S.front)} card</b><span>${KIND_FOR[S.front]} Tap another card to switch, or <button class="link" style="padding:0;font-size:13px" data-act="edit-front">edit this one</button>.</span></div>
         </div>`;
     },
 
@@ -1057,7 +1088,17 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     },
 
     exchange() {
-      const kind = KIND[S.front].charAt(0) + KIND[S.front].slice(1).toLowerCase();
+      const kind = kindName(S.front);
+      // first ask whether the other person has Wasl, so Mariam only appears when she does
+      if (S.exPhase === "ask")
+        return `${back("wallet", "Cards")}
+          <h2 class="title" style="font-size:26px">Share your ${kind} card</h2>
+          <p class="sub">Does the person you just met have Wasl?</p>
+          <div class="stack" style="margin-top:18px">
+            <button class="choice" data-act="has-wasl"><span class="ic">${ic("qr")}</span><span><b>They have Wasl</b><span>Swap cards by scanning each other's code</span></span>${ic("right")}</button>
+            <button class="choice no-wasl" data-act="scan-paper"><span class="ic">${ic("camera")}</span><span><b>No Wasl</b><span>Scan their paper business card instead</span></span>${ic("right")}</button>
+          </div>
+          <div class="sharing"><div class="label" style="text-align:center">You're sharing</div>${card(S.front)}</div>`;
       if (S.exPhase === "scanned") {
         const p = S.scanned[0];
         return `${back("exchange-reset", "Share")}
@@ -1066,7 +1107,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           <div style="margin:18px 0">${personCard(p)}</div>
           <div class="stack">
             <button class="btn" data-go="network">${ic("network")}Open my network</button>
-            <button class="link" data-go="exchange-reset">Swap cards with Mariam instead</button>
+            <button class="link" data-go="exchange-swap">Swap cards with Mariam instead</button>
           </div>`;
       }
       if (S.exPhase === "paper")
@@ -1094,8 +1135,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           <p class="sub">${S.swappedWith === "paper" ? "Wasl turned it into a card and invited her to join." : `She has your ${kind} card. Hers is now in your wallet.`}</p>
           <div style="margin:18px 0">${personCard(MARIAM)}</div>
           <button class="btn" data-go="save">${ic("check")}Save Mariam</button>`;
-      return `${back("wallet", "Cards")}
-        <h2 class="title" style="font-size:26px">Share your ${kind} card</h2>
+      return `${back("exchange-reset", "Back")}
+        <h2 class="title" style="font-size:26px">Swap cards with Mariam</h2>
         <p class="sub">Scan Mariam's code, or let her scan yours.</p>
         <div class="exchange ${S.exPhase === "swapping" ? "swapping" : ""}" id="exchange">
           <div class="slot theirs"><div class="who">Mariam's phone</div>${personCard(MARIAM)}</div>
@@ -1105,8 +1146,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         <div class="row" style="margin-top:12px">
           <div style="width:72px;height:72px;flex:none">${qrSvg(7)}</div>
           <button class="btn" data-act="do-swap" ${S.exPhase === "swapping" ? "disabled" : ""}>${ic("scan")}Scan Mariam's code</button>
-        </div>
-        <button class="link" style="display:block;margin:10px auto 0" data-act="scan-paper">No Wasl? Scan their paper card</button>`;
+        </div>`;
     },
 
     save() {
@@ -1240,7 +1280,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
             </div>`).join("")
           : `<div class="panel stack" style="margin-top:16px"><b>No one matched that</b><p class="sub">Try what they did, where you met, or what you talked about.</p></div>`;
       }
-      return `<div class="topline"><h2 class="title">Recall</h2></div>
+      return `<div class="topline"><h2 class="title">Search</h2></div>
         <p class="sub">Ask like you remember it, by typing or with the mic. No names needed.</p>
         <form class="search" id="recallForm" style="margin-top:16px" autocomplete="off">
           ${ic("recall")}
@@ -1342,7 +1382,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const screenEl = document.getElementById("screen");
   const tabbar = document.getElementById("tabbar");
   const overlay = document.getElementById("overlay");
-  const TABS = [["network", "Network"], ["wallet", "Cards"], ["recall", "Recall"], ["profile", "Profile"], ["settings", "Settings"]];
+  const TABS = [["network", "Network"], ["wallet", "Cards"], ["recall", "Search"], ["profile", "Profile"], ["settings", "Settings"]];
   const TAB_OF = { network: "network", album: "network", debrief: "network", remember: "network", wallet: "wallet", build: "wallet", exchange: "wallet", scanner: "wallet", save: "wallet", recall: "recall", profile: "profile", settings: "settings" };
   let lastScreen = null;
 
@@ -1361,7 +1401,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       screenEl.scrollTop = 0;
       lastScreen = S.screen;
     }
-    tabbar.innerHTML = TABS.map(([k, l]) => `<button data-go="${k}" ${TAB_OF[S.screen] === k ? 'aria-current="page"' : ""}>${ic(k === "wallet" ? "cards" : k)}${l}</button>`).join("");
+    tabbar.innerHTML = TABS.map(([k, l]) => `<button data-go="${k}" ${TAB_OF[S.screen] === k ? 'aria-current="page"' : ""}>${ic(k === "wallet" ? "cards" : k === "recall" ? "search" : k)}${l}</button>`).join("");
     overlay.innerHTML = S.sheet ? sheets[S.sheet]() : "";
     if (S.screen === "debrief") bindDeck();
     renderGuide();
@@ -1427,7 +1467,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   // ---------- actions ----------
   function go(to) {
     if (to === "join-reset") { S.joinPhase = "choose"; S.screen = "join"; }
-    else if (to === "exchange-reset") { S.exPhase = "ready"; S.screen = "exchange"; }
+    else if (to === "exchange-reset") { S.exPhase = "ask"; S.screen = "exchange"; }
+    else if (to === "exchange-swap") { S.exPhase = "ready"; S.screen = "exchange"; }
     else if (to === "save" && !S.swappedWith) { setupTo(3); }
     else if (to === "remember" && !S.swappedWith) { setupTo(4); }
     else S.screen = to;
@@ -1511,7 +1552,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       render();
       xpToast("Card saved", 15);
     },
-    share() { S.exPhase = "ready"; S.screen = "exchange"; render(); },
+    share() { S.exPhase = "ask"; S.screen = "exchange"; render(); },
+    "has-wasl"() { S.exPhase = "ready"; render(); },
     "do-swap"() {
       if (!S.profileFilled) S.profileFilled = true;
       S.exPhase = "swapping";
@@ -2093,12 +2135,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const STEPS = [
     { n: "1", t: "Join", wow: 1, h: "Scan your card. Your profile fills itself.", screen: "join" },
     { n: "2", t: "Build", wow: 1, h: "Tap details on the card to hide them. Pick a color.", screen: "build" },
-    { n: "3", t: "Share", wow: 1, h: "Swap cards with Mariam, or scan her paper card.", screen: "wallet" },
+    { n: "3", t: "Share", wow: 1, h: "Share card. Has Wasl? Swap codes. No Wasl? Scan their paper card.", screen: "wallet" },
     { n: "4", t: "Save", wow: 2, h: "Confirm where you met. Add a tag.", screen: "save" },
     { n: "5", t: "Remember", wow: 2, h: "Tap the mic and talk. Wasl keeps only what mattered.", screen: "remember" },
     { n: "+", t: "Debrief", wow: 2, h: "Bonus: swipe through tonight's people.", screen: "debrief" },
     { n: "6", t: "Browse", wow: 3, h: "Albums by event and company build themselves.", screen: "network" },
-    { n: "7", t: "Recall", wow: 3, h: "Ask for someone by memory, not by name.", screen: "recall" },
+    { n: "7", t: "Search", wow: 3, h: "Find someone by memory, not by name.", screen: "recall" },
   ];
   const WOW = { 1: "WOW 1", 2: "WOW 2", 3: "WOW 3" };
   const STEP_OF = { join: 0, profile: 0, build: 1, wallet: 2, exchange: 2, save: 3, remember: 4, debrief: 5, network: 6, album: 6, recall: 7, settings: -1 };

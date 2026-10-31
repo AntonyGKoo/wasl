@@ -47,10 +47,20 @@ const shots = [
   ],
   ["04-wallet", "#step-3", async () => {}],
   [
+    "05a-has-wasl",
+    "#step-3",
+    async (p) => {
+      await click(p, '[data-act="share"]');
+      await sleep(500);
+    },
+  ],
+  [
     "05-card-swap",
     "#step-3",
     async (p) => {
       await click(p, '[data-act="share"]');
+      await sleep(300);
+      await click(p, '[data-act="has-wasl"]');
       await sleep(300);
       await click(p, '[data-act="do-swap"]');
       await sleep(3400);
