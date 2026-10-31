@@ -452,6 +452,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .detail .dv b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .detail .dv span { color: var(--muted); font-size: 12.5px; }
 .detail.missing .dv b { color: var(--muted); }
+.edit-btn { border: 0; background: transparent; color: var(--muted); width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; }
+.edit-btn:hover { color: var(--text); background: var(--raised); }
+.edit-btn svg { width: 16px; height: 16px; }
+.detail.editing .dv { display: grid; gap: 4px; }
+.detail.editing .dv span { color: var(--muted); font-size: 12.5px; }
+.detail.editing input { min-width: 0; width: 100%; background: var(--raised); border: 1px solid var(--teal); border-radius: 10px; color: var(--text); font: inherit; padding: 8px 10px; outline: none; }
 
 .swatches { display: flex; gap: 12px; }
 .swatch { width: 40px; height: 40px; border-radius: 50%; border: 3px solid transparent; box-shadow: 0 0 0 1px var(--line); }
@@ -498,6 +504,13 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 @keyframes wv { from { height: 6px; } to { height: 34px; } }
 .summary { border-color: rgba(239, 160, 102, 0.45); }
 .summary ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.mic-wrap .live { width: 100%; max-height: 120px; overflow-y: auto; margin: 2px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--raised); color: var(--text-2); font-size: 13.5px; line-height: 1.45; text-align: left; }
+.transcript { margin-top: 10px; font-size: 13px; color: var(--text-2); }
+.transcript summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+.transcript p { margin: 6px 0 0; line-height: 1.5; }
+.search .voice { width: 38px; height: 38px; border-radius: 12px; border: 0; background: var(--raised); color: var(--violet); display: grid; place-items: center; flex: none; padding: 0; }
+.search .voice svg { width: 18px; height: 18px; }
+.search .voice.on { background: var(--danger); color: #2a0f0f; animation: ring 1s ease-out infinite; }
 .summary .kept { margin-top: 10px; color: var(--muted); font-size: 12.5px; display: flex; gap: 6px; align-items: center; }
 .summary .kept svg { width: 14px; height: 14px; }
 .shimmer { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--raised), #3a424d, var(--raised)); background-size: 200% 100%; animation: sh 1s linear infinite; }
@@ -670,6 +683,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     user: '<circle cx="12" cy="8" r="4"/><path d="M5 21c1.3-3.6 4-5.5 7-5.5s5.7 1.9 7 5.5"/>',
     briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
     school: '<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/>',
+    building: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10 21v-3h4v3"/>',
+    pencil: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
     camera: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
@@ -710,7 +725,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const FIELD_META = {
     name: { label: "Name", icon: "user" },
     role: { label: "Role", icon: "briefcase" },
-    org: { label: "University", icon: "school" },
+    org: { label: "Company / university", short: "Workplace", icon: "building" },
     email: { label: "Email", icon: "mail" },
     linkedin: { label: "LinkedIn", icon: "linkedin" },
     phone: { label: "Phone", icon: "phone" },
@@ -799,6 +814,10 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     sheet: null,
     scan: null, // { mode: own | their, phase: camera | reading | review | error, cam, fields, image, progress }
     scanned: [], // people saved by scanning their paper card
+    editField: null, // the profile detail being edited
+    memory: null, // { points: [...], transcript, source: voice | note | sample }
+    liveText: "", // what speech recognition has heard so far while recording
+    voiceNote: "", // shown under the mic when speech-to-text isn't available or heard nothing
     flags: {},
   });
   let S = fresh();
@@ -831,7 +850,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       ${body.includes("name") ? `<div class="c-name">${fEl("name", "", ME.name)}</div>` : ""}
       ${body.filter((f) => f !== "name").map((f) => `<div class="c-line">${fEl(f, "", fieldValue(f))}</div>`).join("")}
       <div class="c-foot">
-        <span class="c-contacts">${contact.length ? contact.map((f) => `<span class="c-mono">${fEl(f, "", fieldValue(f))}</span>`).join("") : `<span class="c-mono">${body.map((f) => FIELD_META[f].label).join(" · ")}</span>`}</span>
+        <span class="c-contacts">${contact.length ? contact.map((f) => `<span class="c-mono">${fEl(f, "", fieldValue(f))}</span>`).join("") : `<span class="c-mono">${body.map((f) => FIELD_META[f].short || FIELD_META[f].label).join(" · ")}</span>`}</span>
         <span class="c-qr">${ic("qr")}</span>
       </div>
     </${opts.tag || "div"}>`;
@@ -911,15 +930,25 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         return `<div class="topline"><h2 class="title">Profile</h2></div>
           <div class="panel stack" style="margin-top:16px"><b>Your profile is empty</b><p class="sub">Scan your business card or import LinkedIn to fill it in one step.</p><button class="btn small" data-go="join">Get started</button></div>`;
       const L = level();
-      const row = (f, val, missing) => `<div class="detail ${missing ? "missing" : ""}">
-          <span class="ic">${ic(FIELD_META[f] ? FIELD_META[f].icon : "camera")}</span>
-          <span class="dv"><b>${esc(val)}</b><span>${FIELD_META[f] ? FIELD_META[f].label : "Photo"}</span></span>
-          ${missing ? `<button class="chip" data-act="add-detail" data-f="${f}">${ic("plus")}Add <span class="xp">+20 XP</span></button>` : ""}
-        </div>`;
-      return `<div class="topline"><h2 class="title">Profile</h2><span class="label">From your card</span></div>
+      const label = (f) => (FIELD_META[f] ? FIELD_META[f].label : "Photo");
+      const row = (f, val, missing) =>
+        S.editField === f
+          ? `<form class="detail editing" data-form="detail" data-f="${f}">
+              <span class="ic">${ic(FIELD_META[f].icon)}</span>
+              <label class="dv"><span>${label(f)}</span><input id="detailInput" value="${esc(missing ? "" : val)}" placeholder="${label(f)}" autocomplete="off"></label>
+              <button class="chip" type="submit" aria-pressed="true">${ic("check")}Save</button>
+            </form>`
+          : `<div class="detail ${missing ? "missing" : ""}">
+              <span class="ic">${ic(FIELD_META[f] ? FIELD_META[f].icon : "camera")}</span>
+              <span class="dv"><b>${esc(val)}</b><span>${label(f)}</span></span>
+              ${missing ? `<button class="chip" data-act="add-detail" data-f="${f}">${ic("plus")}Add <span class="xp">+20 XP</span></button>`
+                : f !== "photo" ? `<button class="edit-btn" data-act="edit-detail" data-f="${f}" aria-label="Edit ${label(f)}">${ic("pencil")}</button>` : ""}
+            </div>`;
+      const initialsOf = (n) => n.split(/\s+/).map((w) => w[0] || "").join("").slice(0, 2).toUpperCase();
+      return `<div class="topline"><h2 class="title">Profile</h2><span class="label">Tap ✎ to edit</span></div>
         <div class="panel" style="margin-top:10px">
           <div class="level">
-            <div class="ring" style="--p:${L.pct}"><div class="av ${S.extra.photo ? "photo" : ""}">${S.extra.photo ? "" : "AG"}</div></div>
+            <div class="ring" style="--p:${L.pct}"><div class="av ${S.extra.photo ? "photo" : ""}">${S.extra.photo ? "" : esc(initialsOf(ME.name))}</div></div>
             <div style="flex:1;min-width:0">
               <div class="label">Level ${L.n}</div>
               <div class="lvl-name">${L.name}</div>
@@ -946,7 +975,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         <div style="margin:16px 0 18px">${card(S.editId, { data: d, edit: true })}</div>
         <div class="stack">
           <div class="label">Add from your profile</div>
-          <div class="chips">${hidden.length ? hidden.map((f) => `<button class="chip" data-act="add-field" data-f="${f}">${ic(FIELD_META[f].icon)}${FIELD_META[f].label}</button>`).join("") : '<span class="sub" style="font-size:13px">Everything is on this card.</span>'}</div>
+          <div class="chips">${hidden.length ? hidden.map((f) => `<button class="chip" data-act="add-field" data-f="${f}">${ic(FIELD_META[f].icon)}${FIELD_META[f].short || FIELD_META[f].label}</button>`).join("") : '<span class="sub" style="font-size:13px">Everything is on this card.</span>'}</div>
           <div class="label" style="margin-top:6px">Color</div>
           <div class="swatches">${["pro", "event", "social", "team"].map((c) => `<button class="swatch ${c}" data-act="color" data-c="${c}" aria-pressed="${d.color === c}" aria-label="${COLOR_NAME[c]}"></button>`).join("")}</div>
           <button class="btn" style="margin-top:12px" data-act="save-card">${ic("check")}Save card</button>
@@ -976,7 +1005,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       const title = own ? "Scan your business card" : "Scan their paper card";
       if (sc.phase === "review") {
         const f = sc.fields;
-        const rows = [["name", "Name"], ["role", "Role"], ["org", own ? "University / company" : "Company"], ["email", "Email"], ["phone", "Phone"], ["web", "LinkedIn / website"]];
+        const rows = [["name", "Name"], ["role", "Role"], ["org", own ? "Company / university" : "Company"], ["email", "Email"], ["phone", "Phone"], ["web", "LinkedIn / website"]];
         const n = rows.filter(([k]) => f[k]).length;
         return `${cancel}
           <h2 class="title" style="font-size:26px">Found ${n} detail${n === 1 ? "" : "s"}</h2>
@@ -1105,22 +1134,25 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           ${S.tags.map((t) => `<span class="chip" aria-pressed="true">${ic("tag")}${t}</span>`).join("")}
         </div>
         <div class="label">Memory</div>
-        ${S.summary ? `<div class="panel summary" style="margin-top:8px">
-            <div class="row" style="justify-content:space-between"><b>What mattered</b><span class="label" style="color:var(--orange)">AI summary</span></div>
-            <ul>
-              <li>Software engineer at Pearl Labs, works on their payments app</li>
-              <li>Offered an intro to her CTO</li>
-              <li>Pearl Labs is hiring interns for summer 2027</li>
-            </ul>
-            <div class="kept">${ic("trash")}Audio deleted. Only this summary is kept.</div>
+        ${S.summary && S.memory ? `<div class="panel summary" style="margin-top:8px">
+            <div class="row" style="justify-content:space-between"><b>What mattered</b><span class="label" style="color:var(--orange)">${S.memory.source === "voice" ? "From your chat" : S.memory.source === "note" ? "Your note" : "Sample"}</span></div>
+            <ul>${S.memory.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+            ${S.memory.transcript ? `<details class="transcript"><summary>Full transcript</summary><p>${esc(S.memory.transcript)}</p></details>` : ""}
+            <div class="kept">${ic("trash")}${S.memory.source === "note" ? "Saved as a private note." : "No audio is kept. Only this text is saved."}</div>
           </div>
-          <button class="btn secondary" style="margin-top:14px" data-go="debrief">See everyone from tonight</button>`
+          <div class="row" style="margin-top:14px;gap:10px">
+            <button class="btn secondary small" data-act="record-again">${ic("mic")}Record again</button>
+            <button class="btn secondary small" style="flex:1" data-go="debrief">See everyone from tonight</button>
+          </div>`
         : `<div class="panel" style="margin-top:8px">
             <div class="mic-wrap">
-              ${summarizing ? `<b>Writing the summary…</b><div class="shimmer" style="width:80%"></div><div class="shimmer" style="width:60%"></div>`
-                : `<button class="mic ${recording ? "rec" : ""}" id="mic" aria-label="${recording ? "Recording. Release to stop" : "Hold to record"}">${ic("mic")}</button>
-                   ${recording ? `<div class="wave">${Array.from({ length: 14 }, (_, i) => `<i style="animation-delay:${(i * 73) % 500}ms"></i>`).join("")}</div><b id="recTime">0:00</b><span class="hint">Release to stop</span>`
-                   : `<b>Hold to record the chat</b><span class="hint">Both people agree first. The audio isn't kept.</span>`}`}
+              ${summarizing ? `<b>Picking out what mattered…</b><div class="shimmer" style="width:80%"></div><div class="shimmer" style="width:60%"></div>`
+                : `<button class="mic ${recording ? "rec" : ""}" id="mic" aria-label="${recording ? "Recording. Tap to stop" : "Tap to record"}">${ic("mic")}</button>
+                   ${recording
+                     ? `<div class="wave">${Array.from({ length: 14 }, (_, i) => `<i style="animation-delay:${(i * 73) % 500}ms"></i>`).join("")}</div><b id="recTime">0:00</b>
+                        <p class="live" id="liveText">${S.liveText ? esc(S.liveText) : S.voiceNote ? esc(S.voiceNote) : "Listening… start talking."}</p>
+                        <span class="hint">Tap the mic to stop</span>`
+                     : `<b>Tap to record the chat</b><span class="hint">${S.voiceNote ? esc(S.voiceNote) : "Both people agree first. Wasl writes down what's said; no audio is kept."}</span>`}`}
             </div>
           </div>
           ${!recording && !summarizing ? '<button class="link" style="display:block;margin:10px auto 0" data-act="type-note">Type a note instead</button>' : ""}`}`;
@@ -1205,11 +1237,11 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           : `<div class="panel stack" style="margin-top:16px"><b>No one matched that</b><p class="sub">Try what they did, where you met, or what you talked about.</p></div>`;
       }
       return `<div class="topline"><h2 class="title">Recall</h2></div>
-        <p class="sub">Ask like you remember it. No names needed.</p>
+        <p class="sub">Ask like you remember it, by typing or with the mic. No names needed.</p>
         <form class="search" id="recallForm" style="margin-top:16px" autocomplete="off">
           ${ic("recall")}
           <input id="recallInput" name="q" value="${esc(q)}" placeholder="Describe who you're looking for" aria-label="Describe who you're looking for">
-          <button type="submit">Ask</button>
+          <button type="button" class="voice" id="voiceBtn" data-act="voice-search" aria-label="Say what you're looking for">${ic("mic")}</button><button type="submit">Ask</button>
         </form>
         ${S.recall === "idle" ? `<div class="stack" style="margin-top:16px"><span class="label">Try</span>${SUGGESTIONS.map((s) => `<button class="suggest" data-act="suggest" data-q="${esc(s)}">${ic("recall")}“${esc(s)}”</button>`).join("")}</div>` : ""}
         ${results}`;
@@ -1257,30 +1289,49 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     const act = p.id === "mariam" ? 'data-go="remember"' : "";
     return `<li><button class="person" ${act}><span class="mini" style="background:var(--card-${p.color})">${initials}</span><span class="pv"><b>${esc(p.name)}</b><span>${esc(p.hideWork ? p.contacts.join(" · ") : `${p.role} · ${p.org}`)}</span></span>${p.fav ? ic("star", 'class="star"') : ""}<span class="label" style="flex:none">${esc(p.when)}</span></button></li>`;
   }
+  // words that matter in a question, cut to a short stem so "intro" matches "introduce"
+  const STOP = new Set("the a an and or of to in on at for with who whom what which that this my me i you your her his their them she he is was were are be been met meet someone person people from about like can could would".split(" "));
+  const stems = (s) => (s.toLowerCase().match(/[a-z0-9]+/g) || []).filter((w) => w.length > 2 && !STOP.has(w)).map((w) => w.slice(0, 5));
+  const overlap = (a, b) => { const B = new Set(stems(b)); return stems(a).filter((w) => B.has(w)).length; };
+  // the memory point that best answers the question, if any
+  function memoryHit(q) {
+    if (!S.summary || !S.memory) return null;
+    const best = S.memory.points.map((pt) => ({ pt, n: overlap(q, pt) })).sort((a, b) => b.n - a.n)[0];
+    return best && best.n > 0 ? best.pt : null;
+  }
   function recallMatch(q) {
     const t = q.toLowerCase();
     const has = (...w) => w.some((x) => t.includes(x));
     const m = TONIGHT;
     const out = [];
+    const memSrc = () => (S.memory && S.memory.source === "voice" ? "Your recorded chat · Campus networking night, tonight" : S.memory && S.memory.source === "note" ? "Your note · Campus networking night, tonight" : "Your chat summary · Campus networking night, tonight");
+    const hit = memoryHit(q);
     const older = (i, contacts, kind) => ({ ...OLDER[i], contacts, kind });
     if (has("going", "attend", "summit")) {
       // network opportunity discovery: people you already met who are going to the same event
       out.push({ p: older(4, ["karim@corniche.example"], "PROFESSIONAL"), label: "Going · worth meeting", score: 92, why: "Investor you met at Web Summit Qatar. You tagged him Investor.", src: "Event guest list · Web Summit Qatar, Nov 4" });
       out.push({ p: older(0, ["linkedin.com/in/hamadalthani"], "PROFESSIONAL"), label: "Also going", score: 80, why: "Mentor at Bayt Ventures. Offered to review your pitch.", src: "Event guest list · Web Summit Qatar, Nov 4" });
     } else if (has("cto", "intro", "engineer", "pearl", "payments")) {
-      out.push({ p: m[0], score: 94, why: S.summary ? "Offered an intro to her CTO" : "Software engineer at Pearl Labs", src: S.summary ? "Your chat summary · Campus networking night, tonight" : "Her card · Campus networking night, tonight" });
+      out.push({ p: m[0], score: 94, why: hit || "Software engineer at Pearl Labs", src: hit ? memSrc() : "Her card · Campus networking night, tonight" });
       if (has("intro")) out.push({ p: { ...OLDER[2], contacts: ["daniel@pearllabs.example"], kind: "PROFESSIONAL" }, score: 61, why: "Tagged Intro offered", src: "Your tag · CMU-Q alumni mixer, Sep 28" });
     } else if (has("design", "portfolio")) {
       out.push({ p: m[1], score: 91, why: "Showed his portfolio app", src: "Your memory · Campus networking night, tonight" });
     } else if (has("hiring", "intern", "job", "recruit")) {
-      if (S.summary) out.push({ p: m[0], score: 88, why: "Pearl Labs is hiring interns for summer 2027", src: "Your chat summary · Campus networking night, tonight" });
+      if (hit) out.push({ p: m[0], score: 88, why: hit, src: memSrc() });
       out.push({ p: m[4], score: 84, why: "Runs their internship program", src: "Your memory · Campus networking night, tonight" });
     } else if (has("founder", "robot", "startup")) {
       out.push({ p: m[3], score: 90, why: "Looking for a first engineer", src: "Your memory · Campus networking night, tonight" });
     } else if (has("data", "nlp", "research")) {
       out.push({ p: m[2], score: 89, why: "Talked about her NLP research", src: "Your memory · Campus networking night, tonight" });
     }
-    return out;
+    // anything Mariam said in your recorded chat or note
+    if (hit && !out.some((r) => r.p.id === "mariam")) out.unshift({ p: m[0], score: 86, why: hit, src: memSrc() });
+    // people you scanned from paper cards, by what they do or where they work
+    for (const sp of S.scanned) {
+      const n = overlap(q, `${sp.role} ${sp.org}`);
+      if (n > 0) out.push({ p: sp, score: Math.min(95, 70 + n * 10), why: [sp.role, sp.org].filter(Boolean).join(" at "), src: "Scanned paper card · Campus networking night, tonight" });
+    }
+    return out.sort((a, b) => b.score - a.score).slice(0, 3);
   }
 
   // ---------- render ----------
@@ -1325,7 +1376,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     note: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
       <div class="grab"></div>
       <h3>Add a note</h3>
-      <div class="search" style="padding:6px 14px"><input id="noteInput" value="Offered an intro to her CTO. Pearl Labs is hiring interns." aria-label="Note"></div>
+      <div class="search" style="padding:6px 14px"><input id="noteInput" value="" placeholder="e.g. Offered an intro to her CTO. Pearl Labs is hiring interns." aria-label="Note"></div>
       <button class="btn" data-act="save-note">${ic("check")}Save note</button>
     </div></div>`,
     email: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
@@ -1346,6 +1397,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 
   // ---------- toast / confetti ----------
   function toast(html) {
+    document.querySelectorAll("#device .toast").forEach((old) => old.remove()); // one message at a time
     const t = document.createElement("div");
     t.className = "toast";
     t.innerHTML = html;
@@ -1376,6 +1428,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     else if (to === "remember" && !S.swappedWith) { setupTo(4); }
     else S.screen = to;
     S.sheet = null;
+    S.editField = null;
     render();
   }
 
@@ -1421,6 +1474,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     "import-linkedin"() { S.joinPhase = "linkedin"; render(); later(1500, () => { if (S.joinPhase === "linkedin") { S.joinPhase = "found"; render(); } }); },
     "email-signup"() { S.sheet = "email"; render(); },
     "create-profile"() { S.profileFilled = true; S.screen = "profile"; S.joinPhase = "choose"; render(); confetti(); xpToast("Level 3 unlocked", 120); },
+    "edit-detail"(el) {
+      S.editField = el.dataset.f;
+      render();
+      const input = document.getElementById("detailInput");
+      if (input) { input.focus(); input.select(); }
+    },
     "add-detail"(el) {
       const f = el.dataset.f;
       S.extra[f === "instagram" ? "instagram" : "photo"] = true;
@@ -1480,10 +1539,19 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       render();
       if (!on) xpToast(`Tagged ${t}`, 5);
     },
-    agree() { S.consent = true; S.sheet = null; render(); toast("Hold the mic to record"); },
+    agree() { S.consent = true; S.sheet = null; render(); toast("Tap the mic to start recording"); },
     "close-sheet"() { S.sheet = null; render(); },
     "type-note"() { S.sheet = "note"; render(); },
-    "save-note"() { S.sheet = null; S.summary = true; render(); xpToast("Memory saved", 10); },
+    "save-note"() {
+      const text = (document.getElementById("noteInput")?.value || "").trim() || "Offered an intro to her CTO. Pearl Labs is hiring interns.";
+      S.memory = { points: keyPoints(splitSentences(text), 4), transcript: "", source: "note" };
+      S.sheet = null;
+      S.summary = true;
+      render();
+      xpToast("Memory saved", 10);
+    },
+    "voice-search"() { voiceSearch(); },
+    "record-again"() { S.summary = false; S.memory = null; S.voiceNote = ""; render(); },
     deck(el) { decide(el.dataset.v); },
     "deck-memory"() {
       const p = TONIGHT[S.debriefIdx];
@@ -1741,38 +1809,132 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     later(1100, () => { S.recall = "done"; render(); });
   }
 
-  // recording: hold the mic, or tap for a short auto recording
+  // ---------- voice: speech-to-text in the browser (Chrome, Edge, Safari) ----------
+  const speechRec = () => window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SAMPLE_MEMORY = {
+    points: ["Software engineer at Pearl Labs, works on their payments app", "Offered an intro to her CTO", "Pearl Labs is hiring interns for summer 2027"],
+    transcript: "",
+    source: "sample",
+  };
+  let convo = null; // the recognizer while a conversation is being recorded
+  let heard = []; // final phrases heard so far
+  let stopping = false;
+
+  function micError(code) {
+    if (code === "not-allowed" || code === "service-not-allowed") return "Microphone access is blocked. Allow it in your browser settings, or type a note instead.";
+    if (code === "network") return "Speech-to-text needs an internet connection. Type a note instead.";
+    if (code === "audio-capture") return "No microphone was found. Type a note instead.";
+    return "";
+  }
+
+  // Remember: tap to start, tap to stop (holding and releasing also works)
   function startRec() {
     S.rec = "recording";
+    S.liveText = "";
+    S.voiceNote = speechRec() ? "" : "This browser can't turn speech into text (try Chrome or Safari), so this records a sample.";
+    heard = [];
+    stopping = false;
     recStart = Date.now();
     render();
     recTimer = setInterval(() => {
       const el = document.getElementById("recTime");
       const s = Math.floor((Date.now() - recStart) / 1000);
-      if (el) el.textContent = `0:${String(s).padStart(2, "0")}`;
+      if (el) el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     }, 250);
+    if (!speechRec()) { later(3000, stopRec); return; }
+    const listen = () => {
+      convo = new (speechRec())();
+      convo.lang = "en-US";
+      convo.continuous = true;
+      convo.interimResults = true;
+      convo.onresult = (e) => {
+        let interim = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const text = e.results[i][0].transcript.trim();
+          if (e.results[i].isFinal) { if (text) heard.push(text); } else interim += " " + text;
+        }
+        S.liveText = (heard.join(" ") + interim).trim();
+        const el = document.getElementById("liveText");
+        if (el) { el.textContent = S.liveText || "Listening… start talking."; el.scrollTop = el.scrollHeight; }
+      };
+      convo.onerror = (e) => {
+        const msg = micError(e.error);
+        if (msg) { S.voiceNote = msg; stopping = true; stopRec(); }
+      };
+      // phones stop listening after a pause; keep going until the person taps stop
+      convo.onend = () => { if (!stopping && S.rec === "recording") { try { listen(); } catch (err) {} } };
+      try { convo.start(); } catch (err) { S.voiceNote = "The microphone couldn't start. Type a note instead."; stopping = true; stopRec(); }
+    };
+    listen();
   }
   function stopRec() {
     if (S.rec !== "recording") return;
+    stopping = true;
     clearInterval(recTimer);
+    if (convo) { try { convo.stop(); } catch (err) {} convo = null; }
+    // give the recognizer a moment to deliver the last phrase
     S.rec = "summarizing";
     render();
-    later(1500, () => { S.rec = "idle"; S.summary = true; render(); xpToast("Memory saved", 25); });
+    later(speechRec() ? 900 : 1200, () => {
+      const phrases = heard.length ? heard : S.liveText ? [S.liveText] : [];
+      const transcript = phrases.join(" ").trim();
+      S.rec = "idle";
+      if (!speechRec()) {
+        S.memory = SAMPLE_MEMORY;
+      } else if (transcript.split(/\s+/).length < 3) {
+        if (!S.voiceNote) S.voiceNote = "Wasl didn't catch anything. Hold the phone closer and try again, or type a note.";
+        render();
+        return;
+      } else {
+        S.memory = { points: keyPoints(phrases.flatMap(splitSentences), 3), transcript, source: "voice" };
+      }
+      S.voiceNote = "";
+      S.summary = true;
+      render();
+      xpToast("Memory saved", 25);
+    });
   }
+
+  // Pick the sentences that carry the most useful facts: work, intros, hiring, follow-ups.
+  // A real build would use the AI model here; this keeps the mockup free and private.
+  function splitSentences(text) {
+    return text.split(/(?<=[.!?])\s+|\n+/).map((s) => s.trim()).filter(Boolean);
+  }
+  function keyPoints(sentences, max) {
+    const strong = /\b(work|works|working|engineer|developer|designer|manager|founder|ceo|cto|cfo|intern|interns|internship|hiring|hire|job|jobs|role|team|company|startup|project|building|launch|introduce|intro|introduction|connect|meet|coffee|follow|email|call|next week|tomorrow|looking for|interested|help|offer|offered|recommend|university|study|studying|research|invest|investor|funding|apply|deadline)\b/gi;
+    const filler = /\b(um+|uh+|you know|i mean|like,)\s*/gi;
+    const scored = sentences.map((s, i) => {
+      const clean = s.replace(filler, "").replace(/\s+/g, " ").trim();
+      const words = clean.split(" ").length;
+      const hits = (clean.match(strong) || []).length;
+      const names = (clean.slice(1).match(/\b[A-Z][a-z]+/g) || []).length;
+      const numbers = (clean.match(/\d/g) || []).length ? 1 : 0;
+      return { i, clean, score: words < 4 ? -1 : hits * 3 + names + numbers };
+    }).filter((x) => x.clean);
+    let pick = scored.filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, max);
+    if (!pick.length) pick = scored.slice(0, max);
+    return pick
+      .sort((a, b) => a.i - b.i)
+      .map((x) => {
+        const s = x.clean.charAt(0).toUpperCase() + x.clean.slice(1);
+        return s.length > 120 ? s.slice(0, 117).replace(/\s+\S*$/, "") + "…" : s;
+      });
+  }
+
   let holdTimer = null;
   screenEl.addEventListener("pointerdown", (e) => {
     const mic = e.target.closest("#mic");
     if (!mic) return;
     e.preventDefault();
     if (!S.consent) { S.sheet = "consent"; render(); return; }
+    if (S.rec === "recording") { stopRec(); return; } // second tap stops
     if (S.rec !== "idle") return;
     startRec();
     const downAt = Date.now();
     const up = () => {
       document.removeEventListener("pointerup", up);
       document.removeEventListener("pointercancel", up);
-      if (Date.now() - downAt < 450) holdTimer = later(2600, stopRec); // a tap records a short sample
-      else stopRec();
+      if (Date.now() - downAt > 700) stopRec(); // press-and-hold: releasing stops
     };
     document.addEventListener("pointerup", up);
     document.addEventListener("pointercancel", up);
@@ -1781,10 +1943,41 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     if (e.target.id === "mic" && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
       if (!S.consent) { S.sheet = "consent"; render(); return; }
-      if (S.rec === "idle") { startRec(); later(2600, stopRec); }
+      if (S.rec === "idle") startRec();
+      else if (S.rec === "recording") stopRec();
     }
     if (e.target.matches('[role="button"][data-act]') && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); e.target.click(); }
   });
+
+  // Recall: say what you're looking for
+  let asking = null;
+  function voiceSearch() {
+    if (asking) { asking.stop(); return; }
+    if (!speechRec()) { toast("Voice search needs Chrome or Safari. Type instead."); return; }
+    const btn = document.getElementById("voiceBtn");
+    const input = document.getElementById("recallInput");
+    asking = new (speechRec())();
+    asking.lang = "en-US";
+    asking.interimResults = true;
+    asking.continuous = false;
+    let said = "";
+    asking.onresult = (e) => {
+      said = Array.from(e.results).map((r) => r[0].transcript).join(" ").trim();
+      if (input) input.value = said;
+    };
+    asking.onerror = (e) => { const msg = micError(e.error); if (msg) toast(msg.replace(" Type a note instead.", " Type instead.")); };
+    asking.onend = () => {
+      asking = null;
+      document.getElementById("voiceBtn")?.classList.remove("on");
+      if (input) input.placeholder = "Describe who you're looking for";
+      if (said) submitRecall(said);
+    };
+    try {
+      asking.start();
+      btn?.classList.add("on");
+      if (input) { input.value = ""; input.placeholder = "Listening…"; }
+    } catch (err) { asking = null; toast("The microphone couldn't start. Type instead."); }
+  }
 
   // debrief deck
   function decide(v) {
@@ -1837,6 +2030,17 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     if (e.target.id === "scanFile" && S.scan) readUploadedPhoto(e.target.files && e.target.files[0]);
   });
   screenEl.addEventListener("submit", (e) => {
+    if (e.target.dataset.form === "detail") {
+      e.preventDefault();
+      const f = e.target.dataset.f;
+      const value = document.getElementById("detailInput").value.trim();
+      if (!value && f === "name") { toast("Your name can't be empty"); return; }
+      ME[f] = value || ME[f];
+      S.editField = null;
+      render();
+      toast(`${FIELD_META[f].label} saved`);
+      return;
+    }
     if (e.target.id === "recallForm") { e.preventDefault(); submitRecall(document.getElementById("recallInput").value); }
   });
 
@@ -1846,7 +2050,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     { n: "2", t: "Build", wow: 1, h: "Tap details on the card to hide them. Pick a color.", screen: "build" },
     { n: "3", t: "Share", wow: 1, h: "Swap cards with Mariam, or scan her paper card.", screen: "wallet" },
     { n: "4", t: "Save", wow: 2, h: "Confirm where you met. Add a tag.", screen: "save" },
-    { n: "5", t: "Remember", wow: 2, h: "Hold the mic. AI keeps only what mattered.", screen: "remember" },
+    { n: "5", t: "Remember", wow: 2, h: "Tap the mic and talk. Wasl keeps only what mattered.", screen: "remember" },
     { n: "+", t: "Debrief", wow: 2, h: "Bonus: swipe through tonight's people.", screen: "debrief" },
     { n: "6", t: "Browse", wow: 3, h: "Albums by event and company build themselves.", screen: "network" },
     { n: "7", t: "Recall", wow: 3, h: "Ask for someone by memory, not by name.", screen: "recall" },
@@ -1861,7 +2065,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     if (i >= 1) { S.profileFilled = true; S.joinPhase = "choose"; }
     if (i >= 3) { S.swappedWith = S.swappedWith || "pro"; S.exPhase = "done"; }
     if (i >= 4) { S.ctxConfirmed = true; S.mariamSaved = true; if (!S.tags.length) S.tags = ["Intro offered"]; }
-    if (i >= 6) { S.summary = true; S.consent = true; }
+    if (i >= 6) { S.summary = true; S.memory = SAMPLE_MEMORY; S.consent = true; }
     const st = STEPS[i];
     if (st.screen === "build") { S.editId = S.front; S.draft = JSON.parse(JSON.stringify(S.cards[S.front])); }
     if (st.screen === "debrief") { S.debriefIdx = 0; S.debrief = {}; }
@@ -1929,7 +2133,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     if (i >= 1) { S.profileFilled = true; S.joinPhase = "choose"; S.screen = "profile"; }
     if (i >= 3) { S.swappedWith = S.swappedWith || S.front; S.exPhase = "done"; S.screen = "exchange"; }
     if (i >= 4) { S.ctxConfirmed = true; S.mariamSaved = true; if (!S.tags.includes("Hiring")) S.tags.push("Hiring"); S.screen = "network"; }
-    if (i >= 5) { S.summary = true; S.consent = true; S.recall = "idle"; S.query = ""; S.screen = "network"; }
+    if (i >= 5) { S.summary = true; S.memory = SAMPLE_MEMORY; S.consent = true; S.recall = "idle"; S.query = ""; S.screen = "network"; }
   }
   document.getElementById("device").addEventListener("pointerdown", () => {
     if (T.mode === "test" && T.running) { T.taps++; const el = document.getElementById("tTaps"); if (el) el.textContent = `${T.taps} taps`; }

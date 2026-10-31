@@ -349,13 +349,45 @@ await caption(
   "Step 5 · Remember",
   2,
   "Talk. Wasl keeps the notes.",
-  "Both people agree first. AI keeps a short summary of what mattered, and the audio is deleted.",
+  "Both people agree, then tap the mic. Wasl writes down what's said and keeps only the key points. No audio is kept.",
   1600,
 );
+// The browser's speech-to-text needs a real microphone, so for the video a stand-in
+// "hears" Mariam's side of the chat; the transcript and key points are produced by the app.
+await p.evaluate(() => {
+  const lines = [
+    "hi I'm Mariam nice to meet you",
+    "I'm a software engineer at Pearl Labs working on our payments app",
+    "the weather is lovely tonight",
+    "if you want I can introduce you to our CTO",
+    "we're also hiring interns for next summer so apply before December",
+  ];
+  class Heard {
+    start() {
+      this.on = true;
+      const results = [];
+      const next = () => {
+        if (!this.on || !lines.length) return;
+        const r = [{ transcript: lines.shift() }];
+        r.isFinal = true;
+        results.push(r);
+        this.onresult &&
+          this.onresult({ resultIndex: results.length - 1, results });
+        setTimeout(next, 1300);
+      };
+      setTimeout(next, 700);
+    }
+    stop() {
+      this.on = false;
+      setTimeout(() => this.onend && this.onend(), 50);
+    }
+  }
+  window.SpeechRecognition = window.webkitSpeechRecognition = Heard;
+});
 await tap("#mic", 1300);
 await tap('[data-act="agree"]', 1000);
-await tap("#mic", 5400);
-await sleep(1800);
+await tap("#mic", 7600);
+await tap("#mic", 2600);
 
 await caption(
   "Bonus · Debrief",
