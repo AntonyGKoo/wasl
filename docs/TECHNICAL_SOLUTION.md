@@ -22,7 +22,7 @@ flowchart LR
 | App | Next.js 16 + React 19, responsive web app | One codebase for phone and laptop. Opens from a link or QR code, so a new contact doesn't need to install anything to see a card. |
 | Database | PostgreSQL with pgvector (PGlite locally, Supabase or any hosted Postgres in production) | Relational data for cards and connections, plus vector search for recall, in one place. |
 | Auth | Email + password sessions handled by the app | Works now. Sign in with LinkedIn is not built (see risks). |
-| OCR | Google Cloud Vision | Requested from IT on the tech requirements form. Reads printed business cards. |
+| OCR | Google Cloud Vision | Requested from IT on the tech requirements form. Reads printed business cards. The clickable mockup uses Tesseract.js, a free OCR that runs in the browser: the first scan downloads about 7 MB (about 5 seconds on 4G), later scans take under a second. Google Vision is more accurate on hard cards. |
 | AI | OpenAI: `gpt-4o-mini` for parsing and grounded answers, `text-embedding-3-small` for recall | Cheap, fast, and supports structured outputs. Both are set by environment variables, so they can be swapped. |
 | Hosting | Vercel (or any Node host) + hosted Postgres | The demo currently runs from Antony's laptop through a temporary tunnel. A hosted deployment is the next infrastructure step. |
 
@@ -32,14 +32,14 @@ Status key: **Built** = works in the MVP repo today. **Mockup** = shown in the c
 
 | Step | What the user sees | How it works | Status |
 |---|---|---|---|
-| 1 · Join | Scan your own card or import LinkedIn; the profile fills itself and levels up | Card photo → Google Vision OCR → `gpt-4o-mini` turns the text into fields → user reviews before saving. Level = share of profile fields filled. | Scan + review: **Built**. Levels: **Mockup**. LinkedIn import: **Planned** (API access uncertain) |
-| 2 · Build | Tap a detail on the card to hide it; pick a color | Each card stores a list of profile fields it shows. Shared links only ever expose those fields. | Field selection: **Built**. Tap-on-card editor and colors: **Mockup** |
-| 3 · Share | Stacked wallet; one scan swaps cards with a buzz | Each card has a revocable share token shown as a QR code. Scanning it saves the card. A two-way swap = both phones scan or one phone confirms on the other. | QR share + save: **Built**. Wallet stack and two-way swap animation: **Mockup** |
+| 1 · Join | Scan your own card or import LinkedIn; the profile fills itself and levels up | Card photo → Google Vision OCR → `gpt-4o-mini` turns the text into fields → user reviews before saving. Level = share of profile fields filled. | Scanning your own card: works in the mockup with the phone camera (OCR in the browser); the real app uses the built Google Vision scanner from step 3. Levels: **Mockup**. LinkedIn import: **Planned** (API access uncertain) |
+| 2 · Build | Tap a detail on the card to hide it; pick a color | Each card stores a list of profile fields it shows. Shared links only ever expose those fields. | Field selection: **Built**. Tap-on-card editor, colors and company logos: **Mockup** |
+| 3 · Share | Stacked wallet; one scan swaps cards with a buzz | Each card has a revocable share token shown as a QR code. Scanning it saves the card. A two-way swap = both phones scan or one phone confirms on the other. No Wasl? Scan their paper card: the mockup does this for real with the phone camera (or a photo), Tesseract.js OCR and an editable review. | QR share + save, and scanning someone else's card (Google Vision, reviewed before saving): **Built**. Wallet stack and two-way swap animation: **Mockup** |
 | 4 · Save | "Wasl already knows where you met"; one-tap tags | On save, the phone suggests event, place and time from the calendar entry happening now and the current location. The user confirms. Tags are stored on the connection. | Meeting context, categories: **Built** (typed in). Calendar + location suggestions: **Mockup** |
 | 5 · Remember | Hold the mic; AI keeps a short summary | Both people consent on their phones → audio is transcribed → `gpt-4o-mini` writes 3–5 bullet points → the audio is deleted and only the text is saved as a private note. | Private notes and interaction history: **Built**. Recording + summary: **Mockup**, **Planned** for the backend |
 | Bonus · Debrief | Swipe through tonight's people | Lists connections saved during the current event. Swipe right = favorite, left = keep as a contact. | Favorites: **Built**. Swipe debrief: **Mockup** |
 | 6 · Browse | Albums by event and company build themselves | Albums are saved filters (event, company, tag) over the user's connections, so they stay up to date with no sorting. | Search and categories: **Built**. Auto albums: **Mockup** |
-| 7 · Recall | "the engineer who offered me an intro to her CTO" → Mariam, with the reason | Hybrid search: keyword matching plus pgvector similarity over each contact's saved context. The top candidates go to the model, which may only return a contact it was given and must quote the exact saved text that matches. If AI is unavailable, keyword results still work. | **Built** (keyword always; AI when an OpenAI key is configured) |
+| 7 · Recall | "the engineer who offered me an intro to her CTO" → Mariam, with the reason | Hybrid search: keyword matching plus pgvector similarity over each contact's saved context. The top candidates go to the model, which may only return a contact it was given and must quote the exact saved text that matches. If AI is unavailable, keyword results still work. Before an event, Recall can also list people you've met who are on its guest list (Mockup). | **Built** (keyword always; AI when an OpenAI key is configured) |
 
 ## Data model (built)
 
@@ -71,6 +71,7 @@ Status key: **Built** = works in the MVP repo today. **Mockup** = shown in the c
 
 ## Where things are
 
-- Clickable mockup: `public/mockup/index.html` (served at `/mockup/index.html` when the app runs). Open a step directly with `#step-1` … `#step-7` or `#step-bonus`. It has a **User test** mode that times six tasks and counts taps.
+- Clickable mockup: https://antonygkoo.github.io/wasl-prototype/ (source: `public/mockup/index.html`). Card scanning uses the real camera. Open a step directly with `#step-1` … `#step-7` or `#step-bonus`. It has a **User test** mode that times six tasks and counts taps.
 - Screenshots for slides: `docs/presentation/mockup-screens/`. Regenerate them with `node scripts/capture-mockup.mjs`.
+- Walkthrough video: https://antonygkoo.github.io/wasl-prototype/walkthrough.mp4. Re-record it with `node scripts/record-walkthrough.mjs` (needs Chrome and ffmpeg).
 - Working MVP: see the root `README.md`; operations and hosting are in `docs/OPERATIONS.md`.
