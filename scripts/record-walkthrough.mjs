@@ -336,7 +336,7 @@ await caption(
   "If they have Wasl, scan their code. Mariam gets your Professional card and you get hers.",
   600,
 );
-await tap('[data-go="exchange-reset"]', 1300);
+await tap('[data-go="exchange-swap"]', 1300);
 await tap('[data-act="do-swap"]', 2600);
 await tap('[data-go="save"]', 1000);
 
@@ -425,7 +425,7 @@ await p.evaluate(() =>
 await sleep(2000);
 
 await caption(
-  "Step 7 · Recall",
+  "Step 7 · Search",
   3,
   "Find people by memory, not by name",
   "Weeks later, describe someone the way you remember them. Wasl finds them and shows why.",
@@ -437,7 +437,7 @@ await scrollScreen(260);
 await sleep(2400);
 
 await caption(
-  "Step 7 · Recall",
+  "Step 7 · Search",
   3,
   "Who from your network is going?",
   "Before an event, ask who you've already met that will be there, and who is worth meeting again.",

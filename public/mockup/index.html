@@ -43,7 +43,7 @@ body {
   background: var(--page);
   color: var(--text);
   font-family: var(--body);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -148,7 +148,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   border-radius: 10px;
   padding: 7px 12px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-2);
 }
 .ghost:hover { color: var(--text); border-color: var(--muted); }
@@ -251,7 +251,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .back svg { width: 18px; height: 18px; }
 .title { font-size: 32px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.15; margin: 6px 0 4px; }
 .sub { color: var(--text-2); }
-.label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.label { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .stack { display: flex; flex-direction: column; gap: 12px; }
 .row { display: flex; gap: 8px; align-items: center; }
 .btn {
@@ -272,7 +272,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .btn.violet { background: var(--violet); color: #17122b; box-shadow: none; }
 .btn.small { width: auto; padding: 10px 14px; font-size: 14px; border-radius: 12px; }
 .link { border: 0; background: transparent; color: var(--text-2); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; padding: 6px; }
-.hint { text-align: center; color: var(--muted); font-size: 13px; }
+.hint { text-align: center; color: var(--muted); font-size: 14px; }
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -335,10 +335,10 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 /* company logo, read from the business card: shown when the card shares a company */
 .card .c-tile.logo { align-self: flex-start; background: #f4f2ee; font-family: var(--display); font-weight: 800; font-size: 11px; letter-spacing: -0.2px; width: auto; min-width: 36px; padding: 0 7px; }
 .card .c-name { font-family: var(--display); font-weight: 800; font-size: 21px; letter-spacing: -0.4px; margin-top: auto; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card .c-line { font-size: 12.5px; font-weight: 600; opacity: 0.92; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .c-line { font-size: 13px; font-weight: 600; opacity: 0.92; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card .c-foot { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; gap: 8px; }
 .card .c-contacts { display: flex; flex-direction: column; min-width: 0; }
-.card .c-mono { font-family: var(--mono); font-size: 11px; line-height: 1.4; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .c-mono { font-family: var(--mono); font-size: 11.5px; line-height: 1.4; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* small cards fanned out on the welcome screen: fixed size so long text can never stretch them */
 .card.mini { width: 196px; height: 122px; aspect-ratio: auto; padding: 12px 14px; border-radius: 16px; }
 .card.mini .c-word { font-size: 16px; }
@@ -359,10 +359,10 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .wallet .card { position: absolute; left: 0; right: 0; width: 100%; transition: transform 200ms; }
 .wallet .card:last-child { position: relative; top: 0 !important; }
 .wallet .card.behind .c-tile { visibility: hidden; }
-.card .c-peek { font-family: var(--mono); font-size: 11px; font-weight: 500; opacity: 0.92; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .c-peek { font-family: var(--mono); font-size: 12px; font-weight: 500; opacity: 0.92; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-about { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
 .card-about b { font-size: 14px; }
-.card-about span { color: var(--text-2); font-size: 13px; }
+.card-about span { color: var(--text-2); font-size: 14px; }
 .wallet .card.behind:hover { transform: translateY(-4px); }
 .wallet .card.front { animation: lift 320ms ease-out; }
 @keyframes lift { from { transform: translateY(-26px); } to { transform: none; } }
@@ -428,7 +428,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .fields { display: grid; gap: 2px; padding-block: 6px; }
 .fld { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .fld:last-child { border-bottom: 0; }
-.fld span { color: var(--muted); font-size: 13px; }
+.fld span { color: var(--muted); font-size: 14px; }
 .fld input { min-width: 0; background: var(--raised); border: 1px solid transparent; border-radius: 10px; color: var(--text); font: inherit; font-size: 14px; padding: 8px 10px; }
 .fld input:focus { outline: none; border-color: var(--teal); }
 .fld input::placeholder { color: var(--muted); }
@@ -460,7 +460,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .detail .ic svg { width: 17px; height: 17px; }
 .detail .dv { min-width: 0; flex: 1; }
 .detail .dv b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.detail .dv span { color: var(--muted); font-size: 12.5px; }
+.detail .dv span { color: var(--muted); font-size: 13.5px; }
 .detail.missing .dv b { color: var(--muted); }
 .edit-btn { border: 0; background: transparent; color: var(--muted); width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; }
 .edit-btn:hover { color: var(--text); background: var(--raised); }
@@ -469,6 +469,19 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .detail.editing .dv span { color: var(--muted); font-size: 12.5px; }
 .detail.editing input { min-width: 0; width: 100%; background: var(--raised); border: 1px solid var(--teal); border-radius: 10px; color: var(--text); font: inherit; padding: 8px 10px; outline: none; }
 
+.toggles { padding-block: 2px; }
+.tg { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--text); text-align: left; padding: 10px 0; }
+.tg:last-child { border-bottom: 0; }
+.tg .ic { width: 34px; height: 34px; border-radius: 10px; background: var(--raised); display: grid; place-items: center; flex: none; color: var(--text-2); }
+.tg .ic svg { width: 17px; height: 17px; }
+.tg .dv { min-width: 0; flex: 1; }
+.tg .dv b { display: block; font-size: 15px; font-weight: 600; }
+.tg .dv span { display: block; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tg[aria-pressed="false"] .dv b { color: var(--text-2); }
+.sw { width: 46px; height: 28px; border-radius: 14px; background: var(--raised); box-shadow: inset 0 0 0 1px var(--line); position: relative; flex: none; transition: background 150ms; }
+.sw::after { content: ""; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--muted); transition: transform 150ms, background 150ms; }
+.tg[aria-pressed="true"] .sw { background: var(--teal); box-shadow: none; }
+.tg[aria-pressed="true"] .sw::after { transform: translateX(18px); background: #fff; }
 .swatches { display: flex; gap: 12px; }
 .swatch { width: 40px; height: 40px; border-radius: 50%; border: 3px solid transparent; box-shadow: 0 0 0 1px var(--line); }
 .swatch[aria-pressed="true"] { border-color: var(--text); }
@@ -478,11 +491,11 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .swatch.team { background: var(--card-team); }
 
 /* the two cards sit in the flow, so the labels can never land on a card at any screen size */
-.exchange { position: relative; display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+.exchange { position: relative; display: flex; flex-direction: column; gap: 34px; margin-top: 10px; }
 .exchange .slot { position: relative; width: 100%; max-width: 300px; margin-inline: auto; transition: transform 700ms cubic-bezier(.6, -0.2, .3, 1.3), opacity 300ms; }
-.exchange .slot .who { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
-.exchange.swapping .theirs { transform: translateY(calc(100% + 14px)) rotate(-3deg); }
-.exchange.swapping .yours { transform: translateY(calc(-100% - 14px)) rotate(3deg); }
+.exchange .slot .who { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+.exchange.swapping .theirs { transform: translateY(calc(100% + 34px)) rotate(-3deg); }
+.exchange.swapping .yours { transform: translateY(calc(-100% - 34px)) rotate(3deg); }
 .choice { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 18px; padding: 16px; }
 .choice .ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; flex: none; background: rgba(92, 196, 184, 0.16); color: var(--teal); }
 .choice .ic svg { width: 22px; height: 22px; }
@@ -492,15 +505,15 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .choice > svg { width: 18px; height: 18px; color: var(--muted); margin-left: auto; flex: none; }
 .sharing { margin-top: 22px; }
 .sharing .card { max-width: 300px; margin: 8px auto 0; }
-.exchange .pulse { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px; border-radius: 50%; display: grid; place-items: center; background: var(--raised); color: var(--teal); z-index: 2; }
-.exchange .pulse svg { width: 28px; height: 28px; }
+.exchange .pulse { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px; border-radius: 50%; display: grid; place-items: center; background: var(--raised); color: var(--teal); z-index: 2; }
+.exchange .pulse svg { width: 24px; height: 24px; }
 .exchange.swapping .pulse { animation: buzz 120ms linear 6; }
 @keyframes buzz { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 .qr { width: 100%; height: 100%; }
 
 .ctx .item { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; }
 .ctx .item svg { width: 18px; height: 18px; color: var(--teal); flex: none; margin-top: 2px; }
-.ctx .src { display: block; color: var(--muted); font-size: 12px; }
+.ctx .src { display: block; color: var(--muted); font-size: 13px; }
 .confirmed { display: flex; align-items: center; gap: 8px; color: var(--teal); font-weight: 600; }
 .confirmed svg { width: 18px; height: 18px; }
 
@@ -523,13 +536,13 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .summary { border-color: rgba(239, 160, 102, 0.45); }
 .summary ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 .mic-wrap .live { width: 100%; max-height: 120px; overflow-y: auto; margin: 2px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--raised); color: var(--text-2); font-size: 13.5px; line-height: 1.45; text-align: left; }
-.transcript { margin-top: 10px; font-size: 13px; color: var(--text-2); }
+.transcript { margin-top: 10px; font-size: 14px; color: var(--text-2); }
 .transcript summary { cursor: pointer; color: var(--muted); font-weight: 600; }
 .transcript p { margin: 6px 0 0; line-height: 1.5; }
 .search .voice { width: 38px; height: 38px; border-radius: 12px; border: 0; background: var(--raised); color: var(--violet); display: grid; place-items: center; flex: none; padding: 0; }
 .search .voice svg { width: 18px; height: 18px; }
 .search .voice.on { background: var(--danger); color: #2a0f0f; animation: ring 1s ease-out infinite; }
-.summary .kept { margin-top: 10px; color: var(--muted); font-size: 12.5px; display: flex; gap: 6px; align-items: center; }
+.summary .kept { margin-top: 10px; color: var(--muted); font-size: 13.5px; display: flex; gap: 6px; align-items: center; }
 .summary .kept svg { width: 14px; height: 14px; }
 .shimmer { height: 12px; border-radius: 6px; background: linear-gradient(90deg, var(--raised), #3a424d, var(--raised)); background-size: 200% 100%; animation: sh 1s linear infinite; }
 @keyframes sh { to { background-position: -200% 0; } }
@@ -557,16 +570,16 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .album .cover i:nth-child(1) { transform: rotate(-12deg) translateX(-14px); }
 .album .cover i:nth-child(3) { transform: rotate(10deg) translateX(14px) translateY(6px); }
 .album b { display: block; margin-top: 8px; font-weight: 600; font-size: 13.5px; line-height: 1.3; }
-.album span { color: var(--muted); font-size: 12px; }
+.album span { color: var(--muted); font-size: 13px; }
 .album.new .cover { display: grid; place-items: center; border-style: dashed; color: var(--muted); }
 .album.new .cover svg { width: 26px; height: 26px; }
-.auto { font-family: var(--mono); font-size: 10px; color: var(--teal); }
+.auto { font-family: var(--mono); font-size: 11px; color: var(--teal); }
 .people { list-style: none; margin: 0; padding: 0; }
 .person { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); width: 100%; background: transparent; border-left: 0; border-right: 0; border-top: 0; text-align: left; }
 .person .mini { width: 52px; height: 34px; border-radius: 7px; flex: none; display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 13px; color: #fff; }
 .person .pv { min-width: 0; flex: 1; }
 .person .pv b { display: block; font-weight: 600; }
-.person .pv span { color: var(--muted); font-size: 12.5px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.person .pv span { color: var(--muted); font-size: 13.5px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .person .star { color: #ffd27a; width: 16px; height: 16px; }
 .group-h { margin-top: 16px; }
 .flip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--gutter)); padding: 6px var(--gutter) 14px; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
@@ -584,11 +597,11 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .why { border-color: rgba(160, 142, 230, 0.45); }
 .why q { display: block; font-style: italic; color: var(--text); margin-top: 6px; }
 .why q::before, .why q::after { content: ""; }
-.match { font-family: var(--mono); font-size: 11px; color: var(--violet); }
+.match { font-family: var(--mono); font-size: 12px; color: var(--violet); }
 
 .setting { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .setting:last-child { border-bottom: 0; }
-.setting span { color: var(--muted); font-size: 12.5px; display: block; }
+.setting span { color: var(--muted); font-size: 13.5px; display: block; }
 .switch { width: 46px; height: 28px; border-radius: 20px; background: var(--teal); position: relative; flex: none; border: 0; }
 .switch::after { content: ""; position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; }
 .switch[aria-checked="false"] { background: var(--raised); }
@@ -609,7 +622,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   border-radius: 999px;
   padding: 8px 14px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   white-space: nowrap;
   display: flex; gap: 8px; align-items: center;
   animation: toast 2.2s ease forwards;
@@ -1007,14 +1020,18 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     build() {
       const d = S.draft;
       const allContact = ["role", "org", "email", "linkedin", "phone", "instagram"];
-      const hidden = allContact.filter((f) => !d.fields.includes(f) && (f !== "instagram" || S.extra.instagram));
+      // every detail gets a labeled switch, so people can see exactly what they're hiding (testers couldn't tell)
+      const rows = allContact.filter((f) => f !== "instagram" || S.extra.instagram);
       return `${back("wallet", "Cards")}
         <h2 class="title" style="font-size:26px">Edit ${kindName(S.editId)} card</h2>
-        <p class="sub">${KIND_FOR[S.editId]} Tap a detail on the card to hide it, like your email.</p>
+        <p class="sub">${KIND_FOR[S.editId]} Switch off anything you don't want to share, like your email.</p>
         <div style="margin:16px 0 18px">${card(S.editId, { data: d, edit: true })}</div>
         <div class="stack">
-          <div class="label">Add from your profile</div>
-          <div class="chips">${hidden.length ? hidden.map((f) => `<button class="chip" data-act="add-field" data-f="${f}">${ic(FIELD_META[f].icon)}${FIELD_META[f].short || FIELD_META[f].label}</button>`).join("") : '<span class="sub" style="font-size:13px">Everything is on this card.</span>'}</div>
+          <div class="label">What this card shares</div>
+          <div class="panel toggles">${rows.map((f) => {
+            const on = d.fields.includes(f);
+            return `<button class="tg" data-act="${on ? "hide-field" : "add-field"}" data-f="${f}" aria-pressed="${on}" aria-label="${on ? "Hide" : "Show"} ${FIELD_META[f].label}"><span class="ic">${ic(FIELD_META[f].icon)}</span><span class="dv"><b>${FIELD_META[f].label}</b><span>${on ? "Shown" : "Hidden"} · ${esc(ME[f])}</span></span><span class="sw" aria-hidden="true"></span></button>`;
+          }).join("")}</div>
           <div class="label" style="margin-top:6px">Color</div>
           <div class="swatches">${["pro", "event", "social", "team"].map((c) => `<button class="swatch ${c}" data-act="color" data-c="${c}" aria-pressed="${d.color === c}" aria-label="${COLOR_NAME[c]}"></button>`).join("")}</div>
           <button class="btn" style="margin-top:12px" data-act="save-card">${ic("check")}Save card</button>
@@ -1138,14 +1155,14 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       return `${back("exchange-reset", "Back")}
         <h2 class="title" style="font-size:26px">Swap cards with Mariam</h2>
         <p class="sub">Scan Mariam's code, or let her scan yours.</p>
+        <div class="row" style="margin-top:14px">
+          <div style="width:72px;height:72px;flex:none">${qrSvg(7)}</div>
+          <button class="btn" data-act="do-swap" ${S.exPhase === "swapping" ? "disabled" : ""}>${ic("scan")}Scan Mariam's code</button>
+        </div>
         <div class="exchange ${S.exPhase === "swapping" ? "swapping" : ""}" id="exchange">
           <div class="slot theirs"><div class="who">Mariam's phone</div>${personCard(MARIAM)}</div>
           <div class="pulse">${ic("swap")}</div>
-          <div class="slot yours"><div class="who">Your ${kind} card</div>${card(S.front)}</div>
-        </div>
-        <div class="row" style="margin-top:12px">
-          <div style="width:72px;height:72px;flex:none">${qrSvg(7)}</div>
-          <button class="btn" data-act="do-swap" ${S.exPhase === "swapping" ? "disabled" : ""}>${ic("scan")}Scan Mariam's code</button>
+          <div class="slot yours"><div class="who">Your card</div>${card(S.front)}</div>
         </div>`;
     },
 
