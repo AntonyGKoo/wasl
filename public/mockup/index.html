@@ -815,6 +815,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     scan: null, // { mode: own | their, phase: camera | reading | review | error, cam, fields, image, progress }
     scanned: [], // people saved by scanning their paper card
     editField: null, // the profile detail being edited
+    photo: null, // the profile photo the person picked, as a small data URL
     memory: null, // { points: [...], transcript, source: voice | note | sample }
     liveText: "", // what speech recognition has heard so far while recording
     voiceNote: "", // shown under the mic when speech-to-text isn't available or heard nothing
@@ -941,14 +942,17 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           : `<div class="detail ${missing ? "missing" : ""}">
               <span class="ic">${ic(FIELD_META[f] ? FIELD_META[f].icon : "camera")}</span>
               <span class="dv"><b>${esc(val)}</b><span>${label(f)}</span></span>
-              ${missing ? `<button class="chip" data-act="add-detail" data-f="${f}">${ic("plus")}Add <span class="xp">+20 XP</span></button>`
+              ${missing
+                ? f === "photo"
+                  ? `<label class="chip" for="photoFile">${ic("plus")}Add <span class="xp">+20 XP</span></label><input type="file" id="photoFile" accept="image/*" hidden>`
+                  : `<button class="chip" data-act="edit-detail" data-f="${f}">${ic("plus")}Add <span class="xp">+20 XP</span></button>`
                 : f !== "photo" ? `<button class="edit-btn" data-act="edit-detail" data-f="${f}" aria-label="Edit ${label(f)}">${ic("pencil")}</button>` : ""}
             </div>`;
       const initialsOf = (n) => n.split(/\s+/).map((w) => w[0] || "").join("").slice(0, 2).toUpperCase();
       return `<div class="topline"><h2 class="title">Profile</h2><span class="label">Tap ✎ to edit</span></div>
         <div class="panel" style="margin-top:10px">
           <div class="level">
-            <div class="ring" style="--p:${L.pct}"><div class="av ${S.extra.photo ? "photo" : ""}">${S.extra.photo ? "" : esc(initialsOf(ME.name))}</div></div>
+            <div class="ring" style="--p:${L.pct}"><div class="av ${S.extra.photo ? "photo" : ""}" ${S.photo ? `style="background:center/cover url('${S.photo}')"` : ""}>${S.extra.photo ? "" : esc(initialsOf(ME.name))}</div></div>
             <div style="flex:1;min-width:0">
               <div class="label">Level ${L.n}</div>
               <div class="lvl-name">${L.name}</div>
@@ -1480,13 +1484,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       const input = document.getElementById("detailInput");
       if (input) { input.focus(); input.select(); }
     },
-    "add-detail"(el) {
-      const f = el.dataset.f;
-      S.extra[f === "instagram" ? "instagram" : "photo"] = true;
-      const L = level();
-      render();
-      if (L.n === 4) { confetti(); xpToast("Level 4 · Connector", 20); } else xpToast(`${f === "photo" ? "Photo" : "Instagram"} added`, 20);
-    },
+    "add-detail"(el) { actions["edit-detail"](el); },
     front(el) {
       const id = el.dataset.id;
       if (id === S.front) return;
@@ -1575,6 +1573,30 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     Object.assign(ME, DEFAULT_ME);
     S = fresh();
     lastScreen = null;
+  }
+
+  function levelUpToast(what) {
+    const L = level();
+    render();
+    if (L.n === 4) { confetti(); xpToast("Level 4 · Connector", 20); } else xpToast(what, 20);
+  }
+  function readProfilePhoto(file) {
+    if (!file) return;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      // keep a small square copy for the avatar
+      const size = 256, c = document.createElement("canvas");
+      c.width = c.height = size;
+      const s = Math.min(img.naturalWidth, img.naturalHeight);
+      c.getContext("2d").drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+      S.photo = c.toDataURL("image/jpeg", 0.85);
+      S.extra.photo = true;
+      levelUpToast("Photo added");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); toast("That file isn't a photo. Try a JPG or PNG."); };
+    img.src = url;
   }
 
   // ---------- real card scanning: camera → photo → OCR (Tesseract.js, runs in the browser) → review ----------
@@ -1762,13 +1784,26 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     take(/(\+?\(?\d[\d\s().-]{6,}\d)/, "phone", (x) => x.replace(/\s+/g, " ").trim());
     if (!f.web) take(/\b((https?:\/\/)?(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)*\.(com|net|org|io|co|qa|edu|ai|app|dev|me|example)(\/\S*)?)\b/i, "web", (x) => x.toLowerCase().replace(/^https?:\/\//, ""));
     // lines that only held contact details or labels are done; the rest are name, role, company
-    const rest = lines.map((l, i) => ({ l: l.replace(/^(tel|phone|mobile|mob|email|e-mail|web|www)\s*[:.]?\s*/i, ""), i })).filter(({ l, i }) => !used.has(i) && !/@|\d{4,}|https?:|www\./i.test(l));
+    const placeRe = /^(?:[A-Za-z .'-]+,\s*)?(doha|qatar|dubai|abu dhabi|riyadh|jeddah|kuwait|bahrain|muscat|oman|uae|saudi arabia|lusail|al wakrah|west bay|education city|london|new york|usa|uk)\.?$|\b(street|st\.|road|rd\.|avenue|ave\.|building|bldg|floor|tower|p\.?o\.? ?box|zone)\b/i;
+    const rest = lines.map((l, i) => ({ l: l.replace(/^(tel|phone|mobile|mob|email|e-mail|web|www)\s*[:.]?\s*/i, ""), i })).filter(({ l, i }) => !used.has(i) && !/@|\d{4,}|https?:|www\./i.test(l) && !placeRe.test(l));
     const roleRe = /\b(engineer|developer|designer|manager|director|founder|co-founder|ceo|cto|cfo|coo|cmo|chief|officer|student|intern|analyst|consultant|scientist|professor|lecturer|partner|lead|head|president|specialist|coordinator|associate|researcher|architect|marketing|sales|product|recruiter|advisor|owner|freelance|photographer|writer|artist|teacher|doctor|nurse|lawyer|accountant|chef|trainer|coach|editor|producer|journalist|executive|assistant|technician)\b/i;
     const orgRe = /\b(inc|llc|ltd|labs?|university|college|school|group|company|co\.|corp|corporation|studio|capital|ventures|technologies|technology|tech|solutions|systems|bank|foundation|institute|analytics|robotics|consulting|agency|partners|holdings|media|qatar|global|international|hub|fintech|center|centre|association|council|ministry|authority|airways|hospital|clinic|hotel|academy|network)\b/i;
-    const isName = (l) => /^[A-Za-z][A-Za-z.'-]+(\s[A-Za-z][A-Za-z.'-]+){1,3}$/.test(l) && !roleRe.test(l) && !orgRe.test(l);
+    const isName = (l) => /^[A-Za-z][A-Za-z.'-]+(\s[A-Za-z][A-Za-z.'-]+){1,3}$/.test(l) && !roleRe.test(l) && !orgRe.test(l) && !/\bwasl\b/i.test(l) && !/\b([A-Za-z])\1\b/.test(l);
+    // "ghada.alnaimi@…" or "linkedin.com/in/ghadaalnaimi" tells us how the name is spelled
+    const handle = ((f.email || "").split("@")[0] + " " + ((f.web || "").match(/\/in\/([a-z0-9-]+)/i) || ["", ""])[1]).toLowerCase();
+    const handleLetters = handle.replace(/[^a-z]/g, "");
+    const matchesHandle = (l) => {
+      const parts = l.toLowerCase().split(/[\s.'-]+/).filter((w) => w.length > 1);
+      return parts.length ? parts.filter((w) => handleLetters.includes(w)).length / parts.length : 0;
+    };
+    const nameFromEmail = () => {
+      const local = (f.email || "").split("@")[0];
+      const parts = local.split(/[._-]+/).filter((w) => /^[a-z]{2,}$/i.test(w));
+      return parts.length >= 2 && parts.length <= 3 ? parts.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ") : "";
+    };
     const pick = (test) => { const x = rest.find((r) => !r.taken && test(r.l)); if (x) x.taken = true; return x ? x.l : ""; };
     for (const r of rest) r.h = heights.get(key(lines[r.i])) || 0;
-    const names = rest.filter((r) => isName(r.l)).sort((a, b) => b.h - a.h);
+    const names = rest.filter((r) => isName(r.l)).sort((a, b) => matchesHandle(b.l) - matchesHandle(a.l) || b.h - a.h);
     if (names[0]) { names[0].taken = true; f.name = names[0].l; }
     f.role = pick((l) => roleRe.test(l));
     // a company often appears twice (logo text in capitals, then the full name): prefer the fuller one
@@ -1778,6 +1813,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       const domain = (f.email || "").split("@")[1] || (f.web && !/linkedin/.test(f.web) ? f.web.replace(/^www\./, "") : "");
       const base = domain.split(".")[0];
       if (base && !/^(gmail|hotmail|outlook|yahoo|icloud|mail)$/.test(base)) f.org = base.charAt(0).toUpperCase() + base.slice(1);
+    }
+    // no line looks like a name that fits the email: spell it from the email ("ghada.alnaimi" → "Ghada Alnaimi")
+    if (nameFromEmail() && (!f.name || matchesHandle(f.name) === 0)) {
+      const kept = rest.find((r) => r.l === f.name);
+      if (kept) kept.taken = false;
+      f.name = nameFromEmail();
     }
     if (!f.name) f.name = pick(() => true);
     const titleCase = (s) => (s && s === s.toUpperCase() ? s.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()) : s);
@@ -2028,6 +2069,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   });
   screenEl.addEventListener("change", (e) => {
     if (e.target.id === "scanFile" && S.scan) readUploadedPhoto(e.target.files && e.target.files[0]);
+    if (e.target.id === "photoFile") readProfilePhoto(e.target.files && e.target.files[0]);
   });
   screenEl.addEventListener("submit", (e) => {
     if (e.target.dataset.form === "detail") {
@@ -2035,8 +2077,11 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       const f = e.target.dataset.f;
       const value = document.getElementById("detailInput").value.trim();
       if (!value && f === "name") { toast("Your name can't be empty"); return; }
-      ME[f] = value || ME[f];
+      const isNew = f === "instagram" && !S.extra.instagram;
       S.editField = null;
+      if (isNew && !value) { render(); return; }
+      ME[f] = f === "instagram" && value && !value.startsWith("@") && !/\//.test(value) ? "@" + value : value || ME[f];
+      if (isNew) { S.extra.instagram = true; levelUpToast("Instagram added"); return; }
       render();
       toast(`${FIELD_META[f].label} saved`);
       return;

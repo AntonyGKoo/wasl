@@ -265,8 +265,16 @@ await caption(
   1400,
 );
 await scrollScreen(420);
-await tap('[data-act="add-detail"][data-f="instagram"]', 1000);
-await tap('[data-act="add-detail"][data-f="photo"]', 2400);
+await tap('[data-act="edit-detail"][data-f="instagram"]', 500);
+await p.locator("#detailInput").pressSequentially("antonygu", { delay: 60 });
+await p.locator("#detailInput").press("Enter");
+await sleep(1100);
+await tap('label[for="photoFile"]', 200);
+await p.setInputFiles(
+  "#photoFile",
+  path.join(root, "docs/presentation/sample-avatar.jpg"),
+);
+await sleep(2400);
 
 await caption(
   "Step 2 · Build",
