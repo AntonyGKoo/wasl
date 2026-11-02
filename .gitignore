@@ -30,3 +30,5 @@ test-results/
 .npm-cache/
 work/
 
+# Vercel project link (local only)
+.vercel/
