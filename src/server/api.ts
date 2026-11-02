@@ -8,6 +8,7 @@ import {
 } from "./responses";
 import { consumeLimit, sessionUser } from "../lib/auth";
 import { blankProfile } from "../lib/types";
+import { database } from "../lib/db";
 import {
   cardSchema,
   connectionSchema,
@@ -51,6 +52,11 @@ export async function handleApi(request: Request): Promise<Response> {
       const card = await publicCard(id);
       if (action === "vcard") return vcardResponse(card.profile);
       return json({ card });
+    }
+    if (area === "health" && method === "GET") {
+      // One tiny query: the daily uptime check also keeps a free hosted database from pausing.
+      await (await database()).query("SELECT 1");
+      return json({ ok: true });
     }
     const user = await sessionUser(request);
     if (area === "session" && method === "GET")

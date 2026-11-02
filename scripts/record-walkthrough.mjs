@@ -284,7 +284,7 @@ await caption(
   600,
 );
 await tap('#tabbar [data-go="wallet"]', 1000);
-await tap('#screen .add-card', 1100);
+await tap("#screen .add-card", 1100);
 await tap('[data-act="pick-card"][data-k="event"]', 1300);
 await tap('[data-act="add-field"][data-f="linkedin"]', 1000);
 await tap('[data-act="hide-field"][data-f="org"]', 1000);

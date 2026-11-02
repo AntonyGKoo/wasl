@@ -367,6 +367,11 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .add-card .ic svg { width: 18px; height: 18px; }
 .add-card b { display: block; font-size: 15px; }
 .add-card span span { color: var(--text-2); font-size: 13.5px; }
+.next-step { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, var(--teal) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--teal) 40%, transparent); }
+.next-step > svg { width: 22px; height: 22px; color: var(--teal); flex: none; }
+.next-step > span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.next-step > span span { color: var(--text-2); font-size: 13.5px; }
+.next-step .btn { width: auto; flex: none; }
 .card-about { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
 .card-about b { font-size: 14px; }
 .card-about span { color: var(--text-2); font-size: 14px; }
@@ -715,6 +720,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>',
     scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/>',
     linkedin: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10v7M8 7v.01M12 17v-4a2 2 0 0 1 4 0v4M12 10v7"/>',
@@ -859,6 +865,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     tags: [],
     ctx: { event: "Campus networking night", place: "Education City, Doha", edited: {} }, // edited: which of event/place you changed
     notes: {}, // notes typed on other people's pages, by person id
+    noteDraft: null, // the saved memory's text while it's being edited
     personId: null,
     consent: false,
     rec: "idle", // idle | recording | summarizing
@@ -917,11 +924,13 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       </div>
     </${opts.tag || "div"}>`;
   }
+  // Other people's cards never say which of their cards it is (Professional, Social...);
+  // only a card made from a paper business card is marked, since that person has no Wasl.
   function personCard(p, opts = {}) {
     const lines = p.hideWork ? [] : [p.role, p.org].filter(Boolean);
     const contacts = opts.foot ? [opts.foot] : p.contacts || [];
     return `<div class="card ${p.color} ${opts.cls || ""}" ${opts.attrs || ""}>
-      <div class="c-top"><span class="c-word">wasl</span><span class="c-kind">${p.kind || "PROFESSIONAL"}</span></div>
+      <div class="c-top"><span class="c-word">wasl</span><span class="c-kind">${p.kind === "PAPER CARD" ? "PAPER CARD" : ""}</span></div>
       ${tile(p.hideWork ? null : p.org)}
       <div class="c-name">${esc(p.name)}</div>
       ${lines.map((l) => `<div class="c-line">${esc(l)}</div>`).join("")}
@@ -1017,6 +1026,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
             </div>`;
       const initialsOf = (n) => n.split(/\s+/).map((w) => w[0] || "").join("").slice(0, 2).toUpperCase();
       return `<div class="topline"><h2 class="title">Profile</h2><span class="label">Tap ✎ to edit</span></div>
+        ${S.flags.newProfile ? `<div class="next-step">${ic("check")}<span><b>Your profile is ready</b><span>Wasl made your first card from it.</span></span><button class="btn small" data-go="wallet">See my card${ic("right")}</button></div>` : ""}
         <div class="panel" style="margin-top:10px">
           <div class="level">
             <div class="ring" style="--p:${L.pct}"><div class="av ${S.extra.photo ? "photo" : ""}" ${S.photo ? `style="background:center/cover url('${S.photo}')"` : ""}>${S.extra.photo ? "" : esc(initialsOf(ME.name))}</div></div>
@@ -1045,7 +1055,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       return `${back("wallet", S.adding ? "Cancel" : "Cards")}
         <h2 class="title" style="font-size:26px">${S.adding ? "New" : "Edit"} ${kindName(S.editId)} card</h2>
         <p class="sub">${KIND_FOR[S.editId]} Switch off anything you don't want to share, like your email.</p>
-        <div style="margin:16px 0 18px">${card(S.editId, { data: d, edit: true })}</div>
+        <div class="label" style="margin-top:16px">What they'll see</div>
+        <div style="margin:8px 0 18px">${card(S.editId, { data: d, edit: true })}</div>
         <div class="stack">
           <div class="label">What this card shares</div>
           <div class="panel toggles">${rows.map((f) => {
@@ -1068,7 +1079,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         </div>
         <div class="stack" style="margin-top:12px;gap:10px">
           <button class="btn" data-act="share">${ic("qr")}Share card</button>
-          <div class="card-about"><b>${kindName(S.front)} card</b><span>${KIND_FOR[S.front]} ${order.length > 1 ? "Tap another card to switch, or" : "Tap the card to"} <button class="link" style="padding:0;font-size:13px" data-act="edit-front">${order.length > 1 ? "edit this one" : "edit it"}</button>.</span></div>
+          <button class="btn secondary" data-act="edit-front">${ic("eye")}Choose what it shares</button>
+          <div class="card-about"><b>${kindName(S.front)} card</b><span>${KIND_FOR[S.front]}${order.length > 1 ? " Tap another card to switch." : ""}</span></div>
           ${more.length ? `<button class="add-card" data-act="add-card"><span class="ic">${ic("plus")}</span><span><b>Add a card</b><span>${order.length > 1 ? "Another card for a different crowd" : "Like an Event card that shares less"}</span></span></button>` : ""}
         </div>`;
     },
@@ -1219,10 +1231,10 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         </div>
         <div class="label">Memory</div>
         ${S.summary && S.memory ? `<div class="panel summary" style="margin-top:8px">
-            <div class="row" style="justify-content:space-between"><b>What mattered</b><span class="label" style="color:var(--orange)">${S.memory.source === "voice" ? "From your chat" : S.memory.source === "note" ? "Your note" : "Sample"}</span></div>
+            <div class="row" style="justify-content:space-between"><b>What mattered</b><span class="row" style="gap:10px"><span class="label" style="color:var(--orange)">${S.memory.source === "voice" ? "From your chat" : S.memory.source === "note" ? "Your note" : "Sample"}</span><button class="link" style="padding:0" data-act="edit-memory">Edit</button></span></div>
             <ul>${S.memory.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
             ${S.memory.transcript ? `<details class="transcript"><summary>Full transcript</summary><p>${esc(S.memory.transcript)}</p></details>` : ""}
-            <div class="kept">${ic("trash")}${S.memory.source === "note" ? "Saved as a private note." : "No audio is kept. Only this text is saved."}</div>
+            <div class="kept">${ic("shield")}Only you can see this. ${S.memory.source === "note" ? "It's a private note." : "No audio is kept, only this text."}</div>
           </div>
           <div class="row" style="margin-top:14px;gap:10px">
             <button class="btn secondary small" data-act="record-again">${ic("mic")}Record again</button>
@@ -1484,13 +1496,14 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       <h3>Record this chat?</h3>
       <p class="sub">Wasl asks Mariam on her phone too. Recording starts only when you both agree. The audio is deleted right after the summary.</p>
       <div class="panel row" style="gap:12px"><span class="ic" style="color:var(--teal)">${ic("shield", 'style="width:22px;height:22px"')}</span><span class="sub" style="font-size:13px">Mariam agreed on her phone at 7:46 PM</span></div>
+      <p class="hint" style="margin:0;text-align:left">No Wasl on their phone? Ask them out loud first, and only record if they say yes.</p>
       <button class="btn" data-act="agree">${ic("check")}We both agree</button>
       <button class="link" data-act="close-sheet">Not now</button>
     </div></div>`,
     note: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
       <div class="grab"></div>
-      <h3>Add a note</h3>
-      <div class="search" style="padding:6px 14px"><input id="noteInput" value="" placeholder="${S.screen === "person" ? "e.g. Wants to stay in touch about internships." : "e.g. Offered an intro to her CTO. Pearl Labs is hiring interns."}" aria-label="Note"></div>
+      <h3>${S.noteDraft != null ? "Edit what Wasl saved" : "Add a note"}</h3>
+      <div class="search" style="padding:6px 14px"><input id="noteInput" value="${esc(S.noteDraft || "")}" placeholder="${S.screen === "person" ? "e.g. Wants to stay in touch about internships." : "e.g. Offered an intro to her CTO. Pearl Labs is hiring interns."}" aria-label="Note"></div>
       <button class="btn" data-act="save-note">${ic("check")}Save note</button>
     </div></div>`,
     email: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
@@ -1554,6 +1567,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   // ---------- actions ----------
   function go(to) {
     if (to === "join-reset") { S.joinPhase = "choose"; S.screen = "join"; }
+    else if (to === "wallet") { S.flags.newProfile = false; S.screen = "wallet"; }
     else if (to === "exchange-reset") { S.exPhase = "ask"; S.screen = "exchange"; }
     else if (to === "exchange-swap") { S.exPhase = "ready"; S.screen = "exchange"; }
     else if (to === "save" && !S.swappedWith) { setupTo(3); }
@@ -1584,6 +1598,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         Object.assign(ME, { name: f.name, role: f.role || ME.role, org: f.org || ME.org, email: f.email || ME.email, phone: f.phone || ME.phone, linkedin: f.web || ME.linkedin });
         S.scan = null;
         S.profileFilled = true;
+        S.flags.newProfile = true;
         S.screen = "profile";
         render();
         confetti();
@@ -1605,7 +1620,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     },
     "import-linkedin"() { S.joinPhase = "linkedin"; render(); later(1500, () => { if (S.joinPhase === "linkedin") { S.joinPhase = "found"; render(); } }); },
     "email-signup"() { S.sheet = "email"; render(); },
-    "create-profile"() { S.profileFilled = true; S.screen = "profile"; S.joinPhase = "choose"; render(); confetti(); xpToast("Level 3 unlocked", 120); },
+    "create-profile"() { S.profileFilled = true; S.flags.newProfile = true; S.screen = "profile"; S.joinPhase = "choose"; render(); confetti(); xpToast("Level 3 unlocked", 120); },
     "edit-detail"(el) {
       S.editField = el.dataset.f;
       render();
@@ -1701,8 +1716,9 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       if (!on) xpToast(`Tagged ${t}`, 5);
     },
     agree() { S.consent = true; S.sheet = null; render(); toast("Tap the mic to start recording"); },
-    "close-sheet"() { S.sheet = null; render(); },
-    "type-note"() { S.sheet = "note"; render(); },
+    "close-sheet"() { S.sheet = null; S.noteDraft = null; render(); },
+    "type-note"() { S.noteDraft = null; S.sheet = "note"; render(); },
+    "edit-memory"() { S.noteDraft = S.memory.points.join(" "); S.sheet = "note"; render(); },
     "open-person"(el) { S.personId = el.dataset.pid; S.screen = "person"; render(); },
     "save-note"() {
       if (S.screen === "person") {
@@ -1711,6 +1727,16 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         S.sheet = null;
         render();
         if (typed) xpToast("Note saved", 10);
+        return;
+      }
+      if (S.noteDraft != null) {
+        // fixing what Wasl saved keeps where it came from; each sentence becomes a point
+        const edited = splitSentences(document.getElementById("noteInput")?.value || "");
+        if (edited.length) S.memory = { ...S.memory, points: edited.slice(0, 6) };
+        S.noteDraft = null;
+        S.sheet = null;
+        render();
+        toast("Memory updated");
         return;
       }
       const text = (document.getElementById("noteInput")?.value || "").trim() || "Offered an intro to her CTO. Pearl Labs is hiring interns.";

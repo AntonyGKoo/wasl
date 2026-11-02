@@ -20,6 +20,7 @@ import type {
   User,
 } from "@/lib/types";
 import { AuthScreen } from "./auth-screen";
+import { InstallApp } from "./install-app";
 import { Avatar, Brand, Button, Notice } from "./ui";
 import { ConnectionDetail, ConnectionForm, NetworkView } from "./network-view";
 import { ProfileView, WalletView } from "./wallet-view";
@@ -362,6 +363,10 @@ function SettingsView({
           <Button variant="secondary" onClick={onLogout}>
             <LogOut size={15} /> Sign out
           </Button>
+        </section>
+        <section>
+          <h3>Wasl on your phone</h3>
+          <InstallApp />
         </section>
         <section>
           <h3>Your data belongs to you.</h3>

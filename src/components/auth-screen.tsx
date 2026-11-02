@@ -4,6 +4,7 @@ import { ArrowRight, Check, Layers, LockKeyhole, Sparkles } from "lucide-react";
 import { api } from "@/lib/client";
 import type { User } from "@/lib/types";
 import { Brand, Button, Notice } from "./ui";
+import { InstallApp } from "./install-app";
 import { presentationAccount } from "@/lib/presentation";
 export function AuthScreen({
   onSignIn,
@@ -188,6 +189,7 @@ export function AuthScreen({
             <Check size={15} /> Your notes are private. You choose what you
             share.
           </p>
+          <InstallApp />
         </div>
       </section>
     </div>

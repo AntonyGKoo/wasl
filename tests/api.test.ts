@@ -95,3 +95,13 @@ test("HTTP flow persists profile, shares a card, saves private notes and revokes
   globalDb.waslDb = undefined;
   await rm(dataDir, { recursive: true, force: true });
 });
+test("health check answers from the database without signing in", async () => {
+  process.env.WASL_DATA_DIR = await mkdtemp(
+    path.join(tmpdir(), "wasl-health-"),
+  );
+  const response = await handleApi(
+    new Request("http://localhost:3000/api/health"),
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true });
+});
