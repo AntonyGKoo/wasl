@@ -304,9 +304,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   border-radius: 22px;
   padding: 16px 18px;
   color: var(--card-text);
-  overflow: hidden;
+  overflow: clip;
   aspect-ratio: 1.6 / 1;
-  min-height: 0;
   max-width: 100%;
   display: flex; flex-direction: column;
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -314,6 +313,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   border: 0;
   width: 100%;
 }
+.card > * { flex-shrink: 0; }
 .card::before, .card::after {
   content: "";
   position: absolute;
@@ -372,7 +372,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .join-hero svg.big { width: 96px; height: 62px; }
 .join-hero .wm { font-family: var(--display); font-weight: 800; font-size: 40px; letter-spacing: -1.2px; line-height: 1; }
 .join-hero p { color: var(--text-2); max-width: 30ch; }
-.fan { position: relative; height: 150px; margin: 10px 0 4px; }
+.fan { position: relative; height: 150px; margin: 10px 0 22px; }
 .what { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .what li { display: flex; align-items: center; gap: 12px; font-size: 14.5px; color: var(--text-2); }
 .what li svg { width: 20px; height: 20px; color: var(--teal); flex: none; }
@@ -505,6 +505,9 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .choice > svg { width: 18px; height: 18px; color: var(--muted); margin-left: auto; flex: none; }
 .sharing { margin-top: 22px; }
 .sharing .card { max-width: 300px; margin: 8px auto 0; }
+.card.waiting { background: transparent; box-shadow: none; border: 2px dashed var(--line); color: var(--text-2); display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; font-size: 14px; }
+.card.waiting::before, .card.waiting::after { display: none; }
+.card.waiting svg { width: 34px; height: 34px; color: var(--muted); }
 .exchange .pulse { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px; border-radius: 50%; display: grid; place-items: center; background: var(--raised); color: var(--teal); z-index: 2; }
 .exchange .pulse svg { width: 24px; height: 24px; }
 .exchange.swapping .pulse { animation: buzz 120ms linear 6; }
@@ -786,11 +789,11 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     { id: "sara", name: "Sara Nasser", role: "Talent partner", org: "Corniche Capital", contacts: ["sara@corniche.example"], color: "team", kind: "PROFESSIONAL", note: "Runs their internship program" },
   ];
   const OLDER = [
-    { name: "Hamad Al-Thani", role: "Mentor, venture studio", org: "Bayt Ventures", event: "Web Summit Qatar", tag: "Mentor", color: "pro", when: "Oct 12" },
-    { name: "Noor Saleh", role: "UX researcher", org: "Dhow Design Studio", event: "Web Summit Qatar", tag: "Follow up", color: "event", when: "Oct 12" },
-    { name: "Daniel Okafor", role: "CMU-Q alum, SWE", org: "Pearl Labs", event: "CMU-Q alumni mixer", tag: "Intro offered", color: "team", when: "Sep 28" },
-    { name: "Aisha Rahman", role: "Product manager", org: "Falcon Analytics", event: "CMU-Q alumni mixer", tag: "Hiring", color: "social", when: "Sep 28" },
-    { name: "Karim Mansour", role: "Investor", org: "Corniche Capital", event: "Web Summit Qatar", tag: "Investor", color: "pro", when: "Oct 12" },
+    { id: "hamad", name: "Hamad Al-Thani", role: "Mentor, venture studio", org: "Bayt Ventures", event: "Web Summit Qatar", tag: "Mentor", color: "pro", when: "Oct 12" },
+    { id: "noor", name: "Noor Saleh", role: "UX researcher", org: "Dhow Design Studio", event: "Web Summit Qatar", tag: "Follow up", color: "event", when: "Oct 12" },
+    { id: "daniel", name: "Daniel Okafor", role: "CMU-Q alum, SWE", org: "Pearl Labs", event: "CMU-Q alumni mixer", tag: "Intro offered", color: "team", when: "Sep 28" },
+    { id: "aisha", name: "Aisha Rahman", role: "Product manager", org: "Falcon Analytics", event: "CMU-Q alumni mixer", tag: "Hiring", color: "social", when: "Sep 28" },
+    { id: "karim", name: "Karim Mansour", role: "Investor", org: "Corniche Capital", event: "Web Summit Qatar", tag: "Investor", color: "pro", when: "Oct 12" },
   ];
   const LOGOS = {
     "Pearl Labs": ["PL", "#1f4fa3"],
@@ -812,6 +815,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     const words = org.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w) && !/^(of|in|the|and|for|at|&)$/i.test(w));
     return words.slice(0, 3).map((w) => w[0].toUpperCase()).join("") || org.slice(0, 2).toUpperCase();
   }
+  const CTX_EVENTS = ["Campus networking night", "CMU-Q alumni mixer", "Web Summit Qatar", "Coffee chat"];
+  const CTX_PLACES = ["Education City, Doha", "Msheireb Downtown", "Online"];
   const TAGS = ["Hiring", "Intro offered", "Follow up", "Mentor", "Investor", "Co-founder"];
   const SUGGESTIONS = [
     "the engineer who offered me an intro to her CTO",
@@ -841,6 +846,9 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     mariamSaved: false,
     ctxConfirmed: false,
     tags: [],
+    ctx: { event: "Campus networking night", place: "Education City, Doha", edited: false },
+    notes: {}, // notes typed on other people's pages, by person id
+    personId: null,
     consent: false,
     rec: "idle", // idle | recording | summarizing
     summary: false,
@@ -1106,7 +1114,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 
     exchange() {
       const kind = kindName(S.front);
-      // first ask whether the other person has Wasl, so Mariam only appears when she does
+      // first ask whether the other person has Wasl; nobody is named until their code is scanned
       if (S.exPhase === "ask")
         return `${back("wallet", "Cards")}
           <h2 class="title" style="font-size:26px">Share your ${kind} card</h2>
@@ -1124,7 +1132,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           <div style="margin:18px 0">${personCard(p)}</div>
           <div class="stack">
             <button class="btn" data-go="network">${ic("network")}Open my network</button>
-            <button class="link" data-go="exchange-swap">Swap cards with Mariam instead</button>
+            <button class="link" data-go="exchange-reset">Share with someone else</button>
           </div>`;
       }
       if (S.exPhase === "paper")
@@ -1153,14 +1161,14 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           <div style="margin:18px 0">${personCard(MARIAM)}</div>
           <button class="btn" data-go="save">${ic("check")}Save Mariam</button>`;
       return `${back("exchange-reset", "Back")}
-        <h2 class="title" style="font-size:26px">Swap cards with Mariam</h2>
-        <p class="sub">Scan Mariam's code, or let her scan yours.</p>
+        <h2 class="title" style="font-size:26px">Swap cards</h2>
+        <p class="sub">Scan their Wasl code, or let them scan yours.</p>
         <div class="row" style="margin-top:14px">
           <div style="width:72px;height:72px;flex:none">${qrSvg(7)}</div>
-          <button class="btn" data-act="do-swap" ${S.exPhase === "swapping" ? "disabled" : ""}>${ic("scan")}Scan Mariam's code</button>
+          <button class="btn" data-act="do-swap" ${S.exPhase === "swapping" ? "disabled" : ""}>${ic("scan")}Scan their code</button>
         </div>
         <div class="exchange ${S.exPhase === "swapping" ? "swapping" : ""}" id="exchange">
-          <div class="slot theirs"><div class="who">Mariam's phone</div>${personCard(MARIAM)}</div>
+          <div class="slot theirs"><div class="who">Their phone</div>${S.exPhase === "swapping" ? personCard(MARIAM) : `<div class="card waiting">${ic("qr")}<span>Their card shows up after you scan</span></div>`}</div>
           <div class="pulse">${ic("swap")}</div>
           <div class="slot yours"><div class="who">Your card</div>${card(S.front)}</div>
         </div>`;
@@ -1173,8 +1181,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         <p class="sub">${confirmed ? "Saved. Add a tag so you remember why." : "From your calendar and location. Just confirm it."}</p>
         <div style="margin:16px 0">${personCard(MARIAM)}</div>
         <div class="panel ctx">
-          <div class="item">${ic("calendar")}<div><b>Campus networking night</b><span class="src">From your calendar</span></div></div>
-          <div class="item">${ic("pin")}<div><b>Education City, Doha</b><span class="src">From your location</span></div></div>
+          <div class="item">${ic("calendar")}<div><b>${esc(S.ctx.event)}</b><span class="src">${S.ctx.edited ? "You picked this" : "From your calendar"}</span></div></div>
+          <div class="item">${ic("pin")}<div><b>${esc(S.ctx.place)}</b><span class="src">${S.ctx.edited ? "You picked this" : "From your location"}</span></div></div>
           <div class="item">${ic("clock")}<div><b>Tonight, 7:40 PM</b><span class="src">When you swapped cards</span></div></div>
           ${confirmed ? `<div class="confirmed" style="margin-top:6px">${ic("check")}Saved to Mariam's story</div>` : `<div class="row" style="margin-top:8px"><button class="btn small" data-act="confirm-ctx">${ic("check")}That's right</button><button class="btn small secondary" data-act="change-ctx">Change</button></div>`}
         </div>
@@ -1191,7 +1199,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       return `${back("network", "Network")}
         <div style="margin:8px 0 12px">${personCard(MARIAM)}</div>
         <div class="chips" style="margin-bottom:14px">
-          <span class="chip">${ic("calendar")}${S.ctxConfirmed ? "Campus networking night" : "Where did you meet?"}</span>
+          <span class="chip">${ic("calendar")}${S.ctxConfirmed ? esc(S.ctx.event) : "Where did you meet?"}</span>
           ${S.tags.map((t) => `<span class="chip" aria-pressed="true">${ic("tag")}${t}</span>`).join("")}
         </div>
         <div class="label">Memory</div>
@@ -1273,6 +1281,23 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         <div style="margin-top:6px">${list}</div>`;
     },
 
+    person() {
+      const p = peopleList().find((x) => x.id === S.personId);
+      if (!p) return `${back("network", "Network")}<p class="sub">This person isn't in your network anymore.</p>`;
+      const note = S.notes[p.id] || p.note;
+      const contacts = p.contacts || [];
+      return `${back("network", "Network")}
+        <div style="margin:8px 0 12px">${personCard({ ...p, contacts: contacts.length ? contacts : [p.event] })}</div>
+        <div class="chips" style="margin-bottom:14px">
+          ${p.event ? `<span class="chip">${ic("calendar")}${esc(p.event)}</span>` : ""}
+          ${p.tag ? `<span class="chip" aria-pressed="true">${ic("tag")}${esc(p.tag)}</span>` : ""}
+          ${p.when ? `<span class="chip">${ic("clock")}${esc(p.when)}</span>` : ""}
+        </div>
+        <div class="label">Memory</div>
+        <div class="panel" style="margin-top:8px">${note ? `<p style="margin:0">${esc(note)}</p>` : `<p class="sub" style="margin:0">Nothing saved yet. Add what you talked about so you can find ${esc(p.name.split(" ")[0])} later.</p>`}</div>
+        <button class="btn secondary" style="margin-top:14px" data-act="type-note">${ic("plus")}${note ? "Change the note" : "Add a note"}</button>`;
+    },
+
     album() {
       const a = albums().find((x) => x.name === S.album) || albums()[0];
       const ps = peopleList().filter(a.match);
@@ -1324,7 +1349,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   function peopleList() {
     const tonight = TONIGHT.map((p) => ({
       ...p,
-      event: "Campus networking night",
+      event: p.id === "mariam" ? S.ctx.event : "Campus networking night",
       tag: p.id === "mariam" ? (S.tags[0] || "Intro offered") : p.id === "sara" ? "Hiring" : p.id === "yousef" ? "Co-founder" : "Follow up",
       when: "Tonight",
       fav: S.debrief[p.id] === "fav",
@@ -1347,7 +1372,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   }
   function personRow(p) {
     const initials = p.name.split(" ").map((w) => w[0]).slice(0, 2).join("");
-    const act = p.id === "mariam" ? 'data-go="remember"' : "";
+    const act = p.id === "mariam" ? 'data-go="remember"' : `data-act="open-person" data-pid="${esc(p.id)}"`;
     return `<li><button class="person" ${act}><span class="mini" style="background:var(--card-${p.color})">${initials}</span><span class="pv"><b>${esc(p.name)}</b><span>${esc(p.hideWork ? p.contacts.join(" · ") : `${p.role} · ${p.org}`)}</span></span>${p.fav ? ic("star", 'class="star"') : ""}<span class="label" style="flex:none">${esc(p.when)}</span></button></li>`;
   }
   // words that matter in a question, cut to a short stem so "intro" matches "introduce"
@@ -1365,7 +1390,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     const has = (...w) => w.some((x) => t.includes(x));
     const m = TONIGHT;
     const out = [];
-    const memSrc = () => (S.memory && S.memory.source === "voice" ? "Your recorded chat · Campus networking night, tonight" : S.memory && S.memory.source === "note" ? "Your note · Campus networking night, tonight" : "Your chat summary · Campus networking night, tonight");
+    const memSrc = () => `${S.memory && S.memory.source === "voice" ? "Your recorded chat" : S.memory && S.memory.source === "note" ? "Your note" : "Your chat summary"} · ${S.ctx.event}, tonight`;
     const hit = memoryHit(q);
     const older = (i, contacts, kind) => ({ ...OLDER[i], contacts, kind });
     if (has("going", "attend", "summit")) {
@@ -1373,8 +1398,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       out.push({ p: older(4, ["karim@corniche.example"], "PROFESSIONAL"), label: "Going · worth meeting", score: 92, why: "Investor you met at Web Summit Qatar. You tagged him Investor.", src: "Event guest list · Web Summit Qatar, Nov 4" });
       out.push({ p: older(0, ["linkedin.com/in/hamadalthani"], "PROFESSIONAL"), label: "Also going", score: 80, why: "Mentor at Bayt Ventures. Offered to review your pitch.", src: "Event guest list · Web Summit Qatar, Nov 4" });
     } else if (has("cto", "intro", "engineer", "pearl", "payments")) {
-      out.push({ p: m[0], score: 94, why: hit || "Software engineer at Pearl Labs", src: hit ? memSrc() : "Her card · Campus networking night, tonight" });
-      if (has("intro")) out.push({ p: { ...OLDER[2], contacts: ["daniel@pearllabs.example"], kind: "PROFESSIONAL" }, score: 61, why: "Tagged Intro offered", src: "Your tag · CMU-Q alumni mixer, Sep 28" });
+      // rank by what you actually saved: a memory or an "Intro offered" tag beats a job title
+      const asksIntro = has("cto", "intro");
+      if (hit) out.push({ p: m[0], score: 94, why: hit, src: memSrc() });
+      else if (asksIntro && S.mariamSaved && S.tags.includes("Intro offered")) out.push({ p: m[0], score: 86, why: "Tagged Intro offered", src: `Your tag · ${S.ctx.event}, tonight` });
+      else if (has("engineer", "pearl", "payments")) out.push({ p: m[0], score: asksIntro ? 58 : 90, why: "Software engineer at Pearl Labs", src: `Her card · ${S.ctx.event}, tonight` });
+      if (asksIntro) out.push({ p: { ...OLDER[2], contacts: ["daniel@pearllabs.example"], kind: "PROFESSIONAL" }, score: 88, why: "Tagged Intro offered", src: "Your tag · CMU-Q alumni mixer, Sep 28" });
     } else if (has("design", "portfolio")) {
       out.push({ p: m[1], score: 91, why: "Showed his portfolio app", src: "Your memory · Campus networking night, tonight" });
     } else if (has("hiring", "intern", "job", "recruit")) {
@@ -1387,8 +1416,17 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     }
     // anything Mariam said in your recorded chat or note
     if (hit && !out.some((r) => r.p.id === "mariam")) out.unshift({ p: m[0], score: 86, why: hit, src: memSrc() });
+    // a name you remember, even just the last name
+    const words = new Set((t.match(/[a-z]+/g) || []).filter((w) => w.length > 2));
+    for (const p of peopleList()) {
+      if (out.some((r) => r.p.id === p.id)) continue;
+      const nameHit = p.name.toLowerCase().split(/[\s-]+/).find((w) => words.has(w));
+      if (nameHit) out.push({ p, score: 97, why: `Name: ${p.name}`, src: `${p.kind === "PAPER CARD" ? "Scanned paper card" : "Their card"} · ${p.event || "Your network"}${p.when ? ", " + p.when.toLowerCase() : ""}` });
+      else if (S.notes[p.id] && overlap(q, S.notes[p.id]) > 0) out.push({ p, score: 85, why: S.notes[p.id], src: `Your note · ${p.event || "Your network"}` });
+    }
     // people you scanned from paper cards, by what they do or where they work
     for (const sp of S.scanned) {
+      if (out.some((r) => r.p.id === sp.id)) continue;
       const n = overlap(q, `${sp.role} ${sp.org}`);
       if (n > 0) out.push({ p: sp, score: Math.min(95, 70 + n * 10), why: [sp.role, sp.org].filter(Boolean).join(" at "), src: "Scanned paper card · Campus networking night, tonight" });
     }
@@ -1400,7 +1438,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const tabbar = document.getElementById("tabbar");
   const overlay = document.getElementById("overlay");
   const TABS = [["network", "Network"], ["wallet", "Cards"], ["recall", "Search"], ["profile", "Profile"], ["settings", "Settings"]];
-  const TAB_OF = { network: "network", album: "network", debrief: "network", remember: "network", wallet: "wallet", build: "wallet", exchange: "wallet", scanner: "wallet", save: "wallet", recall: "recall", profile: "profile", settings: "settings" };
+  const TAB_OF = { network: "network", album: "network", debrief: "network", remember: "network", person: "network", wallet: "wallet", build: "wallet", exchange: "wallet", scanner: "wallet", save: "wallet", recall: "recall", profile: "profile", settings: "settings" };
   let lastScreen = null;
 
   function render() {
@@ -1437,7 +1475,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     note: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
       <div class="grab"></div>
       <h3>Add a note</h3>
-      <div class="search" style="padding:6px 14px"><input id="noteInput" value="" placeholder="e.g. Offered an intro to her CTO. Pearl Labs is hiring interns." aria-label="Note"></div>
+      <div class="search" style="padding:6px 14px"><input id="noteInput" value="" placeholder="${S.screen === "person" ? "e.g. Wants to stay in touch about internships." : "e.g. Offered an intro to her CTO. Pearl Labs is hiring interns."}" aria-label="Note"></div>
       <button class="btn" data-act="save-note">${ic("check")}Save note</button>
     </div></div>`,
     email: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
@@ -1446,6 +1484,16 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       <p class="sub">Email sign-up is still there. In this mockup, the card scan is the fast path.</p>
       <button class="btn" data-act="scan-own">${ic("scan")}Scan my card instead</button>
       <button class="link" data-act="close-sheet">Close</button>
+    </div></div>`,
+    ctx: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
+      <div class="grab"></div>
+      <h3>Where did you meet?</h3>
+      <div class="label">Event</div>
+      <div class="chips">${CTX_EVENTS.map((v) => `<button class="chip" data-act="pick-ctx" data-k="event" data-v="${esc(v)}" aria-pressed="${S.ctx.event === v}">${ic(S.ctx.event === v ? "check" : "calendar")}${esc(v)}</button>`).join("")}</div>
+      <div class="search" style="padding:6px 14px"><input id="ctxInput" value="" placeholder="Or type another event" aria-label="Another event"></div>
+      <div class="label">Place</div>
+      <div class="chips">${CTX_PLACES.map((v) => `<button class="chip" data-act="pick-ctx" data-k="place" data-v="${esc(v)}" aria-pressed="${S.ctx.place === v}">${ic(S.ctx.place === v ? "check" : "pin")}${esc(v)}</button>`).join("")}</div>
+      <button class="btn" data-act="save-ctx">${ic("check")}Save</button>
     </div></div>`,
     album: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
       <div class="grab"></div>
@@ -1588,7 +1636,15 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       xpToast("New connection", 30);
     },
     "confirm-ctx"() { S.ctxConfirmed = true; S.mariamSaved = true; render(); xpToast("Story saved", 10); },
-    "change-ctx"() { toast("You can pick another event or place here"); },
+    "change-ctx"() { S.sheet = "ctx"; render(); },
+    "pick-ctx"(el) { S.ctx[el.dataset.k] = el.dataset.v; S.ctx.edited = true; render(); },
+    "save-ctx"() {
+      const typed = (document.getElementById("ctxInput")?.value || "").trim();
+      if (typed) { S.ctx.event = typed; S.ctx.edited = true; }
+      S.ctxConfirmed = true; S.mariamSaved = true; S.sheet = null;
+      render();
+      xpToast("Story saved", 10);
+    },
     tag(el) {
       const t = el.dataset.t;
       const on = S.tags.includes(t);
@@ -1599,7 +1655,16 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     agree() { S.consent = true; S.sheet = null; render(); toast("Tap the mic to start recording"); },
     "close-sheet"() { S.sheet = null; render(); },
     "type-note"() { S.sheet = "note"; render(); },
+    "open-person"(el) { S.personId = el.dataset.pid; S.screen = "person"; render(); },
     "save-note"() {
+      if (S.screen === "person") {
+        const typed = (document.getElementById("noteInput")?.value || "").trim();
+        if (typed) S.notes[S.personId] = typed;
+        S.sheet = null;
+        render();
+        if (typed) xpToast("Note saved", 10);
+        return;
+      }
       const text = (document.getElementById("noteInput")?.value || "").trim() || "Offered an intro to her CTO. Pearl Labs is hiring interns.";
       S.memory = { points: keyPoints(splitSentences(text), 4), transcript: "", source: "note" };
       S.sheet = null;
@@ -2160,7 +2225,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     { n: "7", t: "Search", wow: 3, h: "Find someone by memory, not by name.", screen: "recall" },
   ];
   const WOW = { 1: "WOW 1", 2: "WOW 2", 3: "WOW 3" };
-  const STEP_OF = { join: 0, profile: 0, build: 1, wallet: 2, exchange: 2, save: 3, remember: 4, debrief: 5, network: 6, album: 6, recall: 7, settings: -1 };
+  const STEP_OF = { join: 0, profile: 0, build: 1, wallet: 2, exchange: 2, save: 3, remember: 4, debrief: 5, network: 6, album: 6, person: 6, recall: 7, settings: -1 };
   const stepOf = () => (S.screen === "scanner" ? (S.scan.mode === "own" ? 0 : 2) : STEP_OF[S.screen]);
 
   function setupTo(i) {

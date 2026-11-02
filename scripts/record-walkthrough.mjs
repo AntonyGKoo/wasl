@@ -336,7 +336,8 @@ await caption(
   "If they have Wasl, scan their code. Mariam gets your Professional card and you get hers.",
   600,
 );
-await tap('[data-go="exchange-swap"]', 1300);
+await tap('[data-go="exchange-reset"]', 900);
+await tap('[data-act="has-wasl"]', 1300);
 await tap('[data-act="do-swap"]', 2600);
 await tap('[data-go="save"]', 1000);
 
