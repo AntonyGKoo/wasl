@@ -24,7 +24,7 @@ flowchart LR
 | Auth | Email + password sessions handled by the app | Works now. Sign in with LinkedIn is not built (see risks). |
 | OCR | Google Cloud Vision | Requested from IT on the tech requirements form. Reads printed business cards. The clickable mockup uses Tesseract.js, a free OCR that runs in the browser: the first scan downloads about 7 MB (about 5 seconds on 4G), later scans take under a second. Google Vision is more accurate on hard cards. |
 | AI | OpenAI: `gpt-4o-mini` for parsing and grounded answers, `text-embedding-3-small` for recall | Cheap, fast, and supports structured outputs. Both are set by environment variables, so they can be swapped. |
-| Hosting | Vercel (or any Node host) + hosted Postgres | The demo currently runs from Antony's laptop through a temporary tunnel. A hosted deployment is the next infrastructure step. |
+| Hosting | Vercel (or any Node host) + hosted Postgres | Live at https://wasl-sable.vercel.app (Vercel in Mumbai, next to the Supabase database). Every push to main redeploys it, and phones can install it like an app. |
 
 ## How each step works
 
@@ -56,7 +56,7 @@ Status key: **Built** = works in the MVP repo today. **Mockup** = shown in the c
 ## What's left, in order
 
 1. **Get API access** from IT (OpenAI key and Google Cloud Vision). Scanning and AI recall are built and waiting on keys.
-2. **Host it properly** (Vercel + Supabase Postgres) so the link works when the laptop is off.
+2. **Host it properly.** Done on 2 November: the real app is live at https://wasl-sable.vercel.app (Vercel + Supabase Postgres, both in Mumbai) and installs on phones from its sign-in screen.
 3. **Bring the mockup screens into the real app**: wallet stack, tap-to-hide editor, levels, albums.
 4. **Conversation memory**: consent flow → transcription → summary → delete audio.
 5. **Calendar and location suggestions** at save time.
@@ -74,4 +74,4 @@ Status key: **Built** = works in the MVP repo today. **Mockup** = shown in the c
 - Clickable mockup: https://antonygkoo.github.io/wasl-prototype/ (source: `public/mockup/index.html`). Card scanning uses the real camera. Open a step directly with `#step-1` … `#step-7` or `#step-bonus`. It has a **User test** mode that times six tasks and counts taps.
 - Screenshots for slides: `docs/presentation/mockup-screens/`. Regenerate them with `node scripts/capture-mockup.mjs`.
 - Walkthrough video: https://antonygkoo.github.io/wasl-prototype/walkthrough.mp4. Re-record it with `node scripts/record-walkthrough.mjs` (needs Chrome and ffmpeg).
-- Working MVP: see the root `README.md`; operations and hosting are in `docs/OPERATIONS.md`.
+- Working MVP: live at https://wasl-sable.vercel.app. Create an account, then use **Install Wasl** (or Add to Home Screen on iPhone). Setup is in the root `README.md`; operations and hosting are in `docs/OPERATIONS.md`.
