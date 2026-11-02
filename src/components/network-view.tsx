@@ -26,6 +26,7 @@ import {
   ProfileFields,
   ProfileLinks,
 } from "./ui";
+import { VoiceMemory } from "./voice-memory";
 export function NetworkView({
   contacts,
   onOpen,
@@ -423,6 +424,15 @@ export function ConnectionDetail({
       setBusy(false);
     }
   }
+  // key points from a recorded chat are saved like any other private note
+  async function saveVoiceNote(text: string) {
+    await api(`connections/${contact.id}/notes`, "POST", {
+      body: text,
+      happened_on: today(),
+    });
+    await load();
+    onChanged();
+  }
   async function removeNote(id: string) {
     setBusy(true);
     try {
@@ -529,6 +539,7 @@ export function ConnectionDetail({
       <p className="private-copy">
         Only you can see these notes. They are never included in a shared card.
       </p>
+      <VoiceMemory name={contact.profile.name || ""} onSave={saveVoiceNote} />
       <form onSubmit={addNote}>
         <label>
           <span>Add an interaction or something to remember</span>

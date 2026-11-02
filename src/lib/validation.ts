@@ -67,6 +67,10 @@ export const importSchema = z.object({
   place: text().default(""),
   met_on: date,
 });
+// the text of a recorded conversation, to be turned into key points
+export const summarySchema = z.object({
+  transcript: text(20000).min(10),
+});
 export const searchSchema = z.object({
   query: text(400).min(2),
   mode: z.enum(["keyword", "ai"]).default("keyword"),

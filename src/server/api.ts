@@ -15,6 +15,7 @@ import {
   importSchema,
   noteSchema,
   searchSchema,
+  summarySchema,
   uuidSchema,
 } from "../lib/validation";
 import {
@@ -35,6 +36,7 @@ import {
 } from "./network";
 import { recall, searchableContacts } from "./recall";
 import { scanCard } from "./scan";
+import { summarizeConversation } from "./summary";
 import { makeVcard } from "../lib/vcard";
 export async function handleApi(request: Request): Promise<Response> {
   try {
@@ -161,6 +163,10 @@ export async function handleApi(request: Request): Promise<Response> {
       uuidSchema.parse(id);
       await deleteNote(user.id, id);
       return json({ ok: true });
+    }
+    if (area === "summarize" && method === "POST") {
+      const input = await readJson(request, summarySchema);
+      return json(await summarizeConversation(user.id, input.transcript));
     }
     if (area === "search" && method === "POST") {
       const input = await readJson(request, searchSchema);

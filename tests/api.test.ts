@@ -105,3 +105,42 @@ test("health check answers from the database without signing in", async () => {
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { ok: true });
 });
+test("a recorded chat becomes key points for a signed-in person, without an AI key", async () => {
+  process.env.WASL_DATA_DIR = await mkdtemp(
+    path.join(tmpdir(), "wasl-summary-"),
+  );
+  const key = process.env.OPENAI_API_KEY;
+  delete process.env.OPENAI_API_KEY;
+  const origin = "http://localhost:3000";
+  const call = (route: string, body: unknown, cookie = "") =>
+    handleApi(
+      new Request(`${origin}/api/${route}`, {
+        method: "POST",
+        headers: { origin, "content-type": "application/json", cookie },
+        body: JSON.stringify(body),
+      }),
+    );
+  const transcript =
+    "Hi, nice to meet you. The weather is lovely tonight. I work as a software engineer at Pearl Labs on our payments app. If you want I can introduce you to our CTO. We are hiring interns for next summer, so apply before December.";
+  assert.equal((await call("summarize", { transcript })).status, 401);
+  const register = await call("auth/register", {
+    name: "Mona",
+    email: "mona@example.test",
+    password: "test-password-123",
+  });
+  const cookie = register.headers.get("set-cookie")!.split(";")[0];
+  assert.equal(
+    (await call("summarize", { transcript: "hi" }, cookie)).status,
+    400,
+  );
+  const response = await call("summarize", { transcript }, cookie);
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.equal(result.mode, "rules");
+  assert.ok(
+    result.points.some((p: string) => /introduce you to our CTO/.test(p)),
+  );
+  assert.ok(result.points.some((p: string) => /hiring interns/.test(p)));
+  assert.ok(!result.points.some((p: string) => /weather/.test(p)));
+  if (key) process.env.OPENAI_API_KEY = key;
+});

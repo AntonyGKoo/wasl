@@ -2417,3 +2417,74 @@ input[type="date"]::-webkit-date-and-time-value {
   font-weight: 400;
   font-size: 12px;
 }
+.voice-memory {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.voice-memory .small-copy {
+  margin: 0;
+}
+.voice-panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f5faf8;
+}
+.voice-panel strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+}
+.voice-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+.voice-panel label {
+  margin-bottom: 0;
+}
+.voice-panel textarea {
+  min-height: 150px;
+}
+.voice-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.voice-panel.recording {
+  border-color: var(--coral);
+  background: #fdf5f1;
+}
+.rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--coral);
+  animation: rec-pulse 1.2s ease-in-out infinite;
+}
+@keyframes rec-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+.rec-live {
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: white;
+  color: var(--ink) !important;
+  line-height: 1.5;
+}
+.voice-transcript summary {
+  cursor: pointer;
+  color: var(--teal);
+  font-weight: 600;
+}
+.voice-transcript p {
+  margin-top: 6px;
+  font-size: 13px;
+}
