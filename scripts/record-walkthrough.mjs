@@ -295,7 +295,7 @@ await caption(
   "Step 3 · Share",
   1,
   "Your cards stack like a wallet",
-  "Professional, Event, Social, Team: each shows different details and its company logo. Tap one to bring it forward.",
+  "Your Professional and Event cards each show different details. Tap one to bring it forward, then share it.",
   600,
 );
 await tap('.wallet [data-id="pro"]', 2400, { x: 160, y: 24 });
@@ -457,7 +457,7 @@ await caption(
   "Wasl",
   0,
   "Digital cards help them remember you.",
-  "Wasl helps you remember them. Try it: antonygkoo.github.io/wasl-prototype",
+  "Wasl helps you remember them. Mockup: antonygkoo.github.io/wasl-prototype · Real app: wasl-sable.vercel.app",
   0,
 );
 await tap('#tabbar [data-go="wallet"]', 4200);
