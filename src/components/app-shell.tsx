@@ -391,13 +391,14 @@ function SettingsView({
           </div>
           <div className="service-row">
             <span>Business-card photo scanning</span>
-            <span className={`pill ${capabilities.ocr ? "available" : ""}`}>
-              {capabilities.ocr ? "Connected" : "Not connected"}
+            <span className="pill available">
+              {capabilities.ocr ? "Connected" : "On your phone"}
             </span>
           </div>
           <p>
-            Manual entry, private memories, keyword recall and QR sharing work
-            independently of these services.
+            {capabilities.ocr
+              ? "Manual entry, private memories, keyword recall and QR sharing work independently of these services."
+              : "Card photos are read on your phone, so they never leave it. Private memories, keyword recall and QR sharing work without any AI service."}
           </p>
         </section>
         <section>

@@ -13,6 +13,11 @@
 * {
   box-sizing: border-box;
 }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* no double-tap zoom: taps act right away, like in an app */
+  touch-action: manipulation;
+}
 body {
   margin: 0;
   color: var(--ink);
@@ -1699,12 +1704,19 @@ form > label:last-of-type {
   font-size: 10px;
   color: #94a49f;
 }
+/* the whole box opens the camera or photos; the browser's own "Choose File" control stays invisible */
+.file-drop {
+  position: relative;
+  cursor: pointer;
+}
 .file-drop input {
-  border: 0;
-  background: transparent;
-  font-size: 11px;
-  max-width: 300px;
-  margin-top: 10px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 .settings-sections {
   display: grid;
@@ -2214,4 +2226,112 @@ form > label:last-of-type {
   width: 75px;
   height: 75px;
   mix-blend-mode: multiply;
+}
+
+/* Phones: text people can read without zooming, and an app that never zooms. */
+@media (max-width: 760px) {
+  .recall-banner .eyebrow,
+  .digital-card-top > span:last-child,
+  .page-intro .eyebrow {
+    font-size: 11px;
+  }
+  .eyebrow,
+  .pill,
+  .auth-story footer,
+  .auth-note,
+  .sidebar-caption,
+  .nav-count,
+  .sidebar-note p,
+  .account-button small,
+  .workspace-private,
+  .stats-strip > div > div > span,
+  .section-heading h2 > span,
+  .filter-chip,
+  .contact-role,
+  .contact-tags .pill,
+  .contact-context,
+  .workspace-footer,
+  .form-divider,
+  .meeting-context .muted,
+  .timeline time,
+  .wallet-guidance p,
+  .digital-card p,
+  .digital-card-bottom,
+  .wallet-card-info span,
+  .wallet-fields span,
+  .field-choice small,
+  .qr-caption,
+  .search-privacy,
+  .suggestions button,
+  .recall-result p,
+  .evidence-label,
+  .file-drop > span,
+  .public-privacy,
+  .public-footer,
+  .app-topbar strong,
+  .mobile-nav button span {
+    font-size: 12px;
+  }
+  .presentation-card-link,
+  .account-button .avatar,
+  .account-button strong,
+  .app-topbar > div:first-child,
+  .app-topbar .avatar,
+  .recall-banner p,
+  .search-box input,
+  .text-button,
+  .checkbox-label span,
+  .meeting-context p,
+  .private-copy,
+  .note-actions input,
+  .profile-editor-heading p,
+  .digital-card > .avatar,
+  .field-choice strong,
+  .ai-toggle span,
+  .recall-explainer,
+  .recall-result blockquote,
+  .file-drop input,
+  .public-card-cover,
+  .saved-connection p,
+  .contact-top > .avatar,
+  .recall-search-panel > .muted {
+    font-size: 13px;
+  }
+  label > span,
+  .button,
+  .notice,
+  .auth-tabs button,
+  .modal-heading p,
+  .profile-links a,
+  .small-copy,
+  .sidebar nav button,
+  .settings-nav,
+  .page-intro p,
+  .empty-state p,
+  .workspace-footer > span:last-child,
+  .detail-profile p,
+  .bio,
+  .meeting-context strong,
+  .timeline p,
+  .timeline > .muted,
+  .danger-zone > p,
+  .wallet-guidance strong,
+  .recall-search-panel > p,
+  .recall-input input,
+  .file-drop strong,
+  .settings-sections p,
+  .service-row,
+  .public-role {
+    font-size: 14px;
+  }
+}
+
+/* iPhone zooms into any text box under 16px when it is tapped; this must win over every
+   per-field size, hence !important */
+@media (max-width: 760px), (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }

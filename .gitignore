@@ -32,3 +32,6 @@ work/
 
 # Vercel project link (local only)
 .vercel/
+
+# Card reader files, copied from node_modules at build time
+public/ocr/

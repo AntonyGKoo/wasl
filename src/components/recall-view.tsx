@@ -81,21 +81,23 @@ export function RecallView({
               <ArrowRight size={19} />
             </Button>
           </div>
-          <label className="checkbox-label ai-toggle">
-            <input
-              type="checkbox"
-              checked={ai}
-              onChange={(e) => setAi(e.target.checked)}
-              disabled={!capabilities.ai}
-            />
-            <span>Use AI to understand my memory</span>
-          </label>
+          {/* the AI option only appears once an AI key is connected, so nothing looks broken */}
+          {capabilities.ai ? (
+            <label className="checkbox-label ai-toggle">
+              <input
+                type="checkbox"
+                checked={ai}
+                onChange={(e) => setAi(e.target.checked)}
+              />
+              <span>Use AI to understand my memory</span>
+            </label>
+          ) : null}
           <p className="search-privacy">
             {ai
               ? "Your query and matching saved details are sent to OpenAI to find supported matches."
               : capabilities.ai
                 ? "Keyword mode searches your saved details without sending them to an AI provider."
-                : "AI recall is not connected yet. You can search your saved details and notes here."}
+                : "Searches the details, notes and places you saved. Nothing leaves your account."}
           </p>
         </form>
         <div className="suggestions">
@@ -200,15 +202,29 @@ export function ScanModal({
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"photo" | "text">(
-    capabilities.ocr ? "photo" : "text",
-  );
+  const [tab, setTab] = useState<"photo" | "text">("photo");
+  const [progress, setProgress] = useState("");
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
     try {
-      if (tab === "photo") {
+      if (tab === "photo" && !capabilities.ocr) {
+        // no cloud OCR configured: read the card on this phone instead
+        if (!file) throw new Error("Take or choose a photo of the card first.");
+        const [{ readCardPhoto }, { parseCardText }] = await Promise.all([
+          import("@/lib/ocr"),
+          import("@/lib/card-text"),
+        ]);
+        const read = await readCardPhoto(file, (status, share) =>
+          setProgress(`${status} ${Math.round(share * 100)}%`),
+        );
+        if (read.text.replace(/[^A-Za-z0-9]/g, "").length < 4)
+          throw new Error(
+            "Couldn't read the card. Try again in good light with the card filling the photo, or paste its text.",
+          );
+        onDraft(parseCardText(read.text, read.lines));
+      } else if (tab === "photo") {
         if (!file) throw new Error("Choose a card image first.");
         const form = new FormData();
         form.set("image", file);
@@ -227,6 +243,7 @@ export function ScanModal({
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      setProgress("");
     }
   }
   return (
@@ -287,10 +304,26 @@ export function ScanModal({
                 </p>
               </>
             ) : (
-              <Notice>
-                Photo scanning is not connected yet. Paste the card’s text
-                below, or add the details manually.
-              </Notice>
+              <>
+                <label className="file-drop">
+                  <Upload size={25} />
+                  <strong>
+                    {file ? file.name : "Take a photo of the card"}
+                  </strong>
+                  <span>Or choose one from your photos</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    required
+                  />
+                </label>
+                <p className="muted small-copy">
+                  {progress ||
+                    "Wasl reads the card on this phone. The photo never leaves it, and you check every detail before saving."}
+                </p>
+              </>
             )}
           </>
         ) : (
@@ -319,11 +352,7 @@ export function ScanModal({
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            busy={busy}
-            disabled={tab === "photo" && !capabilities.ocr}
-          >
+          <Button type="submit" busy={busy}>
             Review contact details <ArrowRight size={15} />
           </Button>
         </div>

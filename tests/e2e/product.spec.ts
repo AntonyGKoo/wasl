@@ -124,6 +124,7 @@ test("two people share selected details, retain private memory, recall and revok
 test("text capture always requires review before saving", async ({ page }) => {
   await signup(page, "Scan QA");
   await page.getByRole("button", { name: "Scan a card", exact: true }).click();
+  await page.getByRole("button", { name: "Paste text", exact: true }).click();
   await page
     .getByLabel("Text from a business card, badge or profile", { exact: true })
     .fill("Sara Smith\nsara@example.test\n+974 5555 1234");

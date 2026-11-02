@@ -2,12 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Wasl Clickable Mockup</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
 <style>
+/* an app keeps one size: no double-tap zoom, and text boxes at 16px so iPhone doesn't zoom in when one is tapped */
+html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+@media (max-width: 760px), (pointer: coarse) { input, textarea, select { font-size: 16px !important; } }
+
 /* Layout: a guide column beside a single phone; on phones the phone fills the screen and the guide becomes a sheet. */
 :root {
   color-scheme: dark;
@@ -1407,10 +1411,13 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const stems = (s) => (s.toLowerCase().match(/[a-z0-9]+/g) || []).filter((w) => w.length > 2 && !STOP.has(w)).map((w) => w.slice(0, 5));
   const overlap = (a, b) => { const B = new Set(stems(b)); return stems(a).filter((w) => B.has(w)).length; };
   // the memory point that best answers the question, if any
+  // a memory or note only counts when it shares two words with the question (one if the question has only one),
+  // so a lone common word like "app" doesn't pull in the wrong person
+  const enough = (q, text) => overlap(q, text) >= Math.min(2, stems(q).length);
   function memoryHit(q) {
     if (!S.summary || !S.memory) return null;
     const best = S.memory.points.map((pt) => ({ pt, n: overlap(q, pt) })).sort((a, b) => b.n - a.n)[0];
-    return best && best.n > 0 ? best.pt : null;
+    return best && best.n > 0 && enough(q, best.pt) ? best.pt : null;
   }
   function recallMatch(q) {
     const t = q.toLowerCase();
@@ -1449,7 +1456,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       if (out.some((r) => r.p.id === p.id)) continue;
       const nameHit = p.name.toLowerCase().split(/[\s-]+/).find((w) => words.has(w));
       if (nameHit) out.push({ p, score: 97, why: `Name: ${p.name}`, src: `${p.kind === "PAPER CARD" ? "Scanned paper card" : "Their card"} · ${p.event || "Your network"}${p.when ? ", " + p.when.toLowerCase() : ""}` });
-      else if (S.notes[p.id] && overlap(q, S.notes[p.id]) > 0) out.push({ p, score: 85, why: S.notes[p.id], src: `Your note · ${p.event || "Your network"}` });
+      else if (S.notes[p.id] && overlap(q, S.notes[p.id]) > 0 && enough(q, S.notes[p.id])) out.push({ p, score: 85, why: S.notes[p.id], src: `Your note · ${p.event || "Your network"}` });
     }
     // people you scanned from paper cards, by what they do or where they work
     for (const sp of S.scanned) {
@@ -1562,6 +1569,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     document.getElementById("device").appendChild(box);
     setTimeout(() => box.remove(), 2200);
   }
+  for (const g of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(g, (e) => e.preventDefault(), { passive: false });
   const buzz = () => { try { navigator.vibrate && navigator.vibrate([40, 30, 60]); } catch (e) {} };
 
   // ---------- actions ----------

@@ -57,3 +57,23 @@ test("pasted card text remains editable and missing data stays blank", () => {
   assert.equal(fields.company, "");
   assert.equal(fields.linkedin, "");
 });
+test("card text finds the role and company, not just name, email and phone", () => {
+  const fields = parseCardText(
+    "Sara Smith\nProduct Manager\nFalcon Analytics\nsara@falcon.example\n+974 5555 1234",
+  );
+  assert.equal(fields.name, "Sara Smith");
+  assert.equal(fields.title, "Product Manager");
+  assert.equal(fields.company, "Falcon Analytics");
+  assert.equal(fields.phone, "+974 5555 1234");
+});
+test("card text read from a photo keeps links valid and the name readable", () => {
+  const fields = parseCardText(
+    "NOOR AL MANSOURI\nSenior Product Designer\nnoor.almansouri @ sidrastudio. qa\nlinkedin.com/in/nooralmansouri\nwww.sidrastudio.qa\nDoha, Qatar",
+  );
+  assert.equal(fields.name, "Noor Al Mansouri");
+  assert.equal(fields.title, "Senior Product Designer");
+  assert.equal(fields.email, "noor.almansouri@sidrastudio.qa");
+  assert.equal(fields.linkedin, "https://linkedin.com/in/nooralmansouri");
+  assert.equal(fields.website, "https://www.sidrastudio.qa");
+  assert.equal(fields.company, "Sidrastudio");
+});
