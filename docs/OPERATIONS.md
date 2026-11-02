@@ -48,6 +48,10 @@ Vercel requires a hosted `DATABASE_URL`. The app refuses to initialize the local
 
 Use Node 24 and the standard Next.js preset. Build requires no paid provider credentials. Runtime AI/OCR features need their respective keys. Source migrations are included in the server build trace, while local data directories are excluded.
 
+### The live deployment
+
+The pilot runs at https://wasl-sable.vercel.app (Vercel project `wasl`, region `bom1`) with the Supabase project "Wasl MVP" (`ap-south-1`). Pushes to `main` deploy automatically. After resetting the database password, run `node scripts/connect-database.mjs` (it asks for the password without echoing it and stores the connection as a Vercel secret), then `npx vercel deploy --prod`.
+
 ## Privacy and account handling
 
 Private notes never enter a public card. Public routes project only selected profile fields and use `no-store` caching. QR URLs use unguessable share tokens. An active link reflects current selected fields. A saved contact is a private snapshot: **Update shared details** refreshes the snapshot from a still-active link without touching private notes. Revocation prevents future link reads but cannot erase previously saved copies.
