@@ -87,6 +87,8 @@ export function WaslApp() {
     void loadSession();
   }, []);
   useEffect(() => {
+    // after signing in, start at the top of the app rather than where the sign-up form was
+    window.scrollTo(0, 0);
     if (user) void refresh();
   }, [user?.id]);
   function navigate(next: View) {
@@ -219,6 +221,7 @@ export function WaslApp() {
           </div>
         </header>
         <main className="workspace-content">
+          <InstallApp banner />
           {error ? (
             <Notice error>
               {error}

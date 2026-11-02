@@ -59,6 +59,7 @@ export function AuthScreen({
   return (
     <div className="auth-page">
       <section className="auth-story">
+        <InstallApp banner />
         <Brand />
         <div className="auth-story-body">
           <span className="eyebrow">THE MEMORY FOR YOUR NETWORK</span>
@@ -189,7 +190,7 @@ export function AuthScreen({
             <Check size={15} /> Your notes are private. You choose what you
             share.
           </p>
-          <InstallApp />
+          <InstallApp computerOnly />
         </div>
       </section>
     </div>

@@ -460,6 +460,63 @@ form > label:last-of-type {
 .install-steps svg {
   vertical-align: -2px;
 }
+.install-banner {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: white;
+  box-shadow: 0 6px 18px rgba(28, 48, 61, 0.08);
+}
+.install-banner-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.install-banner-row img {
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  flex: none;
+}
+.install-banner-row > span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.install-banner-row strong,
+.install-banner-row > span > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.install-banner-row strong {
+  font-size: 14px;
+  color: var(--ink);
+}
+.install-banner-row > span > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+/* the Install button gets its own full-width row, so the title fits on any phone */
+.install-banner .install-banner-button {
+  order: 3;
+  flex: 1 1 100%;
+  min-height: 40px;
+  font-size: 13px;
+}
+.install-banner .install-steps {
+  padding: 4px 6px 4px 26px;
+}
+.install-steps .install-hint {
+  list-style: none;
+  margin-left: -20px;
+  color: var(--muted);
+  font-size: 12px;
+}
 .install-app.done {
   display: flex;
   gap: 8px;

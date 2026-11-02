@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Check, Download, Share, Smartphone, SquarePlus } from "lucide-react";
+import {
+  Check,
+  Download,
+  Share,
+  Smartphone,
+  SquarePlus,
+  X,
+} from "lucide-react";
 import QRCode from "qrcode";
 import { Button } from "./ui";
 
@@ -10,12 +17,58 @@ type InstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 type Device = "ios" | "phone" | "computer";
+const HIDE_BANNER = "wasl-install-banner-hidden";
 
-export function InstallApp() {
+function InstallSteps({ device }: { device: Device }) {
+  if (device === "ios")
+    return (
+      <ol className="install-steps">
+        <li>
+          Tap <Share size={15} aria-label="Share" /> <strong>Share</strong> at
+          the bottom of Safari. On newer iPhones, tap <strong>•••</strong>{" "}
+          first, then Share.
+        </li>
+        <li>
+          Scroll down and tap <SquarePlus size={15} aria-hidden="true" />{" "}
+          <strong>Add to Home Screen</strong> (under <strong>View More</strong>{" "}
+          if you don&rsquo;t see it).
+        </li>
+        <li>
+          Tap <strong>Add</strong>. Wasl appears with your apps.
+        </li>
+        <li className="install-hint">
+          Opened from WhatsApp or Instagram? Open the link in Safari first.
+        </li>
+      </ol>
+    );
+  return (
+    <ol className="install-steps">
+      <li>
+        Tap <strong>⋮</strong> at the top right of Chrome.
+      </li>
+      <li>
+        Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+      </li>
+      <li className="install-hint">
+        Opened from WhatsApp? Tap ⋮ then <strong>Open in Chrome</strong> first.
+      </li>
+    </ol>
+  );
+}
+
+// The full block (sign-in on laptops, Settings) or, with `banner`, a slim bar for the top of phone screens.
+export function InstallApp({
+  banner = false,
+  computerOnly = false,
+}: {
+  banner?: boolean;
+  computerOnly?: boolean;
+}) {
   const [prompt, setPrompt] = useState<InstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [device, setDevice] = useState<Device | null>(null);
   const [steps, setSteps] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [qr, setQr] = useState("");
   useEffect(() => {
     const ua = navigator.userAgent;
@@ -27,6 +80,9 @@ export function InstallApp() {
       window.matchMedia("(display-mode: standalone)").matches ||
         (navigator as Navigator & { standalone?: boolean }).standalone === true,
     );
+    try {
+      setHidden(localStorage.getItem(HIDE_BANNER) === "1");
+    } catch {}
     const onPrompt = (event: Event) => {
       event.preventDefault();
       setPrompt(event as InstallPromptEvent);
@@ -43,7 +99,7 @@ export function InstallApp() {
     };
   }, []);
   useEffect(() => {
-    if (device !== "computer") return;
+    if (banner || device !== "computer") return;
     let active = true;
     QRCode.toDataURL(window.location.origin, {
       width: 360,
@@ -56,14 +112,8 @@ export function InstallApp() {
     return () => {
       active = false;
     };
-  }, [device]);
-  if (!device) return null;
-  if (installed)
-    return (
-      <div className="install-app done">
-        <Check size={18} /> Wasl is installed on this device.
-      </div>
-    );
+  }, [banner, device]);
+  if (!device || (computerOnly && device !== "computer")) return null;
   async function install() {
     if (!prompt) return setSteps((open) => !open);
     await prompt.prompt();
@@ -71,6 +121,46 @@ export function InstallApp() {
     if (choice.outcome === "accepted") setInstalled(true);
     setPrompt(null);
   }
+  if (banner) {
+    if (device === "computer" || installed || hidden) return null;
+    return (
+      <div className="install-banner" role="region" aria-label="Get the app">
+        <div className="install-banner-row">
+          <img src="/icon-192.png" alt="" width={40} height={40} />
+          <span>
+            <strong>Get the Wasl app</strong>
+            <span>Add to your home screen</span>
+          </span>
+          <Button
+            className="install-banner-button"
+            onClick={install}
+            aria-expanded={prompt ? undefined : steps}
+          >
+            <Download size={15} /> Install
+          </Button>
+          <button
+            className="icon-button"
+            aria-label="Hide this"
+            onClick={() => {
+              setHidden(true);
+              try {
+                localStorage.setItem(HIDE_BANNER, "1");
+              } catch {}
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+        {steps && !prompt ? <InstallSteps device={device} /> : null}
+      </div>
+    );
+  }
+  if (installed)
+    return (
+      <div className="install-app done">
+        <Check size={18} /> Wasl is installed on this device.
+      </div>
+    );
   return (
     <div className="install-app">
       <div className="install-app-text">
@@ -102,31 +192,7 @@ export function InstallApp() {
           <Download size={16} /> Install Wasl
         </Button>
       ) : null}
-      {steps && !prompt ? (
-        device === "ios" ? (
-          <ol className="install-steps">
-            <li>
-              Tap <Share size={15} aria-label="Share" /> in Safari&rsquo;s
-              toolbar.
-            </li>
-            <li>
-              Choose <SquarePlus size={15} aria-hidden="true" />{" "}
-              <strong>Add to Home Screen</strong>.
-            </li>
-            <li>
-              Tap <strong>Add</strong>. Wasl appears with your apps.
-            </li>
-          </ol>
-        ) : (
-          <ol className="install-steps">
-            <li>Open your browser&rsquo;s menu (⋮).</li>
-            <li>
-              Choose <strong>Install app</strong> or{" "}
-              <strong>Add to Home screen</strong>.
-            </li>
-          </ol>
-        )
-      ) : null}
+      {steps && !prompt ? <InstallSteps device={device} /> : null}
     </div>
   );
 }
