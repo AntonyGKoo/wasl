@@ -2,10 +2,11 @@
 import {
   useEffect,
   useRef,
+  useState,
   type ReactNode,
   type ButtonHTMLAttributes,
 } from "react";
-import { ArrowUpRight, LoaderCircle, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, LoaderCircle, X } from "lucide-react";
 import {
   fieldLabels,
   profileFields,
@@ -174,9 +175,14 @@ export function ProfileFields({
   const fields = compact
     ? profileFields.filter((f) => f !== "bio")
     : profileFields;
+  // Links and "about" are filled in less often: they wait behind "More details" (opened
+  // already when one has a value), so the form fits a phone without endless scrolling.
+  const extra: ProfileField[] = ["linkedin", "instagram", "website", "bio"];
+  const [more, setMore] = useState(() => extra.some((f) => value[f]));
+  const shown = more ? fields : fields.filter((f) => !extra.includes(f));
   return (
     <div className="form-grid">
-      {fields.map((field: ProfileField) => (
+      {shown.map((field: ProfileField) => (
         <label key={field} className={field === "bio" ? "span-2" : ""}>
           <span>
             {fieldLabels[field]}
@@ -220,6 +226,16 @@ export function ProfileFields({
           )}
         </label>
       ))}
+      {more ? null : (
+        <button
+          type="button"
+          className="more-fields span-2"
+          onClick={() => setMore(true)}
+        >
+          <ChevronDown size={16} /> More details
+          <span>LinkedIn, Instagram, website, about</span>
+        </button>
+      )}
     </div>
   );
 }

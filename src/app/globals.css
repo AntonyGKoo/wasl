@@ -2335,3 +2335,85 @@ form > label:last-of-type {
     font-size: 16px !important;
   }
 }
+
+/* Nothing in the app can slide left and right. On iPhone a date field with 16px text
+   has a minimum width that can push past its column, and a pop-up that scrolls sideways
+   makes the whole form slide; both are stopped here. */
+html,
+body {
+  overflow-x: clip;
+}
+.modal {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+label,
+.form-grid > * {
+  min-width: 0;
+}
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* Phones: forms stay compact, so a profile or a new connection doesn't need endless scrolling */
+@media (max-width: 760px) {
+  label {
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  form > label:last-of-type {
+    margin-bottom: 14px;
+  }
+  input,
+  select {
+    min-height: 42px;
+    padding: 8px 12px;
+  }
+  textarea {
+    min-height: 84px;
+    padding: 9px 12px;
+  }
+  .modal {
+    padding: 18px;
+  }
+  .modal-heading {
+    margin-bottom: 16px;
+  }
+  .form-actions {
+    margin-top: 12px;
+    padding-top: 14px;
+  }
+  .note-actions input {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+}
+.more-fields {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  border: 1px dashed #b9d6d0;
+  border-radius: 10px;
+  background: #f5faf8;
+  color: var(--teal);
+  font-weight: 600;
+  text-align: left;
+}
+.more-fields span {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}

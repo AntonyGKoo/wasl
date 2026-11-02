@@ -50,7 +50,7 @@ Use Node 24 and the standard Next.js preset. Build requires no paid provider cre
 
 ### The live deployment
 
-The pilot runs at https://wasl-sable.vercel.app (Vercel project `wasl`, region `bom1`) with the Supabase project "Wasl MVP" (`ap-south-1`). Pushes to `main` deploy automatically. After resetting the database password, run `node scripts/connect-database.mjs` (it asks for the password without echoing it and stores the connection as a Vercel secret), then `npx vercel deploy --prod`.
+The pilot runs at https://wasl-sable.vercel.app (Vercel project `wasl`, region `bom1`) with the Supabase project "Wasl MVP" (`ap-south-1`). Pushes to `main` deploy automatically. After resetting the database password, run `node scripts/connect-database.mjs` (it asks for the password without echoing it and stores the connection as a Vercel secret), then `npx vercel deploy --prod`. AI recall is turned on the same way: `node scripts/connect-openai.mjs` asks for an OpenAI API key without echoing it, checks it with a free request and stores it as the `OPENAI_API_KEY` secret.
 
 ## Privacy and account handling
 

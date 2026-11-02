@@ -258,7 +258,11 @@ export function WaslApp() {
               }}
             />
           ) : view === "recall" ? (
-            <RecallView capabilities={capabilities} onOpen={setDetail} />
+            <RecallView
+              capabilities={capabilities}
+              onOpen={setDetail}
+              contactCount={contacts.length}
+            />
           ) : (
             <SettingsView
               user={user}

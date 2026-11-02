@@ -15,9 +15,11 @@ import { Avatar, Button, Modal, Notice } from "./ui";
 export function RecallView({
   capabilities,
   onOpen,
+  contactCount,
 }: {
   capabilities: Capabilities;
   onOpen: (contact: Connection) => void;
+  contactCount: number;
 }) {
   const [query, setQuery] = useState("");
   const [ai, setAi] = useState(false);
@@ -138,11 +140,23 @@ export function RecallView({
           {!hits.length ? (
             <div className="empty-state small">
               <Search size={27} />
-              <h3>A little more context might help.</h3>
-              <p>
-                Try a different event, topic or company. Wasl can only find
-                details you have saved.
-              </p>
+              {contactCount ? (
+                <>
+                  <h3>A little more context might help.</h3>
+                  <p>
+                    Try a word from their role, company, the event, or a note
+                    you saved. Wasl only searches what you have saved.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3>You haven&rsquo;t saved anyone yet.</h3>
+                  <p>
+                    Add or scan a connection and a note about them first, then
+                    find them here by what you remember.
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             hits.map((hit) => (

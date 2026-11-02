@@ -30,6 +30,11 @@ const synonyms: Record<string, string> = {
   university: "campus",
   college: "campus",
 };
+// One form per word, so "introduce" finds "introduction" and "hire" finds "hiring".
+const stem = (w: string) =>
+  w.length > 4
+    ? w.replace(/(ations?|ions?|ings?|ers?|ed|es|s|e)$/, "").slice(0, 5)
+    : w.replace(/e$/, "");
 export const tokens = (text: string) => [
   ...new Set(
     (
@@ -40,7 +45,7 @@ export const tokens = (text: string) => [
         .match(/[\p{L}\p{N}]+/gu) || []
     )
       .filter((w) => !stop.has(w) && w.length > 1)
-      .map((w) => synonyms[w] || w),
+      .map((w) => stem(synonyms[w] || w)),
   ),
 ];
 export function contextLines(contact: Connection) {

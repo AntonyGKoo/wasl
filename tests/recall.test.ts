@@ -77,3 +77,18 @@ test("card text read from a photo keeps links valid and the name readable", () =
   assert.equal(fields.website, "https://www.sidrastudio.qa");
   assert.equal(fields.company, "Sidrastudio");
 });
+test("recall matches different forms of the same word", () => {
+  assert.equal(
+    lexicalRecall("who said they could introduce me to a CTO", [contact])[0]
+      ?.connection.id,
+    "known",
+  );
+  const hiring = {
+    ...contact,
+    notes: [{ ...contact.notes![0], body: "Her team is hiring interns" }],
+  };
+  assert.equal(
+    lexicalRecall("someone who hires an intern", [hiring])[0]?.connection.id,
+    "known",
+  );
+});
