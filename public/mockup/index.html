@@ -327,7 +327,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .card.event { background: linear-gradient(150deg, #6a5bbb, var(--card-event)); }
 .card.social { background: linear-gradient(150deg, #a8623c, var(--card-social)); }
 .card.team { background: linear-gradient(150deg, #4a70cc, var(--card-team)); }
-.card .c-top { display: flex; justify-content: space-between; align-items: center; }
+.card .c-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .card .c-word { font-family: var(--display); font-weight: 800; font-size: 21px; letter-spacing: -0.4px; }
 .card .c-kind { font-family: var(--display); font-weight: 800; font-size: 11.5px; letter-spacing: 0.22em; }
 .card .c-tile { width: 36px; height: 28px; border-radius: 8px; background: rgba(15, 18, 24, 0.28); display: grid; place-items: center; margin-top: 8px; flex: none; }
@@ -846,7 +846,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     mariamSaved: false,
     ctxConfirmed: false,
     tags: [],
-    ctx: { event: "Campus networking night", place: "Education City, Doha", edited: false },
+    ctx: { event: "Campus networking night", place: "Education City, Doha", edited: {} }, // edited: which of event/place you changed
     notes: {}, // notes typed on other people's pages, by person id
     personId: null,
     consent: false,
@@ -1181,8 +1181,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         <p class="sub">${confirmed ? "Saved. Add a tag so you remember why." : "From your calendar and location. Just confirm it."}</p>
         <div style="margin:16px 0">${personCard(MARIAM)}</div>
         <div class="panel ctx">
-          <div class="item">${ic("calendar")}<div><b>${esc(S.ctx.event)}</b><span class="src">${S.ctx.edited ? "You picked this" : "From your calendar"}</span></div></div>
-          <div class="item">${ic("pin")}<div><b>${esc(S.ctx.place)}</b><span class="src">${S.ctx.edited ? "You picked this" : "From your location"}</span></div></div>
+          <div class="item">${ic("calendar")}<div><b>${esc(S.ctx.event)}</b><span class="src">${S.ctx.edited.event ? "You picked this" : "From your calendar"}</span></div></div>
+          <div class="item">${ic("pin")}<div><b>${esc(S.ctx.place)}</b><span class="src">${S.ctx.edited.place ? "You picked this" : "From your location"}</span></div></div>
           <div class="item">${ic("clock")}<div><b>Tonight, 7:40 PM</b><span class="src">When you swapped cards</span></div></div>
           ${confirmed ? `<div class="confirmed" style="margin-top:6px">${ic("check")}Saved to Mariam's story</div>` : `<div class="row" style="margin-top:8px"><button class="btn small" data-act="confirm-ctx">${ic("check")}That's right</button><button class="btn small secondary" data-act="change-ctx">Change</button></div>`}
         </div>
@@ -1248,7 +1248,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           ${left.slice(0, 3).reverse().map((p, i, arr) => {
             const top = i === arr.length - 1;
             const depth = arr.length - 1 - i;
-            return personCard(p, { cls: top ? "top" : "", stamps: top, note: p.id === "mariam" && S.summary ? "Offered an intro to her CTO" : p.note, attrs: `data-pid="${p.id}" style="transform:translateY(${depth * 12}px) scale(${1 - depth * 0.04});z-index:${10 - depth}"` });
+            return personCard(p, { cls: top ? "top" : "", stamps: top, note: p.id === "mariam" && S.summary ? memoryHit("intro cto") || S.memory?.points[0] || p.note : p.note, attrs: `data-pid="${p.id}" style="transform:translateY(${depth * 12}px) scale(${1 - depth * 0.04});z-index:${10 - depth}"` });
           }).join("")}
         </div>
         <div class="deck-actions">
@@ -1593,7 +1593,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     "add-detail"(el) { actions["edit-detail"](el); },
     front(el) {
       const id = el.dataset.id;
-      if (id === S.front) return;
+      // tapping the card that's already in front opens it for editing
+      if (id === S.front) { actions["edit-front"](); return; }
       S.order = S.order.filter((x) => x !== id).concat(id);
       S.front = id;
       render();
@@ -1637,10 +1638,10 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     },
     "confirm-ctx"() { S.ctxConfirmed = true; S.mariamSaved = true; render(); xpToast("Story saved", 10); },
     "change-ctx"() { S.sheet = "ctx"; render(); },
-    "pick-ctx"(el) { S.ctx[el.dataset.k] = el.dataset.v; S.ctx.edited = true; render(); },
+    "pick-ctx"(el) { S.ctx[el.dataset.k] = el.dataset.v; S.ctx.edited[el.dataset.k] = true; render(); },
     "save-ctx"() {
       const typed = (document.getElementById("ctxInput")?.value || "").trim();
-      if (typed) { S.ctx.event = typed; S.ctx.edited = true; }
+      if (typed) { S.ctx.event = typed; S.ctx.edited.event = true; }
       S.ctxConfirmed = true; S.mariamSaved = true; S.sheet = null;
       render();
       xpToast("Story saved", 10);
@@ -1967,7 +1968,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   }
   function submitRecall(q) {
     q = q.trim();
-    if (!q) return;
+    if (!q) { toast("Type who you're looking for, or tap an example below"); document.getElementById("recallInput")?.focus(); return; }
     S.query = q;
     S.recall = "searching";
     render();
@@ -2087,10 +2088,15 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   }
 
   let holdTimer = null;
+  // The mic reacts on touch-down, so the click that the same press fires afterwards is ignored.
+  // Without this, on phones that click lands on the sheet that just opened and closes it again.
+  let ignoreNextClick = false;
+  document.getElementById("device").addEventListener("pointerdown", () => { ignoreNextClick = false; }, true); // a new press
   screenEl.addEventListener("pointerdown", (e) => {
     const mic = e.target.closest("#mic");
     if (!mic) return;
     e.preventDefault();
+    ignoreNextClick = true;
     if (!S.consent) { S.sheet = "consent"; render(); return; }
     if (S.rec === "recording") { stopRec(); return; } // second tap stops
     if (S.rec !== "idle") return;
@@ -2185,7 +2191,11 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 
   // clicks
   document.getElementById("device").addEventListener("click", (e) => {
-    if (e.target.closest("[data-stop]") && !e.target.closest("[data-act],[data-go]")) return;
+    if (ignoreNextClick) { ignoreNextClick = false; return; }
+    // taps inside a sheet (like on its text box) must not reach the backdrop's close action
+    const stop = e.target.closest("[data-stop]");
+    const hit = e.target.closest("[data-act],[data-go]");
+    if (stop && (!hit || !stop.contains(hit))) return;
     const goEl = e.target.closest("[data-go]");
     if (goEl) { go(goEl.dataset.go); return; }
     const a = e.target.closest("[data-act]");
