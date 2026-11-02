@@ -360,6 +360,13 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .wallet .card:last-child { position: relative; top: 0 !important; }
 .wallet .card.behind .c-tile { visibility: hidden; }
 .card .c-peek { font-family: var(--mono); font-size: 12px; font-weight: 500; opacity: 0.92; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.choice .shares { display: block; margin-top: 4px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.add-card { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 16px; border: 1.5px dashed var(--line); background: transparent; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+.add-card:hover { border-color: var(--teal); }
+.add-card .ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--surface); color: var(--teal); flex: none; }
+.add-card .ic svg { width: 18px; height: 18px; }
+.add-card b { display: block; font-size: 15px; }
+.add-card span span { color: var(--text-2); font-size: 13.5px; }
 .card-about { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
 .card-about b { font-size: 14px; }
 .card-about span { color: var(--text-2); font-size: 14px; }
@@ -773,6 +780,14 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     social: "For friends and people you meet socially.",
     team: "For your teammates and classmates.",
   };
+  // what each type of card shares when you first add it
+  const CARD_TYPES = {
+    pro: { color: "pro", fields: ["name", "role", "org", "email", "linkedin"] },
+    event: { color: "event", fields: ["name", "role", "org"] },
+    social: { color: "social", fields: ["name", "email", "instagram"] },
+    team: { color: "team", fields: ["name", "role", "phone"] },
+  };
+  const newCard = (id) => JSON.parse(JSON.stringify(CARD_TYPES[id]));
   const kindName = (id) => KIND[id].charAt(0) + KIND[id].slice(1).toLowerCase();
   const COLOR_NAME = { pro: "Deep teal", event: "Deep violet", social: "Copper", team: "Deep blue" };
 
@@ -831,16 +846,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     joinPhase: "choose", // choose | scanning | found | linkedin
     profileFilled: false,
     extra: { instagram: false, photo: false },
-    cards: {
-      pro: { color: "pro", fields: ["name", "role", "org", "email", "linkedin"] },
-      event: { color: "event", fields: ["name", "role", "org"] },
-      social: { color: "social", fields: ["name", "email", "instagram"] },
-      team: { color: "team", fields: ["name", "role", "phone"] },
-    },
-    order: ["social", "team", "pro", "event"],
-    front: "event",
-    editId: "event",
+    cards: { pro: newCard("pro") }, // everyone starts with one card and adds more
+    order: ["pro"],
+    front: "pro",
+    editId: "pro",
     draft: null,
+    adding: false, // the card being edited is a new one that isn't saved yet
     exPhase: "ask", // ask | ready | swapping | done | paper | paperfound | scanned
     swappedWith: null,
     mariamSaved: false,
@@ -884,7 +895,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   const sharesList = (fields) => fields.map((f) => FIELD_META[f].short || FIELD_META[f].label).join(" · ");
   const cardFields = (id) => S.cards[id].fields.filter((f) => f !== "instagram" || S.extra.instagram);
   function card(id, opts = {}) {
-    const c = opts.data || S.cards[id];
+    const c = opts.data || S.cards[id] || CARD_TYPES[id];
     // Instagram appears only after the person adds their own handle
     const fields = c.fields.filter((f) => f !== "instagram" || S.extra.instagram);
     const isEdit = !!opts.edit;
@@ -1030,8 +1041,9 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       const allContact = ["role", "org", "email", "linkedin", "phone", "instagram"];
       // every detail gets a labeled switch, so people can see exactly what they're hiding (testers couldn't tell)
       const rows = allContact.filter((f) => f !== "instagram" || S.extra.instagram);
-      return `${back("wallet", "Cards")}
-        <h2 class="title" style="font-size:26px">Edit ${kindName(S.editId)} card</h2>
+      const canRemove = !S.adding && S.order.length > 1;
+      return `${back("wallet", S.adding ? "Cancel" : "Cards")}
+        <h2 class="title" style="font-size:26px">${S.adding ? "New" : "Edit"} ${kindName(S.editId)} card</h2>
         <p class="sub">${KIND_FOR[S.editId]} Switch off anything you don't want to share, like your email.</p>
         <div style="margin:16px 0 18px">${card(S.editId, { data: d, edit: true })}</div>
         <div class="stack">
@@ -1042,19 +1054,22 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           }).join("")}</div>
           <div class="label" style="margin-top:6px">Color</div>
           <div class="swatches">${["pro", "event", "social", "team"].map((c) => `<button class="swatch ${c}" data-act="color" data-c="${c}" aria-pressed="${d.color === c}" aria-label="${COLOR_NAME[c]}"></button>`).join("")}</div>
-          <button class="btn" style="margin-top:12px" data-act="save-card">${ic("check")}Save card</button>
+          <button class="btn" style="margin-top:12px" data-act="save-card">${ic(S.adding ? "plus" : "check")}${S.adding ? "Add card" : "Save card"}</button>
+          ${canRemove ? `<button class="link" style="display:block;margin:4px auto 0;color:var(--muted)" data-act="remove-card">Remove this card</button>` : ""}
         </div>`;
     },
 
     wallet() {
       const order = S.order;
-      return `<div class="topline"><h2 class="title">My cards</h2><button class="round" data-act="edit-front" aria-label="Edit the front card">${ic("pencil")}</button></div>
+      const more = Object.keys(CARD_TYPES).filter((k) => !S.cards[k]);
+      return `<div class="topline"><h2 class="title">My cards</h2><div class="row" style="gap:8px">${more.length ? `<button class="round quiet" data-act="add-card" aria-label="Add a card">${ic("plus")}</button>` : ""}<button class="round" data-act="edit-front" aria-label="Edit the front card">${ic("pencil")}</button></div></div>
         <div class="wallet" style="padding-top:calc(var(--band) * ${order.length - 1})">
           ${order.map((id, i) => card(id, { peek: id !== S.front, cls: id === S.front ? "front" : "behind", attrs: `style="top:calc(var(--band) * ${i});z-index:${i + 1}" data-act="front" data-id="${id}" role="button" tabindex="0" aria-label="${kindName(id)} card: ${sharesList(cardFields(id))}"` })).join("")}
         </div>
         <div class="stack" style="margin-top:12px;gap:10px">
           <button class="btn" data-act="share">${ic("qr")}Share card</button>
-          <div class="card-about"><b>${kindName(S.front)} card</b><span>${KIND_FOR[S.front]} Tap another card to switch, or <button class="link" style="padding:0;font-size:13px" data-act="edit-front">edit this one</button>.</span></div>
+          <div class="card-about"><b>${kindName(S.front)} card</b><span>${KIND_FOR[S.front]} ${order.length > 1 ? "Tap another card to switch, or" : "Tap the card to"} <button class="link" style="padding:0;font-size:13px" data-act="edit-front">${order.length > 1 ? "edit this one" : "edit it"}</button>.</span></div>
+          ${more.length ? `<button class="add-card" data-act="add-card"><span class="ic">${ic("plus")}</span><span><b>Add a card</b><span>${order.length > 1 ? "Another card for a different crowd" : "Like an Event card that shares less"}</span></span></button>` : ""}
         </div>`;
     },
 
@@ -1485,6 +1500,13 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       <button class="btn" data-act="scan-own">${ic("scan")}Scan my card instead</button>
       <button class="link" data-act="close-sheet">Close</button>
     </div></div>`,
+    addcard: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
+      <div class="grab"></div>
+      <h3>Add a card</h3>
+      <p class="sub">Each card shares different details, so you show the right side of you.</p>
+      <div class="stack" style="gap:10px">${Object.keys(CARD_TYPES).filter((k) => !S.cards[k]).map((k) => `<button class="choice" data-act="pick-card" data-k="${k}"><span class="ic" style="background:var(--card-${k});color:#fff">${ic("cards")}</span><span><b>${kindName(k)} card</b><span>${KIND_FOR[k]}</span><span class="shares">${esc(sharesList(CARD_TYPES[k].fields.filter((f) => f !== "instagram" || S.extra.instagram)))}</span></span>${ic("right")}</button>`).join("")}</div>
+      <button class="link" data-act="close-sheet">Not now</button>
+    </div></div>`,
     ctx: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
       <div class="grab"></div>
       <h3>Where did you meet?</h3>
@@ -1599,7 +1621,19 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       S.front = id;
       render();
     },
-    "edit-front"() { S.editId = S.front; S.draft = JSON.parse(JSON.stringify(S.cards[S.front])); S.screen = "build"; render(); },
+    "edit-front"() { S.editId = S.front; S.draft = JSON.parse(JSON.stringify(S.cards[S.front])); S.adding = false; S.screen = "build"; render(); },
+    "add-card"() { S.sheet = "addcard"; render(); },
+    "pick-card"(el) { S.editId = el.dataset.k; S.draft = newCard(el.dataset.k); S.adding = true; S.sheet = null; S.screen = "build"; render(); },
+    "remove-card"() {
+      const id = S.editId;
+      delete S.cards[id];
+      S.order = S.order.filter((x) => x !== id);
+      S.front = S.order[S.order.length - 1];
+      S.draft = null;
+      S.screen = "wallet";
+      render();
+      toast(`${kindName(id)} card removed`);
+    },
     "hide-field"(el) { const f = el.dataset.f; S.draft.fields = S.draft.fields.filter((x) => x !== f); render(); },
     "add-field"(el) {
       const f = el.dataset.f;
@@ -1609,6 +1643,19 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     },
     color(el) { S.draft.color = el.dataset.c; render(); },
     "save-card"() {
+      if (S.adding) {
+        // a new card goes on top of the stack, ready to share
+        S.cards[S.editId] = S.draft;
+        S.order = S.order.filter((x) => x !== S.editId).concat(S.editId);
+        S.front = S.editId;
+        S.adding = false;
+        S.draft = null;
+        S.flags.addedCard = true;
+        S.screen = "wallet";
+        render();
+        xpToast(`${kindName(S.front)} card added`, 15);
+        return;
+      }
       const hadEmail = S.cards[S.editId].fields.includes("email");
       S.cards[S.editId] = S.draft;
       if (hadEmail && !S.draft.fields.includes("email")) S.flags.hidEmail = true;
@@ -2226,7 +2273,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   // ---------- walkthrough + user test guide ----------
   const STEPS = [
     { n: "1", t: "Join", wow: 1, h: "Scan your card. Your profile fills itself.", screen: "join" },
-    { n: "2", t: "Build", wow: 1, h: "Tap details on the card to hide them. Pick a color.", screen: "build" },
+    { n: "2", t: "Build", wow: 1, h: "Add an Event card that shares less. Switch details on or off.", screen: "build" },
     { n: "3", t: "Share", wow: 1, h: "Share card. Has Wasl? Swap codes. No Wasl? Scan their paper card.", screen: "wallet" },
     { n: "4", t: "Save", wow: 2, h: "Confirm where you met. Add a tag.", screen: "save" },
     { n: "5", t: "Remember", wow: 2, h: "Tap the mic and talk. Wasl keeps only what mattered.", screen: "remember" },
@@ -2242,11 +2289,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     // start clean, then make every earlier step "done" so any step opens the same way each time
     resetAll();
     if (i >= 1) { S.profileFilled = true; S.joinPhase = "choose"; }
+    if (i >= 2) { S.cards.event = newCard("event"); S.order = ["pro", "event"]; S.front = "event"; } // added in step 2
     if (i >= 3) { S.swappedWith = S.swappedWith || "pro"; S.exPhase = "done"; }
     if (i >= 4) { S.ctxConfirmed = true; S.mariamSaved = true; if (!S.tags.length) S.tags = ["Intro offered"]; }
     if (i >= 6) { S.summary = true; S.memory = SAMPLE_MEMORY; S.consent = true; }
     const st = STEPS[i];
-    if (st.screen === "build") { S.editId = S.front; S.draft = JSON.parse(JSON.stringify(S.cards[S.front])); }
+    if (st.screen === "build") { S.editId = "event"; S.draft = newCard("event"); S.adding = true; }
     if (st.screen === "debrief") { S.debriefIdx = 0; S.debrief = {}; }
     if (st.screen === "recall") { S.recall = "idle"; S.query = ""; }
     if (st.screen === "network") { S.sort = "recent"; }

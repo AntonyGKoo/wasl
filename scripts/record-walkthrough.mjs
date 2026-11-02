@@ -279,16 +279,17 @@ await sleep(2400);
 await caption(
   "Step 2 · Build",
   1,
-  "The card is the editor",
-  "Each card shows only what you choose. Tap a detail to hide it, add one from your profile, pick a color.",
+  "Add a card for each crowd",
+  "You start with one card. Add an Event card, then switch each detail on or off and pick a color.",
   600,
 );
 await tap('#tabbar [data-go="wallet"]', 1000);
-await tap('#screen [data-act="edit-front"]', 1300);
+await tap('#screen .add-card', 1100);
+await tap('[data-act="pick-card"][data-k="event"]', 1300);
 await tap('[data-act="add-field"][data-f="linkedin"]', 1000);
 await tap('[data-act="hide-field"][data-f="org"]', 1000);
 await tap('[data-act="color"][data-c="team"]', 1000);
-await tap('[data-act="save-card"]', 1600);
+await tap('[data-act="save-card"]', 1600); // adds the Event card
 
 await caption(
   "Step 3 · Share",
