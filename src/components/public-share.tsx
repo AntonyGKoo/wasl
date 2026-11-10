@@ -125,7 +125,9 @@ export function PublicShare({ token }: { token: string }) {
         <div className="public-card-shell">
           <h2>This card is no longer available.</h2>
           <p className="muted">
-            {error || "Ask its owner for a new sharing link."}
+            {/* the heading already says it's gone; don't say it twice */}
+            {error.replace(/^This card is no longer available\.\s*/, "") ||
+              "Ask its owner for a new sharing link."}
           </p>
           <a href="/" className="button secondary">
             Open Wasl
