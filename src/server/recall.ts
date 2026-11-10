@@ -48,19 +48,42 @@ export const tokens = (text: string) => [
       .map((w) => stem(synonyms[w] || w)),
   ),
 ];
-export function contextLines(contact: Connection) {
+const labels: Record<string, string> = {
+  name: "Name",
+  title: "Role",
+  company: "Company",
+  university: "University",
+  email: "Email",
+  phone: "Phone",
+  linkedin: "LinkedIn",
+  instagram: "Instagram",
+  website: "Website",
+  bio: "About",
+};
+// What Wasl knows about a person, as label + value. Only the values are searched, so a word
+// like "company" or "meeting" in a question doesn't match every saved person.
+export function contextEntries(contact: Connection) {
   return [
     ...Object.entries(contact.profile)
-      .filter(([, v]) => v)
-      .map(([key, value]) => `${key}: ${value}`),
-    contact.tags.length ? `Categories: ${contact.tags.join(", ")}` : "",
-    contact.event ? `Met at: ${contact.event}` : "",
-    contact.place ? `Place: ${contact.place}` : "",
-    `Meeting date: ${String(contact.met_on).slice(0, 10)}`,
-    ...(contact.notes || []).map(
-      (note) => `Note (${String(note.happened_on).slice(0, 10)}): ${note.body}`,
-    ),
-  ].filter(Boolean);
+      .filter(([key, v]) => v && labels[key])
+      .map(([key, value]) => ({ label: labels[key], value: String(value) })),
+    contact.tags.length
+      ? { label: "Tags", value: contact.tags.join(", ") }
+      : null,
+    contact.albums?.length
+      ? { label: "Albums", value: contact.albums.join(", ") }
+      : null,
+    contact.event ? { label: "Met at", value: contact.event } : null,
+    contact.place ? { label: "Place", value: contact.place } : null,
+    { label: "Met on", value: String(contact.met_on).slice(0, 10) },
+    ...(contact.notes || []).map((note) => ({
+      label: `Note (${String(note.happened_on).slice(0, 10)})`,
+      value: note.body,
+    })),
+  ].filter((e): e is { label: string; value: string } => !!e);
+}
+export function contextLines(contact: Connection) {
+  return contextEntries(contact).map((e) => `${e.label}: ${e.value}`);
 }
 export function lexicalRecall(
   query: string,
@@ -70,11 +93,12 @@ export function lexicalRecall(
   if (!wanted.length) return [];
   return contacts
     .map((connection) => {
-      const lines = contextLines(connection);
-      const available = new Set(tokens(lines.join(" ")));
+      const entries = contextEntries(connection);
+      const available = new Set(tokens(entries.map((e) => e.value).join(" ")));
       const matches = wanted.filter((w) => available.has(w));
-      const evidence = lines
-        .filter((line) => tokens(line).some((w) => matches.includes(w)))
+      const evidence = entries
+        .filter((e) => tokens(e.value).some((w) => matches.includes(w)))
+        .map((e) => `${e.label}: ${e.value}`)
         .slice(0, 3);
       return {
         connection,

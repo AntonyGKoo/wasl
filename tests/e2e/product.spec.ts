@@ -65,8 +65,15 @@ test("two people share selected details, retain private memory, recall and revok
   await page
     .getByRole("checkbox", { name: `Email ${email}`, exact: true })
     .uncheck();
-  await page.getByRole("button", { name: "Save card", exact: true }).click();
-  await page.getByRole("button", { name: "Share card", exact: true }).click();
+  await page.getByRole("button", { name: "Add card", exact: true }).click();
+  // every account starts with a Professional card; share the new one
+  await expect(
+    page.getByRole("button", { name: "Share card", exact: true }),
+  ).toHaveCount(2);
+  await page
+    .getByRole("button", { name: "Share card", exact: true })
+    .last()
+    .click();
   const linkField = page.getByLabel("Share link", { exact: true });
   await expect(linkField).toHaveValue(/\/c\/[A-Za-z0-9_-]{43}$/);
   const link = await linkField.inputValue();
@@ -85,17 +92,19 @@ test("two people share selected details, retain private memory, recall and revok
     await bob
       .getByLabel("Where did you meet?", { exact: true })
       .fill("Career Fair");
-    await bob
-      .getByRole("button", { name: "Save to my Wasl network", exact: true })
-      .click();
+    // Bob saves Alice's card and sends his own back in the same tap
+    await bob.getByRole("button", { name: "Swap cards", exact: true }).click();
     await expect(
-      bob.getByText("A new connection. A story to keep.", { exact: true }),
+      bob.getByRole("heading", {
+        name: "You swapped cards with Alice",
+        exact: true,
+      }),
     ).toBeVisible();
-    await bob
-      .getByRole("link", { name: "Open your network", exact: true })
-      .click();
+    await bob.getByRole("link", { name: "Open Alice", exact: true }).click();
     await expect(
-      bob.getByRole("heading", { name: "Alice QA", exact: true }),
+      bob
+        .getByRole("dialog", { name: "Connection details" })
+        .getByRole("heading", { name: "Alice QA", exact: true }),
     ).toBeVisible();
     await expect(bob.getByText("Yousef Omar", { exact: true })).toHaveCount(0);
     await page
@@ -110,12 +119,19 @@ test("two people share selected details, retain private memory, recall and revok
     await page.reload();
     await page
       .getByRole("button", {
-        name: info.project.name === "mobile" ? "Network" : "Your network 1",
+        name: info.project.name === "mobile" ? "Network" : "Your network 2",
         exact: true,
       })
       .click();
     await expect(
       page.getByRole("heading", { name: "Yousef Omar", exact: true }),
+    ).toBeVisible();
+    // Bob's card came back to Alice, marked New
+    await expect(
+      page.getByText("Bob QA swapped cards with you", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Bob QA", exact: true }),
     ).toBeVisible();
   } finally {
     await recipient.close();

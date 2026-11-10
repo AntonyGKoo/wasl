@@ -39,14 +39,19 @@ export function Avatar({
   name,
   size = "normal",
   color = "ocean",
+  photo,
 }: {
   name: string;
   size?: "normal" | "large";
   color?: string;
+  photo?: string;
 }) {
   return (
-    <span className={`avatar ${size} ${color}`} aria-hidden="true">
-      {initials(name)}
+    <span
+      className={`avatar ${size} ${color} ${photo ? "photo" : ""}`}
+      aria-hidden="true"
+    >
+      {photo ? <img src={photo} alt="" /> : initials(name)}
     </span>
   );
 }

@@ -2,8 +2,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import QRCode from "qrcode";
 import {
+  ArrowLeftRight,
   ArrowUpRight,
+  Camera,
   Check,
+  ScanLine,
+  Share2,
+  Sparkles,
   Copy,
   CreditCard,
   Link2,
@@ -15,23 +20,32 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/client";
 import {
-  fieldLabels,
-  profileFields,
+  cardFieldLabels,
+  cardFields,
+  cardKinds,
+  kindLabels,
+  type Capabilities,
   type Card,
+  type CardField,
   type Profile,
+  type ProfileField,
   type User,
 } from "@/lib/types";
 import { Avatar, Button, Modal, Notice, ProfileFields } from "./ui";
+import { ScanModal } from "./recall-view";
+import { squarePhoto } from "@/lib/photo";
 export function WalletView({
   cards,
   user,
   onChanged,
   onProfile,
+  onScanCode,
 }: {
   cards: Card[];
   user: User;
   onChanged: () => void;
   onProfile: () => void;
+  onScanCode: () => void;
 }) {
   const [editing, setEditing] = useState<Card | null | undefined>();
   const [sharing, setSharing] = useState<Card | null>(null);
@@ -95,26 +109,7 @@ export function WalletView({
         <div className="wallet-grid">
           {cards.map((card) => (
             <article className="wallet-item" key={card.id}>
-              <div className={`digital-card ${card.color}`}>
-                <div className="digital-card-top">
-                  <span className="mini-wordmark">wasl</span>
-                  <span>{card.kind}</span>
-                </div>
-                <Avatar name={user.name} />
-                <h2>{user.name}</h2>
-                <p>
-                  {[
-                    card.profile?.title,
-                    card.profile?.company || card.profile?.university,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-                <div className="digital-card-bottom">
-                  <span>{card.label}</span>
-                  <QrCode size={26} />
-                </div>
-              </div>
+              <CardFace card={card} profile={user.profile} />
               <div className="wallet-card-info">
                 <div>
                   <h3>{card.label}</h3>
@@ -133,7 +128,7 @@ export function WalletView({
               </div>
               <div className="wallet-fields">
                 {card.fields.map((f) => (
-                  <span key={f}>{fieldLabels[f]}</span>
+                  <span key={f}>{cardFieldLabels[f]}</span>
                 ))}
               </div>
               <div className="wallet-card-actions">
@@ -168,6 +163,10 @@ export function WalletView({
           card={sharing}
           onClose={() => setSharing(null)}
           onChanged={onChanged}
+          onScanCode={() => {
+            setSharing(null);
+            onScanCode();
+          }}
         />
       ) : null}
       {deleting ? (
@@ -189,6 +188,72 @@ export function WalletView({
     </>
   );
 }
+// The card as other people see it, used in the wallet and as a live preview while editing.
+export function CardFace({
+  card,
+  profile,
+  detailed = false,
+}: {
+  card: Pick<Card, "label" | "kind" | "color" | "fields">;
+  profile: Partial<Profile>;
+  detailed?: boolean;
+}) {
+  const has = (f: CardField) => card.fields.includes(f);
+  const shown = (f: ProfileField) => (has(f) ? profile[f] || "" : "");
+  const work = [shown("title"), shown("company") || shown("university")].filter(
+    Boolean,
+  );
+  const lines = detailed
+    ? (["email", "phone", "linkedin", "instagram", "website"] as const)
+        .map((f) => shown(f).replace(/^https?:\/\/(www\.)?/, ""))
+        .filter(Boolean)
+    : [];
+  return (
+    <div className={`digital-card ${card.color}`}>
+      <div className="digital-card-top">
+        <span className="mini-wordmark">wasl</span>
+        <span>{kindLabels[card.kind]}</span>
+      </div>
+      <Avatar
+        name={profile.name || "You"}
+        photo={has("photo") ? profile.photo : undefined}
+      />
+      <h2>{profile.name || "Your name"}</h2>
+      <p>{work.join(" · ")}</p>
+      {lines.length ? (
+        <ul className="digital-card-lines">
+          {lines.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
+      ) : null}
+      <div className="digital-card-bottom">
+        <span>{card.label || kindLabels[card.kind]}</span>
+        <QrCode size={26} />
+      </div>
+    </div>
+  );
+}
+const kindHints: Record<Card["kind"], string> = {
+  professional: "For work: your role, company and how to reach you.",
+  event: "For events: share less, like your name and LinkedIn only.",
+  social: "For friends: Instagram instead of your work email.",
+  team: "For your team or club: what your teammates need.",
+};
+const kindFields: Record<Card["kind"], CardField[]> = {
+  professional: [
+    "name",
+    "title",
+    "company",
+    "email",
+    "phone",
+    "linkedin",
+    "photo",
+  ],
+  event: ["name", "title", "company", "linkedin", "photo"],
+  social: ["name", "instagram", "photo"],
+  team: ["name", "title", "email", "phone", "photo"],
+};
 function CardForm({
   card,
   profile,
@@ -203,8 +268,8 @@ function CardForm({
   const [label, setLabel] = useState(card?.label || "");
   const [kind, setKind] = useState<Card["kind"]>(card?.kind || "professional");
   const [color, setColor] = useState<Card["color"]>(card?.color || "ocean");
-  const [fields, setFields] = useState(
-    card?.fields || ["name", "title", "company", "email"],
+  const [fields, setFields] = useState<CardField[]>(
+    card?.fields || kindFields.professional,
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -213,7 +278,7 @@ function CardForm({
     setBusy(true);
     try {
       await api(`cards${card ? `/${card.id}` : ""}`, card ? "PUT" : "POST", {
-        label,
+        label: label.trim() || kindLabels[kind],
         kind,
         color,
         fields,
@@ -227,70 +292,110 @@ function CardForm({
   }
   return (
     <Modal
-      title={card ? "Edit your card" : "Create a card"}
-      description="Choose the details you want to share in this context."
+      title={card ? `Edit your ${card.label} card` : "A new card"}
+      description="Switch off anything you don't want this card to share."
       onClose={onClose}
+      wide
     >
       <form onSubmit={submit}>
-        <label>
-          <span>Card name</span>
-          <input
-            value={label}
-            required
-            maxLength={60}
-            placeholder="e.g. Professional, Friends, Web Summit"
-            onChange={(e) => setLabel(e.target.value)}
-          />
-        </label>
-        <div className="form-grid">
-          <label>
-            <span>Card type</span>
-            <select
-              value={kind}
-              onChange={(e) => setKind(e.target.value as Card["kind"])}
+        <div className="card-editor">
+          <div className="card-preview">
+            <span className="eyebrow">WHAT THEY&rsquo;LL SEE</span>
+            <CardFace
+              card={{ label, kind, color, fields }}
+              profile={profile}
+              detailed
+            />
+            <p className="muted small-copy">{kindHints[kind]}</p>
+          </div>
+          <div className="card-settings">
+            <div className="form-grid">
+              <label>
+                <span>Card type</span>
+                <select
+                  value={kind}
+                  onChange={(e) => {
+                    const next = e.target.value as Card["kind"];
+                    setKind(next);
+                    // a new card starts with the details that suit its crowd
+                    if (!card) setFields(kindFields[next]);
+                  }}
+                >
+                  {cardKinds.map((k) => (
+                    <option key={k} value={k}>
+                      {kindLabels[k]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Card name</span>
+                <input
+                  value={label}
+                  maxLength={60}
+                  placeholder={kindLabels[kind]}
+                  onChange={(e) => setLabel(e.target.value)}
+                />
+              </label>
+            </div>
+            <div
+              className="swatch-row"
+              role="radiogroup"
+              aria-label="Card color"
             >
-              <option value="professional">Professional</option>
-              <option value="social">Social</option>
-              <option value="event">Event</option>
-            </select>
-          </label>
-          <label>
-            <span>Card color</span>
-            <select
-              value={color}
-              onChange={(e) => setColor(e.target.value as Card["color"])}
-            >
-              <option value="ocean">Ocean</option>
-              <option value="violet">Violet</option>
-              <option value="coral">Coral</option>
-              <option value="ink">Midnight</option>
-            </select>
-          </label>
-        </div>
-        <div className="field-selection">
-          {profileFields.map((field) => (
-            <label key={field} className="field-choice">
-              <input
-                type="checkbox"
-                checked={fields.includes(field)}
-                disabled={field === "name"}
-                onChange={(e) =>
-                  setFields(
-                    e.target.checked
-                      ? [...fields, field]
-                      : fields.filter((f) => f !== field),
-                  )
-                }
-              />
-              <span>
-                <strong>{fieldLabels[field]}</strong>
-                <small>
-                  {profile[field] || "Not added to your profile yet"}
-                </small>
-              </span>
-              {fields.includes(field) ? <Check size={15} /> : null}
-            </label>
-          ))}
+              {(
+                [
+                  ["ocean", "Ocean"],
+                  ["violet", "Violet"],
+                  ["coral", "Coral"],
+                  ["ink", "Midnight"],
+                ] as const
+              ).map(([c, name]) => (
+                <button
+                  type="button"
+                  key={c}
+                  role="radio"
+                  aria-checked={color === c}
+                  aria-label={name}
+                  className={`swatch ${c}`}
+                  onClick={() => setColor(c)}
+                />
+              ))}
+            </div>
+            <div className="field-selection">
+              {cardFields.map((field) => {
+                const value =
+                  field === "photo"
+                    ? profile.photo
+                      ? "Your profile photo"
+                      : ""
+                    : profile[field];
+                return (
+                  <label key={field} className="field-choice">
+                    <input
+                      type="checkbox"
+                      checked={fields.includes(field)}
+                      disabled={field === "name"}
+                      onChange={(e) =>
+                        setFields(
+                          e.target.checked
+                            ? [...fields, field]
+                            : fields.filter((f) => f !== field),
+                        )
+                      }
+                    />
+                    <span>
+                      <strong>{cardFieldLabels[field]}</strong>
+                      <small>{value || "Not in your profile yet"}</small>
+                    </span>
+                    <em aria-hidden="true">
+                      {fields.includes(field) ? "Shown" : "Hidden"}
+                    </em>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
         <p className="muted small-copy">
           Changes to your profile update your active card links. People can keep
@@ -302,7 +407,7 @@ function CardForm({
             Cancel
           </Button>
           <Button type="submit" busy={busy}>
-            Save card
+            {card ? "Save card" : "Add card"}
           </Button>
         </div>
       </form>
@@ -313,11 +418,14 @@ function ShareModal({
   card,
   onClose,
   onChanged,
+  onScanCode,
 }: {
   card: Card;
   onClose: () => void;
   onChanged: () => void;
+  onScanCode: () => void;
 }) {
+  const canShare = typeof navigator !== "undefined" && !!navigator.share;
   const [url, setUrl] = useState("");
   const [qr, setQr] = useState("");
   const [error, setError] = useState("");
@@ -396,7 +504,32 @@ function ShareModal({
       </div>
       <div className="qr-caption">
         <ShieldCheck size={15} />
-        {card.fields.length} selected fields. No private notes.
+        {card.fields.length} selected details. No private notes.
+      </div>
+      <p className="swap-hint">
+        <ArrowLeftRight size={15} />
+        <span>
+          <strong>They have Wasl?</strong> When they save your card, they can
+          send theirs back in the same tap. Or scan their code.
+        </span>
+      </p>
+      <div className="share-actions">
+        <Button variant="secondary" onClick={onScanCode}>
+          <ScanLine size={16} /> Scan their code
+        </Button>
+        {canShare ? (
+          <Button
+            variant="secondary"
+            disabled={!url}
+            onClick={() =>
+              void navigator
+                .share({ title: `${card.label} card on Wasl`, url })
+                .catch(() => {})
+            }
+          >
+            <Share2 size={16} /> Send my card
+          </Button>
+        ) : null}
       </div>
       <label>
         <span>Or share a link</span>
@@ -446,30 +579,95 @@ function ShareModal({
     </Modal>
   );
 }
+// what makes a profile complete enough to share well
+const strengthItems: {
+  key: string;
+  label: string;
+  done: (p: Profile) => boolean;
+}[] = [
+  { key: "photo", label: "a photo", done: (p) => !!p.photo },
+  { key: "title", label: "your role", done: (p) => !!p.title },
+  {
+    key: "org",
+    label: "your company or university",
+    done: (p) => !!(p.company || p.university),
+  },
+  { key: "email", label: "your email", done: (p) => !!p.email },
+  { key: "phone", label: "your phone", done: (p) => !!p.phone },
+  { key: "linkedin", label: "your LinkedIn", done: (p) => !!p.linkedin },
+  { key: "bio", label: "a line about you", done: (p) => !!p.bio },
+];
+// "a, b and c"
+const listOf = (items: string[]) =>
+  items.length > 1
+    ? `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`
+    : items[0] || "";
+export function profileStrength(p: Profile) {
+  const missing = strengthItems.filter((i) => !i.done(p));
+  return {
+    done: strengthItems.length - missing.length,
+    total: strengthItems.length,
+    missing: missing.map((i) => i.label),
+  };
+}
 export function ProfileView({
   user,
+  capabilities,
   onSaved,
 }: {
   user: User;
+  capabilities: Capabilities;
   onSaved: (user: User) => void;
 }) {
   const [profile, setProfile] = useState<Profile>(user.profile);
   const [busy, setBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [message, setMessage] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [filledByAi, setFilledByAi] = useState<boolean | null>(null);
+  const strength = profileStrength(profile);
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
-    setSaved(false);
+    setMessage("");
     try {
       const result = await api<{ user: User }>("profile", "PUT", profile);
       onSaved(result.user);
-      setSaved(true);
+      setFilledByAi(null);
+      setMessage("Your profile and active card links are updated.");
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
+    }
+  }
+  // the photo is saved right away, on top of the last saved profile
+  async function savePhoto(photo: string) {
+    setPhotoBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const result = await api<{ user: User }>("profile", "PUT", {
+        ...user.profile,
+        photo,
+      });
+      onSaved(result.user);
+      setProfile((p) => ({ ...p, photo }));
+      setMessage(photo ? "Photo saved." : "Photo removed.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+  async function choosePhoto(file?: File) {
+    if (!file) return;
+    try {
+      await savePhoto(await squarePhoto(file));
+    } catch (e) {
+      setError((e as Error).message);
     }
   }
   return (
@@ -480,23 +678,83 @@ export function ProfileView({
           <h1>Your profile</h1>
           <p>Update once. Your active cards stay up to date.</p>
         </div>
+        <Button variant="secondary" onClick={() => setScanning(true)}>
+          <ScanLine size={16} /> Fill from my business card
+        </Button>
       </section>
       <div className="profile-editor">
         <div className="profile-editor-heading">
-          <Avatar name={profile.name || user.name} size="large" />
-          <div>
-            <h3>{user.name}</h3>
-            <p className="muted">
-              Choose what to share when you create a card.
-            </p>
+          <Avatar
+            name={profile.name || user.name}
+            size="large"
+            photo={profile.photo || undefined}
+          />
+          <div className="profile-heading-text">
+            <h3>{profile.name || user.name}</h3>
+            <div className="photo-actions">
+              <label className={`text-button ${photoBusy ? "busy" : ""}`}>
+                <Camera size={15} />
+                {profile.photo ? "Change photo" : "Add a photo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  disabled={photoBusy}
+                  onChange={(e) => {
+                    void choosePhoto(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {profile.photo ? (
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={photoBusy}
+                  onClick={() => void savePhoto("")}
+                >
+                  Remove
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
-        <form onSubmit={submit}>
-          <ProfileFields value={profile} onChange={setProfile} />
-          {error ? <Notice error>{error}</Notice> : null}
-          {saved ? (
-            <Notice>Your profile and active card links are updated.</Notice>
+        <div className="strength" aria-label="Profile strength">
+          <div className="strength-top">
+            <strong>
+              {strength.done === strength.total
+                ? "Your profile is complete"
+                : `Profile ${strength.done} of ${strength.total}`}
+            </strong>
+            <span>{Math.round((strength.done / strength.total) * 100)}%</span>
+          </div>
+          <div className="strength-bar">
+            <i
+              style={{ width: `${(strength.done / strength.total) * 100}%` }}
+            />
+          </div>
+          {strength.missing.length ? (
+            <p className="muted small-copy">
+              Add {listOf(strength.missing.slice(0, 3))}
+              {strength.missing.length > 3 ? " and more" : ""} so people
+              remember you. Each card shares only what you choose.
+            </p>
           ) : null}
+        </div>
+        {filledByAi !== null ? (
+          <p className={`draft-source ${filledByAi ? "ai" : ""}`}>
+            {filledByAi ? <Sparkles size={15} /> : <ScanLine size={15} />}
+            Filled from your card. Check each detail, then save.
+          </p>
+        ) : null}
+        <form onSubmit={submit}>
+          <ProfileFields
+            key={filledByAi === null ? "typed" : "scanned"}
+            value={profile}
+            onChange={setProfile}
+          />
+          {error ? <Notice error>{error}</Notice> : null}
+          {message ? <Notice>{message}</Notice> : null}
           <div className="form-actions">
             <Button type="submit" busy={busy}>
               Save profile
@@ -504,6 +762,26 @@ export function ProfileView({
           </div>
         </form>
       </div>
+      {scanning ? (
+        <ScanModal
+          own
+          capabilities={capabilities}
+          onClose={() => setScanning(false)}
+          onDraft={(found, byAi) => {
+            setScanning(false);
+            setMessage("");
+            // keep what's already there unless the card has it
+            setProfile((p) => {
+              const next = { ...p };
+              for (const [k, v] of Object.entries(found))
+                if (typeof v === "string" && v.trim())
+                  (next as Record<string, string>)[k] = v.trim();
+              return next;
+            });
+            setFilledByAi(byAi);
+          }}
+        />
+      ) : null}
     </>
   );
 }

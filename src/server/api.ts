@@ -1,4 +1,10 @@
-import { authRoute, updateProfile } from "./auth-routes";
+import {
+  authRoute,
+  changePassword,
+  deleteAccount,
+  updateProfile,
+} from "./auth-routes";
+import { placeName } from "./place";
 import {
   assertOrigin,
   errorResponse,
@@ -10,17 +16,26 @@ import { consumeLimit, sessionUser } from "../lib/auth";
 import { blankProfile } from "../lib/types";
 import { database } from "../lib/db";
 import {
+  albumSchema,
   cardSchema,
   connectionSchema,
+  favoriteSchema,
+  placeSchema,
   importSchema,
   noteSchema,
   searchSchema,
   summarySchema,
+  scanTextSchema,
   uuidSchema,
 } from "../lib/validation";
 import {
+  deleteAlbum,
   deleteCard,
   deleteConnection,
+  markSeen,
+  saveAlbum,
+  setFavorite,
+  swapBack,
   deleteNote,
   getConnection,
   importCard,
@@ -35,7 +50,7 @@ import {
   shareCard,
 } from "./network";
 import { recall, searchableContacts } from "./recall";
-import { scanCard } from "./scan";
+import { readCardText, scanCard } from "./scan";
 import { summarizeConversation } from "./summary";
 import { makeVcard } from "../lib/vcard";
 export async function handleApi(request: Request): Promise<Response> {
@@ -118,19 +133,30 @@ export async function handleApi(request: Request): Promise<Response> {
           },
           201,
         );
-      if (id === "import" && method === "POST")
-        return json(
-          {
-            connection: await importCard(
-              user.id,
-              await readJson(request, importSchema),
-            ),
-          },
-          201,
-        );
+      if (id === "import" && method === "POST") {
+        const input = await readJson(request, importSchema);
+        const connection = await importCard(user.id, input);
+        let swapped = false;
+        if (input.share_back_card_id) {
+          if (!(await consumeLimit(`swap:${user.id}`, 60, 3600)))
+            throw new HttpError(429, "Too many swaps. Try again in an hour.");
+          swapped = !!(await swapBack(user.id, input));
+        }
+        return json({ connection, swapped }, 201);
+      }
       uuidSchema.parse(id);
-      if (!action && method === "GET")
+      if (!action && method === "GET") {
+        await markSeen(user.id, id);
         return json({ connection: await getConnection(user.id, id) });
+      }
+      if (action === "favorite" && method === "POST")
+        return json({
+          connection: await setFavorite(
+            user.id,
+            id,
+            (await readJson(request, favoriteSchema)).favorite,
+          ),
+        });
       if (!action && method === "PUT")
         return json({
           connection: await saveConnection(
@@ -163,6 +189,28 @@ export async function handleApi(request: Request): Promise<Response> {
       uuidSchema.parse(id);
       await deleteNote(user.id, id);
       return json({ ok: true });
+    }
+    if (area === "albums") {
+      if (!id && method === "PUT")
+        return json(
+          await saveAlbum(user.id, await readJson(request, albumSchema)),
+        );
+      if (id && method === "DELETE") {
+        await deleteAlbum(user.id, decodeURIComponent(id).slice(0, 60));
+        return json({ ok: true });
+      }
+    }
+    if (area === "place" && method === "GET") {
+      const input = placeSchema.parse(Object.fromEntries(url.searchParams));
+      return json(await placeName(user.id, input.lat, input.lon));
+    }
+    if (area === "account" && id === "password" && method === "POST")
+      return await changePassword(request, user);
+    if (area === "account" && !id && method === "DELETE")
+      return await deleteAccount(request, user);
+    if (area === "scan-text" && method === "POST") {
+      const input = await readJson(request, scanTextSchema);
+      return json(await readCardText(user.id, input.text));
     }
     if (area === "summarize" && method === "POST") {
       const input = await readJson(request, summarySchema);

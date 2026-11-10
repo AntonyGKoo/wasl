@@ -1,7 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { vector } from "@electric-sql/pglite-pgvector";
 import postgres from "postgres";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 export interface Queryable {
@@ -102,19 +102,25 @@ export async function migrate(db: Database) {
   await db.exec(
     "CREATE TABLE IF NOT EXISTS schema_migrations (version text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())",
   );
-  const rows = await db.query(
-    "SELECT version FROM schema_migrations WHERE version=$1",
-    ["001"],
-  );
-  if (!rows.length)
+  const dir = path.join(process.cwd(), "db");
+  // every db/NNN_name.sql file, in order, each applied once
+  const files = (await readdir(dir))
+    .filter((f) => /^\d{3}_[\w-]+\.sql$/.test(f))
+    .sort();
+  for (const file of files) {
+    const version = file.slice(0, 3);
+    const rows = await db.query(
+      "SELECT version FROM schema_migrations WHERE version=$1",
+      [version],
+    );
+    if (rows.length) continue;
     await db.transaction(async (tx) => {
-      await tx.exec(
-        await readFile(path.join(process.cwd(), "db/001_initial.sql"), "utf8"),
-      );
+      await tx.exec(await readFile(path.join(dir, file), "utf8"));
       await tx.query("INSERT INTO schema_migrations(version) VALUES ($1)", [
-        "001",
+        version,
       ]);
     });
+  }
 }
 const globalDb = globalThis as unknown as { waslDb?: Promise<Database> };
 export function database(): Promise<Database> {

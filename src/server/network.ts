@@ -11,6 +11,7 @@ import {
   type User,
 } from "../lib/types";
 import type {
+  albumSchema,
   cardSchema,
   connectionSchema,
   importSchema,
@@ -18,16 +19,20 @@ import type {
 } from "../lib/validation";
 import { HttpError } from "./responses";
 type CardInput = z.infer<typeof cardSchema>;
-type ContactInput = z.infer<typeof connectionSchema>;
+type ContactInput = Omit<z.infer<typeof connectionSchema>, "origin"> & {
+  origin?: "" | "scan";
+};
 export function selectedProfile(
   profile: Partial<Profile>,
   fields: string[],
 ): Partial<Profile> {
-  return Object.fromEntries(
+  const chosen: Partial<Profile> = Object.fromEntries(
     profileFields
       .filter((key) => fields.includes(key) && typeof profile[key] === "string")
       .map((key) => [key, profile[key]]),
   );
+  if (fields.includes("photo") && profile.photo) chosen.photo = profile.photo;
+  return chosen;
 }
 export async function listCards(user: User, db?: Database) {
   const cards = await asUser(
@@ -244,9 +249,9 @@ export async function saveConnection(
           )
         : await tx.query<Connection>(
             `
-      INSERT INTO connections(profile,tags,event,place,met_on,favorite,id,owner_id)
-      VALUES($1::jsonb,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-            [...values, randomUUID(), userId],
+      INSERT INTO connections(profile,tags,event,place,met_on,favorite,id,owner_id,origin)
+      VALUES($1::jsonb,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+            [...values, randomUUID(), userId, input.origin || ""],
           );
       if (!rows.length) throw new HttpError(404, "Contact not found.");
       return rows[0];
@@ -271,8 +276,8 @@ export async function importCard(
     async (tx) => {
       const [result] = await tx.query<Connection>(
         `
-      INSERT INTO connections(id,owner_id,source_share_id,profile,event,place,met_on)
-      VALUES($1,$2,$3,$4::jsonb,$5,$6,$7)
+      INSERT INTO connections(id,owner_id,source_share_id,profile,event,place,met_on,origin)
+      VALUES($1,$2,$3,$4::jsonb,$5,$6,$7,'link')
       ON CONFLICT (owner_id,source_share_id) WHERE source_share_id IS NOT NULL
       DO UPDATE SET source_share_id=excluded.source_share_id RETURNING *`,
         [
@@ -287,6 +292,127 @@ export async function importCard(
       );
       return result;
     },
+    db,
+  );
+}
+// Two-way swap: after someone saves your card, they can send one of their own cards back.
+// It lands in your network marked New, linked to their card so it stays up to date.
+export async function swapBack(
+  userId: string,
+  input: z.infer<typeof importSchema>,
+  providedDb?: Database,
+) {
+  if (!input.share_back_card_id) return null;
+  const db = providedDb ?? (await database());
+  const source = await sharedSource(input.token, db);
+  if (source.owner_id === userId) return null;
+  const [me] = await db.query<{ profile: Partial<Profile> }>(
+    "SELECT profile FROM users WHERE id=$1",
+    [userId],
+  );
+  const [card] = await asUser(
+    userId,
+    (tx) =>
+      tx.query<{ id: string; fields: string[] }>(
+        "SELECT id,fields FROM cards WHERE id=$1 AND owner_id=$2",
+        [input.share_back_card_id, userId],
+      ),
+    db,
+  );
+  if (!me || !card) throw new HttpError(404, "Card not found.");
+  const token = await shareCard(userId, card.id, db);
+  const [share] = await db.query<{ id: string }>(
+    "SELECT id FROM shares WHERE token=$1",
+    [token],
+  );
+  const [row] = await asUser(
+    source.owner_id,
+    (tx) =>
+      tx.query<{ id: string }>(
+        `
+      INSERT INTO connections(id,owner_id,source_share_id,profile,event,place,met_on,origin,unseen)
+      VALUES($1,$2,$3,$4::jsonb,$5,$6,$7,'swap',true)
+      ON CONFLICT (owner_id,source_share_id) WHERE source_share_id IS NOT NULL
+      DO UPDATE SET profile=excluded.profile,unseen=true,updated_at=now() RETURNING id`,
+        [
+          randomUUID(),
+          source.owner_id,
+          share.id,
+          JSON.stringify(selectedProfile(me.profile, card.fields)),
+          input.event,
+          input.place,
+          input.met_on,
+        ],
+      ),
+    db,
+  );
+  return row?.id ?? null;
+}
+export async function setFavorite(
+  userId: string,
+  id: string,
+  favorite: boolean,
+  db?: Database,
+) {
+  return asUser(
+    userId,
+    async (tx) => {
+      const rows = await tx.query<Connection>(
+        "UPDATE connections SET favorite=$1,updated_at=now() WHERE id=$2 AND owner_id=$3 RETURNING *",
+        [favorite, id, userId],
+      );
+      if (!rows.length) throw new HttpError(404, "Contact not found.");
+      return rows[0];
+    },
+    db,
+  );
+}
+export async function markSeen(userId: string, id: string, db?: Database) {
+  await asUser(
+    userId,
+    (tx) =>
+      tx.query(
+        "UPDATE connections SET unseen=false WHERE id=$1 AND owner_id=$2 AND unseen",
+        [id, userId],
+      ),
+    db,
+  );
+}
+// An album you make yourself is a name on each person in it. Saving sets exactly who is in it.
+export async function saveAlbum(
+  userId: string,
+  input: z.infer<typeof albumSchema>,
+  db?: Database,
+) {
+  return asUser(
+    userId,
+    async (tx) => {
+      if (input.previous_name && input.previous_name !== input.name)
+        await tx.query(
+          "UPDATE connections SET albums=array_remove(albums,$1) WHERE owner_id=$2 AND $1=ANY(albums)",
+          [input.previous_name, userId],
+        );
+      await tx.query(
+        "UPDATE connections SET albums=array_remove(albums,$1) WHERE owner_id=$2 AND $1=ANY(albums) AND NOT (id=ANY($3::uuid[]))",
+        [input.name, userId, input.connection_ids],
+      );
+      const rows = await tx.query<{ id: string }>(
+        "UPDATE connections SET albums=array_append(albums,$1) WHERE owner_id=$2 AND id=ANY($3::uuid[]) AND NOT ($1=ANY(albums)) RETURNING id",
+        [input.name, userId, input.connection_ids],
+      );
+      return { name: input.name, added: rows.length };
+    },
+    db,
+  );
+}
+export async function deleteAlbum(userId: string, name: string, db?: Database) {
+  await asUser(
+    userId,
+    (tx) =>
+      tx.query(
+        "UPDATE connections SET albums=array_remove(albums,$1) WHERE owner_id=$2 AND $1=ANY(albums)",
+        [name, userId],
+      ),
     db,
   );
 }

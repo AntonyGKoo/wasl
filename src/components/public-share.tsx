@@ -1,47 +1,90 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import {
+  ArrowLeftRight,
   ArrowRight,
   Check,
   Download,
   LoaderCircle,
+  LocateFixed,
   ShieldCheck,
 } from "lucide-react";
-import { api, today } from "@/lib/client";
-import type { PublicCard, User } from "@/lib/types";
+import {
+  api,
+  autoLocation,
+  lastMeeting,
+  locatePlace,
+  rememberMeeting,
+  today,
+} from "@/lib/client";
+import { kindLabels, type Card, type PublicCard, type User } from "@/lib/types";
 import { Avatar, Brand, Button, Notice, ProfileLinks } from "./ui";
+
 export function PublicShare({ token }: { token: string }) {
   const [card, setCard] = useState<PublicCard | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [myCards, setMyCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [event, setEvent] = useState("");
   const [place, setPlace] = useState("");
+  const [carried, setCarried] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [date, setDate] = useState(today());
+  const [sendBack, setSendBack] = useState(true);
+  const [backCard, setBackCard] = useState("");
   const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<{ id: string; swapped: boolean } | null>(
+    null,
+  );
   useEffect(() => {
     let active = true;
-    Promise.all([
-      api<{ card: PublicCard }>(`share/${token}`),
-      api<{ user: User | null }>("session"),
-    ])
-      .then(([a, b]) => {
-        if (active) {
-          setCard(a.card);
-          setUser(b.user);
-        }
-      })
-      .catch((e) => {
-        if (active) setError(e.message);
-      })
-      .finally(() => {
+    (async () => {
+      try {
+        const [a, b] = await Promise.all([
+          api<{ card: PublicCard }>(`share/${token}`),
+          api<{ user: User | null }>("session"),
+        ]);
+        let cards: Card[] = [];
+        if (b.user) cards = (await api<{ cards: Card[] }>("cards")).cards;
+        if (!active) return;
+        setCard(a.card);
+        setUser(b.user);
+        setMyCards(cards);
+        setBackCard(
+          (cards.find((c) => c.kind === "professional") || cards[0])?.id || "",
+        );
+        const last = lastMeeting();
+        if (last) {
+          setEvent(last.event);
+          setPlace(last.place);
+          setCarried(true);
+        } else if (b.user && autoLocation.get()) void fillLocation();
+      } catch (e) {
+        if (active) setError((e as Error).message);
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    })();
     return () => {
       active = false;
     };
   }, [token]);
+  async function fillLocation() {
+    setLocating(true);
+    setError("");
+    try {
+      setPlace(await locatePlace());
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLocating(false);
+    }
+  }
+  // your own card, opened from your own phone
+  const own = myCards.some((c) => c.token === token);
+  const first = card?.profile.name?.split(" ")[0] || "them";
+  const chosen = myCards.find((c) => c.id === backCard);
   async function save(e: FormEvent) {
     e.preventDefault();
     if (!user) {
@@ -51,13 +94,18 @@ export function PublicShare({ token }: { token: string }) {
     setBusy(true);
     setError("");
     try {
-      await api("connections/import", "POST", {
+      const result = await api<{
+        connection: { id: string };
+        swapped: boolean;
+      }>("connections/import", "POST", {
         token,
         event,
         place,
         met_on: date,
+        ...(sendBack && backCard ? { share_back_card_id: backCard } : {}),
       });
-      setSaved(true);
+      rememberMeeting(event, place);
+      setSaved({ id: result.connection.id, swapped: result.swapped });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -90,7 +138,11 @@ export function PublicShare({ token }: { token: string }) {
             <ShieldCheck size={20} />
           </div>
           <div className="public-card-content">
-            <Avatar name={card.profile.name || "Contact"} size="large" />
+            <Avatar
+              name={card.profile.name || "Contact"}
+              size="large"
+              photo={card.profile.photo}
+            />
             <h1>{card.profile.name}</h1>
             <p className="public-role">
               {[
@@ -111,69 +163,153 @@ export function PublicShare({ token }: { token: string }) {
             >
               <Download size={16} /> Save contact to phone
             </a>
-            <div className="form-divider">KEEP THE CONNECTION IN WASL</div>
-            {saved ? (
+            {own ? (
+              <div className="saved-connection">
+                <h3>This is your card</h3>
+                <p>
+                  This is what people see when they scan your code. Only the
+                  details you chose are here.
+                </p>
+                <a href="/?view=wallet" className="button primary">
+                  Back to my cards <ArrowRight size={15} />
+                </a>
+              </div>
+            ) : saved ? (
               <div className="saved-connection">
                 <span>
-                  <Check size={24} />
+                  {saved.swapped ? (
+                    <ArrowLeftRight size={24} />
+                  ) : (
+                    <Check size={24} />
+                  )}
                 </span>
-                <h3>A new connection. A story to keep.</h3>
+                <h3>
+                  {saved.swapped
+                    ? `You swapped cards with ${first}`
+                    : `${first} is in your network`}
+                </h3>
                 <p>
-                  Your contact is saved. Add a private note about your
-                  conversation.
+                  {saved.swapped
+                    ? `${first} now has your ${chosen?.label || ""} card, and ${first}'s card is in your network. Add what you talked about while you remember it.`
+                    : "Add what you talked about while you remember it. Only you can see it."}
                 </p>
-                <a href="/" className="button primary">
-                  Open your network <ArrowRight size={15} />
+                <a href={`/?contact=${saved.id}`} className="button primary">
+                  Open {first} <ArrowRight size={15} />
                 </a>
               </div>
             ) : (
-              <form onSubmit={save}>
-                {user ? (
-                  <>
-                    <label>
-                      <span>Where did you meet?</span>
-                      <input
-                        value={event}
-                        onChange={(e) => setEvent(e.target.value)}
-                        placeholder="Event or occasion"
-                        maxLength={200}
-                      />
-                    </label>
-                    <div className="form-grid">
+              <>
+                <div className="form-divider">
+                  {user ? "SAVE AND SWAP CARDS" : "KEEP THE CONNECTION IN WASL"}
+                </div>
+                <form onSubmit={save}>
+                  {user ? (
+                    <>
                       <label>
-                        <span>Place</span>
+                        <span>Where did you meet?</span>
                         <input
-                          value={place}
-                          onChange={(e) => setPlace(e.target.value)}
+                          value={event}
+                          onChange={(e) => {
+                            setEvent(e.target.value);
+                            setCarried(false);
+                          }}
+                          placeholder="Event or occasion"
                           maxLength={200}
-                          placeholder="City or venue"
                         />
                       </label>
-                      <label>
-                        <span>Meeting date</span>
-                        <input
-                          type="date"
-                          value={date}
-                          required
-                          onChange={(e) => setDate(e.target.value)}
-                        />
-                      </label>
-                    </div>
-                  </>
-                ) : (
-                  <p className="muted small-copy">
-                    Save this person with the context of how you met. Sign in or
-                    create an account to start.
-                  </p>
-                )}
-                {error ? <Notice error>{error}</Notice> : null}
-                <Button className="full" type="submit" busy={busy}>
-                  {user
-                    ? "Save to my Wasl network"
-                    : "Sign in to save this connection"}
-                  <ArrowRight size={16} />
-                </Button>
-              </form>
+                      {carried ? (
+                        <p className="field-hint">
+                          Same event as the last person you saved today.
+                        </p>
+                      ) : null}
+                      <div className="form-grid">
+                        <label>
+                          <span>Place</span>
+                          <span className="input-with-action">
+                            <input
+                              value={place}
+                              onChange={(e) => setPlace(e.target.value)}
+                              maxLength={200}
+                              placeholder="City or venue"
+                            />
+                            <button
+                              type="button"
+                              className="icon-button"
+                              aria-label="Use my location"
+                              title="Use my location"
+                              disabled={locating}
+                              onClick={() => void fillLocation()}
+                            >
+                              {locating ? (
+                                <LoaderCircle size={16} className="spin" />
+                              ) : (
+                                <LocateFixed size={16} />
+                              )}
+                            </button>
+                          </span>
+                        </label>
+                        <label>
+                          <span>Meeting date</span>
+                          <input
+                            type="date"
+                            value={date}
+                            required
+                            onChange={(e) => setDate(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                      {myCards.length ? (
+                        <div className="send-back">
+                          <label className="checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={sendBack}
+                              onChange={(e) => setSendBack(e.target.checked)}
+                            />
+                            <span>
+                              Send {first} my card too, so we both have each
+                              other
+                            </span>
+                          </label>
+                          {sendBack && myCards.length > 1 ? (
+                            <label>
+                              <span>Which card?</span>
+                              <select
+                                value={backCard}
+                                onChange={(e) => setBackCard(e.target.value)}
+                              >
+                                {myCards.map((c) => (
+                                  <option key={c.id} value={c.id}>
+                                    {c.label} ({kindLabels[c.kind]})
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p className="muted small-copy">
+                          Make a card in Wasl to swap cards next time.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="muted small-copy">
+                      Save {first} with where you met, and send your own card
+                      back. Sign in or create a free account to start.
+                    </p>
+                  )}
+                  {error ? <Notice error>{error}</Notice> : null}
+                  <Button className="full" type="submit" busy={busy}>
+                    {!user
+                      ? "Sign in to save and swap cards"
+                      : sendBack && backCard
+                        ? "Swap cards"
+                        : "Save to my Wasl network"}
+                    <ArrowRight size={16} />
+                  </Button>
+                </form>
+              </>
             )}
             <p className="public-privacy">
               <ShieldCheck size={13} /> This card only includes details its

@@ -1,7 +1,9 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight,
+  Mic,
+  Square,
   Search,
   ShieldCheck,
   Sparkles,
@@ -11,7 +13,9 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/client";
 import type { Capabilities, Connection, Profile, SearchHit } from "@/lib/types";
+import type { OcrLine } from "@/lib/card-text";
 import { Avatar, Button, Modal, Notice } from "./ui";
+import { micProblem, speechApi, type Recognizer } from "./voice-memory";
 export function RecallView({
   capabilities,
   onOpen,
@@ -22,12 +26,58 @@ export function RecallView({
   contactCount: number;
 }) {
   const [query, setQuery] = useState("");
-  const [ai, setAi] = useState(false);
+  // with AI connected, search by meaning is on by default (it can be switched off)
+  const [ai, setAi] = useState(capabilities.ai);
   const [busy, setBusy] = useState(false);
   const [hits, setHits] = useState<SearchHit[] | null>(null);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [resultMode, setResultMode] = useState("keyword");
+  const [listening, setListening] = useState(false);
+  const [canSpeak, setCanSpeak] = useState(false);
+  const recognizer = useRef<Recognizer | null>(null);
+  useEffect(() => {
+    setCanSpeak(!!speechApi());
+    return () => recognizer.current?.stop();
+  }, []);
+  // ask by voice: what's said becomes the search, then it runs
+  function listen() {
+    const Speech = speechApi();
+    if (!Speech) return;
+    if (listening) {
+      recognizer.current?.stop();
+      return;
+    }
+    setError("");
+    const rec = new Speech();
+    rec.lang = navigator.language || "en-US";
+    rec.continuous = false;
+    rec.interimResults = true;
+    let heard = "";
+    rec.onresult = (e) => {
+      let text = "";
+      for (let i = 0; i < e.results.length; i++)
+        text += e.results[i][0].transcript;
+      heard = text.trim();
+      setQuery(heard);
+    };
+    rec.onerror = (e) => {
+      const problem = micProblem(e.error);
+      if (problem) setError(problem.replace("Type a note", "Type your search"));
+    };
+    rec.onend = () => {
+      setListening(false);
+      recognizer.current = null;
+      if (heard.length >= 2) void search(undefined, heard);
+    };
+    recognizer.current = rec;
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      setError("The microphone couldn't start. Type your search instead.");
+    }
+  }
   async function search(e?: FormEvent, value = query) {
     e?.preventDefault();
     if (value.trim().length < 2) return;
@@ -77,9 +127,29 @@ export function RecallView({
               maxLength={400}
               required
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="The software engineer I met at Web Summit…"
+              placeholder={
+                listening
+                  ? "Listening… say who you're looking for"
+                  : "The software engineer I met at Web Summit…"
+              }
             />
-            <Button type="submit" busy={busy} aria-label="Find connections">
+            {canSpeak ? (
+              <button
+                type="button"
+                className={`icon-button voice-search ${listening ? "on" : ""}`}
+                aria-label={listening ? "Stop listening" : "Ask by voice"}
+                aria-pressed={listening}
+                onClick={listen}
+              >
+                {listening ? <Square size={16} /> : <Mic size={18} />}
+              </button>
+            ) : null}
+            <Button
+              type="submit"
+              busy={busy}
+              disabled={query.trim().length < 2}
+              aria-label="Find connections"
+            >
               <ArrowRight size={19} />
             </Button>
           </div>
@@ -165,7 +235,10 @@ export function RecallView({
                 key={hit.connection.id}
                 onClick={() => onOpen(hit.connection)}
               >
-                <Avatar name={hit.connection.profile.name || "Contact"} />
+                <Avatar
+                  name={hit.connection.profile.name || "Contact"}
+                  photo={hit.connection.profile.photo}
+                />
                 <div>
                   <h3>{hit.connection.profile.name}</h3>
                   <p className="muted">
@@ -206,10 +279,13 @@ export function ScanModal({
   capabilities,
   onClose,
   onDraft,
+  own = false,
 }: {
   capabilities: Capabilities;
   onClose: () => void;
-  onDraft: (profile: Profile) => void;
+  onDraft: (profile: Profile, byAi: boolean) => void;
+  // scanning your own card to fill your profile
+  own?: boolean;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState("");
@@ -218,6 +294,25 @@ export function ScanModal({
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"photo" | "text">("photo");
   const [progress, setProgress] = useState("");
+  // Card text from the phone or a paste: AI fills the fields when connected; the rules here
+  // (which also know how big each line was printed) are the fallback.
+  async function draftFrom(cardText: string, lines?: OcrLine[]) {
+    const { parseCardText } = await import("@/lib/card-text");
+    if (capabilities.ai) {
+      setProgress("Wasl's AI is reading the details…");
+      try {
+        const result = await api<{ profile: Profile; mode: string }>(
+          "scan-text",
+          "POST",
+          { text: cardText.slice(0, 16000) },
+        );
+        if (result.mode === "ai") return onDraft(result.profile, true);
+      } catch {
+        // fall back to the rules below
+      }
+    }
+    onDraft(parseCardText(cardText, lines), false);
+  }
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -226,10 +321,7 @@ export function ScanModal({
       if (tab === "photo" && !capabilities.ocr) {
         // no cloud OCR configured: read the card on this phone instead
         if (!file) throw new Error("Take or choose a photo of the card first.");
-        const [{ readCardPhoto }, { parseCardText }] = await Promise.all([
-          import("@/lib/ocr"),
-          import("@/lib/card-text"),
-        ]);
+        const { readCardPhoto } = await import("@/lib/ocr");
         const read = await readCardPhoto(file, (status, share) =>
           setProgress(`${status} ${Math.round(share * 100)}%`),
         );
@@ -237,21 +329,20 @@ export function ScanModal({
           throw new Error(
             "Couldn't read the card. Try again in good light with the card filling the photo, or paste its text.",
           );
-        onDraft(parseCardText(read.text, read.lines));
+        await draftFrom(read.text, read.lines);
       } else if (tab === "photo") {
         if (!file) throw new Error("Choose a card image first.");
         const form = new FormData();
         form.set("image", file);
         form.set("consent", String(consent));
-        const result = await api<{ profile: Profile; text: string }>(
-          "scan",
-          "POST",
-          form,
-        );
-        onDraft(result.profile);
+        const result = await api<{
+          profile: Profile;
+          text: string;
+          mode: string;
+        }>("scan", "POST", form);
+        onDraft(result.profile, result.mode === "ocr-ai");
       } else {
-        const { parseCardText } = await import("@/lib/card-text");
-        onDraft(parseCardText(text));
+        await draftFrom(text);
       }
     } catch (e) {
       setError((e as Error).message);
@@ -262,8 +353,12 @@ export function ScanModal({
   }
   return (
     <Modal
-      title="Capture a connection"
-      description="Review every detail before adding it to your network."
+      title={own ? "Fill your profile from your card" : "Capture a connection"}
+      description={
+        own
+          ? "Take a photo of your business card. You check every detail before saving."
+          : "Review every detail before adding it to your network."
+      }
       onClose={onClose}
     >
       <div className="auth-tabs">
@@ -335,7 +430,9 @@ export function ScanModal({
                 </label>
                 <p className="muted small-copy">
                   {progress ||
-                    "Wasl reads the card on this phone. The photo never leaves it, and you check every detail before saving."}
+                    (capabilities.ai
+                      ? "Wasl reads the card on this phone, so the photo never leaves it. Wasl's AI then sorts the words into fields, and you check every detail before saving."
+                      : "Wasl reads the card on this phone. The photo never leaves it, and you check every detail before saving.")}
                 </p>
               </>
             )}
@@ -356,8 +453,9 @@ export function ScanModal({
               rows={7}
             />
             <small id="card-text-help" className="muted">
-              This option runs locally. You can add missing details on the next
-              screen.
+              {capabilities.ai
+                ? "Wasl's AI sorts the text into fields. You can fix and add details on the next screen."
+                : "This option runs locally. You can add missing details on the next screen."}
             </small>
           </div>
         )}
@@ -367,7 +465,8 @@ export function ScanModal({
             Cancel
           </Button>
           <Button type="submit" busy={busy}>
-            Review contact details <ArrowRight size={15} />
+            {own ? "Review my details" : "Review contact details"}{" "}
+            <ArrowRight size={15} />
           </Button>
         </div>
       </form>

@@ -10,7 +10,7 @@ type SpeechEvent = {
   resultIndex: number;
   results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>;
 };
-type Recognizer = {
+export type Recognizer = {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
@@ -20,14 +20,14 @@ type Recognizer = {
   start(): void;
   stop(): void;
 };
-const speechApi = () => {
+export const speechApi = () => {
   const w = window as unknown as {
     SpeechRecognition?: new () => Recognizer;
     webkitSpeechRecognition?: new () => Recognizer;
   };
   return w.SpeechRecognition || w.webkitSpeechRecognition;
 };
-const micProblem = (code: string) =>
+export const micProblem = (code: string) =>
   code === "not-allowed" || code === "service-not-allowed"
     ? "Microphone access is blocked. Allow it for this site in your phone's settings, or type a note instead."
     : code === "network"
@@ -50,6 +50,7 @@ export function VoiceMemory({
   const [seconds, setSeconds] = useState(0);
   const [points, setPoints] = useState("");
   const [transcript, setTranscript] = useState("");
+  const [byAi, setByAi] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const heard = useRef<string[]>([]);
@@ -153,14 +154,16 @@ export function VoiceMemory({
     }
     setTranscript(text);
     try {
-      const result = await api<{ points: string[]; warning: string }>(
-        "summarize",
-        "POST",
-        { transcript: text },
-      );
+      const result = await api<{
+        points: string[];
+        warning: string;
+        mode: string;
+      }>("summarize", "POST", { transcript: text });
       setPoints(result.points.map((p) => `• ${p}`).join("\n"));
+      setByAi(result.mode === "ai");
       setMessage(result.warning);
     } catch (e) {
+      setByAi(false);
       setPoints(text);
       setMessage((e as Error).message);
     }
@@ -243,7 +246,10 @@ export function VoiceMemory({
       {phase === "review" ? (
         <div className="voice-panel">
           <label>
-            <span>Key points · check and edit before saving</span>
+            <span>
+              {byAi ? "Key points by Wasl's AI" : "Key points"} · check and edit
+              before saving
+            </span>
             <textarea
               value={points}
               onChange={(e) => setPoints(e.target.value)}

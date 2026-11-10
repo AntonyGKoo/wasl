@@ -2,14 +2,18 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { asUser, migrate, openDatabase } from "../src/lib/db";
-import { blankProfile, type User } from "../src/lib/types";
+import { blankProfile, type Connection, type User } from "../src/lib/types";
 import {
+  deleteAlbum,
   getConnection,
   importCard,
   publicCard,
+  saveAlbum,
   saveCard,
   saveNote,
+  setFavorite,
   shareCard,
+  swapBack,
 } from "../src/server/network";
 test(
   "hosted PostgreSQL driver, vector extension and RLS match local behavior",
@@ -88,6 +92,50 @@ test(
         ).length,
         0,
       );
+      // the receiver sends a card back: it lands in the owner's network, marked New
+      const back = await saveCard(
+        receiver,
+        { label: "Club", kind: "team", color: "violet", fields: ["name"] },
+        undefined,
+        db,
+      );
+      const swap = {
+        token,
+        event: "Career Fair",
+        place: "Doha",
+        met_on: "2026-10-24",
+        share_back_card_id: back.id,
+      };
+      assert.ok(await swapBack(receiver.id, swap, db));
+      assert.ok(await swapBack(receiver.id, swap, db));
+      const ownerNetwork = await asUser(
+        owner.id,
+        (tx) => tx.query<Connection>("SELECT * FROM connections"),
+        db,
+      );
+      assert.equal(ownerNetwork.length, 1);
+      assert.equal(ownerNetwork[0].origin, "swap");
+      assert.equal(ownerNetwork[0].unseen, true);
+      assert.equal(ownerNetwork[0].event, "Career Fair");
+      const id = ownerNetwork[0].id;
+      assert.equal((await setFavorite(owner.id, id, true, db)).favorite, true);
+      // album membership is set with a uuid[] parameter through the hosted driver
+      await saveAlbum(
+        owner.id,
+        { name: "Fair friends", connection_ids: [id] },
+        db,
+      );
+      await saveAlbum(
+        owner.id,
+        { name: "Fair", previous_name: "Fair friends", connection_ids: [id] },
+        db,
+      );
+      assert.deepEqual((await getConnection(owner.id, id, db)).albums, [
+        "Fair",
+      ]);
+      await saveAlbum(owner.id, { name: "Fair", connection_ids: [] }, db);
+      assert.deepEqual((await getConnection(owner.id, id, db)).albums, []);
+      await deleteAlbum(owner.id, "Fair", db);
     } finally {
       await db.query("DELETE FROM users WHERE id=ANY($1::uuid[])", [
         [owner.id, receiver.id],

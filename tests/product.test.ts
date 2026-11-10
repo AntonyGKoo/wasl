@@ -1,0 +1,450 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { handleApi } from "../src/server/api";
+import { parseContactText, readContactCode } from "../src/lib/contact-code";
+import { lexicalRecall } from "../src/server/recall";
+import { blankProfile, type Connection } from "../src/lib/types";
+
+// a 1×1 JPEG, the smallest real photo
+const PHOTO =
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==";
+
+test("people swap cards both ways, with albums, favorites, password change and account deletion", async () => {
+  process.env.WASL_DATA_DIR = await mkdtemp(
+    path.join(tmpdir(), "wasl-product-"),
+  );
+  const origin = "http://localhost:3000";
+  const call = async (
+    route: string,
+    method = "GET",
+    body?: unknown,
+    cookie = "",
+  ) => {
+    const response = await handleApi(
+      new Request(`${origin}/api/${route}`, {
+        method,
+        headers: { origin, "content-type": "application/json", cookie },
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    );
+    return {
+      status: response.status,
+      headers: response.headers,
+      data: await response.json(),
+    };
+  };
+  const register = async (name: string, email: string) => {
+    const r = await call("auth/register", "POST", {
+      name,
+      email,
+      password: "test-password-123",
+    });
+    assert.equal(r.status, 201);
+    return r.headers.get("set-cookie")!.split(";")[0];
+  };
+  const alice = await register("Alice Haddad", "alice@example.test");
+  const bob = await register("Bob Karim", "bob@example.test");
+
+  // every new account starts with a Professional card that can share a photo
+  const aliceCards = (await call("cards", "GET", undefined, alice)).data.cards;
+  assert.equal(aliceCards.length, 1);
+  assert.equal(aliceCards[0].kind, "professional");
+  assert.ok(aliceCards[0].fields.includes("photo"));
+  const bobCard = (await call("cards", "GET", undefined, bob)).data.cards[0];
+
+  // a profile photo is saved and only real image data is accepted
+  const profile = {
+    ...blankProfile,
+    name: "Alice Haddad",
+    title: "Product designer",
+    company: "Sidra Studio",
+    email: "alice@example.test",
+  };
+  assert.equal(
+    (
+      await call(
+        "profile",
+        "PUT",
+        { ...profile, photo: "javascript:alert(1)" },
+        alice,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await call("profile", "PUT", { ...profile, photo: PHOTO }, alice)).status,
+    200,
+  );
+  await call(
+    "profile",
+    "PUT",
+    {
+      ...blankProfile,
+      name: "Bob Karim",
+      title: "Founder",
+      company: "Falcon Labs",
+    },
+    bob,
+  );
+
+  // Alice shows her code; Bob saves her card and sends his back in the same tap
+  const token = (
+    await call(`cards/${aliceCards[0].id}/share`, "POST", {}, alice)
+  ).data.token;
+  const publicCard = (await call(`share/${token}`)).data.card;
+  assert.equal(publicCard.profile.photo, PHOTO);
+  const swap = await call(
+    "connections/import",
+    "POST",
+    {
+      token,
+      event: "Web Summit Qatar",
+      place: "Doha",
+      met_on: "2026-11-10",
+      share_back_card_id: bobCard.id,
+    },
+    bob,
+  );
+  assert.equal(swap.status, 201);
+  assert.equal(swap.data.swapped, true);
+  assert.equal(swap.data.connection.origin, "link");
+  // Bob can't send someone else's card
+  const stranger = await register("Sam", "sam@example.test");
+  const samCard = (await call("cards", "GET", undefined, stranger)).data
+    .cards[0];
+  assert.equal(
+    (
+      await call(
+        "connections/import",
+        "POST",
+        { token, met_on: "2026-11-10", share_back_card_id: samCard.id },
+        bob,
+      )
+    ).status,
+    404,
+  );
+
+  // Bob is now in Alice's network, marked New, with where they met
+  let aliceNetwork: Connection[] = (
+    await call("connections", "GET", undefined, alice)
+  ).data.connections;
+  assert.equal(aliceNetwork.length, 1);
+  const bobForAlice = aliceNetwork[0];
+  assert.equal(bobForAlice.profile.name, "Bob Karim");
+  assert.equal(bobForAlice.profile.company, "Falcon Labs");
+  assert.equal(bobForAlice.origin, "swap");
+  assert.equal(bobForAlice.unseen, true);
+  assert.equal(bobForAlice.event, "Web Summit Qatar");
+  // swapping again doesn't add Bob twice
+  await call(
+    "connections/import",
+    "POST",
+    { token, met_on: "2026-11-10", share_back_card_id: bobCard.id },
+    bob,
+  );
+  assert.equal(
+    (await call("connections", "GET", undefined, alice)).data.connections
+      .length,
+    1,
+  );
+  // opening Bob clears New
+  await call(`connections/${bobForAlice.id}`, "GET", undefined, alice);
+  aliceNetwork = (await call("connections", "GET", undefined, alice)).data
+    .connections;
+  assert.equal(aliceNetwork[0].unseen, false);
+  // Bob's later profile changes reach Alice through his card
+  await call(
+    "profile",
+    "PUT",
+    {
+      ...blankProfile,
+      name: "Bob Karim",
+      title: "CEO",
+      company: "Falcon Labs",
+    },
+    bob,
+  );
+  const refreshed = await call(
+    `connections/${bobForAlice.id}/refresh`,
+    "POST",
+    {},
+    alice,
+  );
+  assert.equal(refreshed.data.connection.profile.title, "CEO");
+
+  // favorites and albums
+  const fav = await call(
+    `connections/${bobForAlice.id}/favorite`,
+    "POST",
+    { favorite: true },
+    alice,
+  );
+  assert.equal(fav.data.connection.favorite, true);
+  await call(
+    "albums",
+    "PUT",
+    { name: "Founders", connection_ids: [bobForAlice.id] },
+    alice,
+  );
+  aliceNetwork = (await call("connections", "GET", undefined, alice)).data
+    .connections;
+  assert.deepEqual(aliceNetwork[0].albums, ["Founders"]);
+  await call(
+    "albums",
+    "PUT",
+    {
+      name: "Startup founders",
+      previous_name: "Founders",
+      connection_ids: [bobForAlice.id],
+    },
+    alice,
+  );
+  aliceNetwork = (await call("connections", "GET", undefined, alice)).data
+    .connections;
+  assert.deepEqual(aliceNetwork[0].albums, ["Startup founders"]);
+  // another person's id can't be put in Alice's album
+  const bobNetwork = (await call("connections", "GET", undefined, bob)).data
+    .connections;
+  await call(
+    "albums",
+    "PUT",
+    {
+      name: "Startup founders",
+      connection_ids: [bobForAlice.id, bobNetwork[0].id],
+    },
+    alice,
+  );
+  assert.deepEqual(
+    (await call("connections", "GET", undefined, bob)).data.connections[0]
+      .albums,
+    [],
+  );
+  await call(
+    `albums/${encodeURIComponent("Startup founders")}`,
+    "DELETE",
+    undefined,
+    alice,
+  );
+  aliceNetwork = (await call("connections", "GET", undefined, alice)).data
+    .connections;
+  assert.deepEqual(aliceNetwork[0].albums, []);
+
+  // a Team card
+  assert.equal(
+    (
+      await call(
+        "cards",
+        "POST",
+        {
+          label: "CMU-Q robotics",
+          kind: "team",
+          color: "violet",
+          fields: ["name", "email"],
+        },
+        alice,
+      )
+    ).status,
+    201,
+  );
+
+  // password change: wrong password refused, then other sessions end
+  assert.equal(
+    (
+      await call(
+        "account/password",
+        "POST",
+        { current: "wrong-password", next: "new-password-456" },
+        alice,
+      )
+    ).status,
+    400,
+  );
+  const changed = await call(
+    "account/password",
+    "POST",
+    { current: "test-password-123", next: "new-password-456" },
+    alice,
+  );
+  assert.equal(changed.status, 200);
+  assert.equal(
+    (await call("connections", "GET", undefined, alice)).status,
+    401,
+  );
+  const aliceAgain = changed.headers.get("set-cookie")!.split(";")[0];
+  assert.equal(
+    (await call("connections", "GET", undefined, aliceAgain)).status,
+    200,
+  );
+  assert.equal(
+    (
+      await call("auth/login", "POST", {
+        email: "alice@example.test",
+        password: "new-password-456",
+      })
+    ).status,
+    200,
+  );
+
+  // deleting the account removes everything; Bob keeps his own copy of Alice's card
+  assert.equal(
+    (await call("account", "DELETE", { password: "nope" }, aliceAgain)).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call(
+        "account",
+        "DELETE",
+        { password: "new-password-456" },
+        aliceAgain,
+      )
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await call("connections", "GET", undefined, aliceAgain)).status,
+    401,
+  );
+  assert.equal(
+    (
+      await call("auth/login", "POST", {
+        email: "alice@example.test",
+        password: "new-password-456",
+      })
+    ).status,
+    401,
+  );
+  assert.equal((await call(`share/${token}`)).status, 404);
+  const bobAfter = (await call("connections", "GET", undefined, bob)).data
+    .connections;
+  assert.equal(bobAfter.length, 1);
+  assert.equal(bobAfter[0].profile.name, "Alice Haddad");
+});
+
+test("QR codes on paper cards become contacts; Wasl codes open the card", () => {
+  const vcard = parseContactText(
+    "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Ali;Mariam;;;\r\nFN:Mariam Ali\r\nORG:Pearl Labs;Engineering\r\nTITLE:Software engineer\r\nTEL;TYPE=CELL:+974 5571 2290\r\nEMAIL:Mariam@PearlLabs.example\r\nURL:https://www.linkedin.com/in/mariamali\r\nEND:VCARD",
+  );
+  assert.equal(vcard?.name, "Mariam Ali");
+  assert.equal(vcard?.company, "Pearl Labs");
+  assert.equal(vcard?.title, "Software engineer");
+  assert.equal(vcard?.phone, "+974 5571 2290");
+  assert.equal(vcard?.email, "mariam@pearllabs.example");
+  assert.equal(vcard?.linkedin, "https://www.linkedin.com/in/mariamali");
+  const mecard = parseContactText(
+    "MECARD:N:Omar,Yousef;TEL:+97455550000;EMAIL:yousef@example.com;URL:falcon.example;;",
+  );
+  assert.equal(mecard?.name, "Yousef Omar");
+  assert.equal(mecard?.website, "https://falcon.example");
+  const token = "a".repeat(43);
+  assert.deepEqual(
+    readContactCode(
+      `https://wasl-sable.vercel.app/c/${token}`,
+      "http://localhost:3000",
+    ),
+    {
+      kind: "wasl",
+      path: `/c/${token}`,
+    },
+  );
+  assert.equal(
+    readContactCode("https://example.com/promo", "http://localhost:3000").kind,
+    "link",
+  );
+  assert.equal(
+    readContactCode("just some words", "http://localhost:3000").kind,
+    "other",
+  );
+});
+
+test("search matches what was saved, not the names of the fields", () => {
+  const contact = {
+    id: "c1",
+    owner_id: "o",
+    profile: {
+      ...blankProfile,
+      name: "Lina Farouk",
+      company: "Falcon Analytics",
+      photo: PHOTO,
+    },
+    tags: [],
+    albums: [],
+    origin: "",
+    unseen: false,
+    event: "Career fair",
+    place: "Doha",
+    met_on: "2026-11-10",
+    favorite: false,
+    source_share_id: null,
+    created_at: "",
+    updated_at: "",
+    version: 1,
+    notes: [],
+  } as Connection;
+  // "company", "meeting" and "date" are labels, not memories
+  assert.equal(lexicalRecall("company meeting date", [contact]).length, 0);
+  const hits = lexicalRecall("falcon", [contact]);
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].evidence[0], "Company: Falcon Analytics");
+  // the photo is never searched
+  assert.equal(lexicalRecall("base64 jpeg", [contact]).length, 0);
+});
+
+test("password guessing is limited per account, not for everyone on the same Wi-Fi", async () => {
+  process.env.WASL_DATA_DIR ||= await mkdtemp(
+    path.join(tmpdir(), "wasl-limit-"),
+  );
+  const origin = "http://localhost:3000";
+  const post = (route: string, body: unknown) =>
+    handleApi(
+      new Request(`${origin}/api/${route}`, {
+        method: "POST",
+        headers: { origin, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    );
+  for (const name of ["Dana", "Eli"])
+    assert.equal(
+      (
+        await post("auth/register", {
+          name,
+          email: `${name.toLowerCase()}@limit.test`,
+          password: "right-password-123",
+        })
+      ).status,
+      201,
+    );
+  for (let i = 0; i < 10; i++)
+    assert.equal(
+      (
+        await post("auth/login", {
+          email: "dana@limit.test",
+          password: "wrong-password-0",
+        })
+      ).status,
+      401,
+    );
+  // the eleventh try on Dana's account is stopped, even with the right password
+  assert.equal(
+    (
+      await post("auth/login", {
+        email: "dana@limit.test",
+        password: "right-password-123",
+      })
+    ).status,
+    429,
+  );
+  // someone else on the same connection can still sign in
+  assert.equal(
+    (
+      await post("auth/login", {
+        email: "eli@limit.test",
+        password: "right-password-123",
+      })
+    ).status,
+    200,
+  );
+});

@@ -11,7 +11,12 @@ export const profileFields = [
   "bio",
 ] as const;
 export type ProfileField = (typeof profileFields)[number];
-export type Profile = Record<ProfileField, string>;
+// a small profile photo (data URL, about 10 KB) travels with the profile but is not a text field:
+// it is never searched, sent to AI or read from a card
+export type Profile = Record<ProfileField, string> & { photo?: string };
+// what a card can share: the text fields plus the photo
+export const cardFields = [...profileFields, "photo"] as const;
+export type CardField = (typeof cardFields)[number];
 export const blankProfile: Profile = Object.fromEntries(
   profileFields.map((f) => [f, ""]),
 ) as Profile;
@@ -27,6 +32,26 @@ export const fieldLabels: Record<ProfileField, string> = {
   website: "Website",
   bio: "A little about you",
 };
+export const cardFieldLabels: Record<CardField, string> = {
+  ...fieldLabels,
+  photo: "Profile photo",
+};
+export const cardKinds = ["professional", "event", "social", "team"] as const;
+export const kindLabels: Record<Card["kind"], string> = {
+  professional: "Professional",
+  event: "Event",
+  social: "Social",
+  team: "Team",
+};
+// one tap tags offered when saving someone (your own tags are offered too)
+export const suggestedTags = [
+  "Hiring",
+  "Intro offered",
+  "Follow up",
+  "Mentor",
+  "Investor",
+  "Co-founder",
+];
 export type User = {
   id: string;
   name: string;
@@ -38,9 +63,9 @@ export type Card = {
   id: string;
   owner_id: string;
   label: string;
-  kind: "professional" | "social" | "event";
+  kind: (typeof cardKinds)[number];
   color: "ocean" | "violet" | "coral" | "ink";
-  fields: ProfileField[];
+  fields: CardField[];
   created_at: string;
   token?: string | null;
   profile?: Partial<Profile>;
@@ -54,6 +79,9 @@ export type Connection = {
   place: string;
   met_on: string;
   favorite: boolean;
+  albums: string[];
+  origin: "" | "scan" | "link" | "swap";
+  unseen: boolean;
   source_share_id: string | null;
   created_at: string;
   updated_at: string;
