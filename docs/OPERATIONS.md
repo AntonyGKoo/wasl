@@ -35,7 +35,7 @@ Per-user and project-wide call limits are stored in PostgreSQL and configured in
 
 1. Provision PostgreSQL with the `vector` extension, such as a Supabase project.
 2. Set the server-only `DATABASE_URL` in `.env.local` to an administrative connection compatible with the host or Supabase pooler.
-3. Run `npm run db:migrate`. The migration script loads Next.js environment files and applies every `db/NNN_*.sql` file in order, once each: `001_initial.sql` (extension, tables, indexes, policies, restricted `wasl_member` role) and `002_product.sql` (Team cards, albums, two-way swaps). Hosted migrations are explicit; only the local fallback migrates automatically.
+3. Run `npm run db:migrate`. The migration script loads Next.js environment files and applies every `db/NNN_*.sql` file in order, once each: `001_initial.sql` (extension, tables, indexes, policies, restricted `wasl_member` role), `002_product.sql` (Team cards, albums, two-way swaps) and `003_lock_migration_log.sql` (keeps the list of applied migrations away from Supabase's public API roles). Hosted migrations are explicit; only the local fallback migrates automatically.
 4. Configure `DATABASE_URL`, an HTTPS `APP_URL`, and optional provider credentials on the hosting platform.
 5. Deploy as a Next.js Node application. Build: `npm run build`; ordinary Node startup: `npm start`.
 6. Verify signup, selected-field sharing, private notes, recall, revocation, and logout using two accounts on the deployed domain.

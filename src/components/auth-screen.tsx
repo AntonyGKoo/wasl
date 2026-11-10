@@ -77,16 +77,16 @@ export function AuthScreen({
           </p>
           <div className="auth-features">
             <div>
-              <Layers size={20} />
-              <span>Share the right side of you</span>
-            </div>
-            <div>
               <LockKeyhole size={20} />
-              <span>Keep the context, privately</span>
+              <span>Keep the story of every meeting, privately</span>
             </div>
             <div>
               <Sparkles size={20} />
               <span>Find people by what you remember</span>
+            </div>
+            <div>
+              <Layers size={20} />
+              <span>Swap cards in one scan</span>
             </div>
           </div>
         </div>

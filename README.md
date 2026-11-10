@@ -1,6 +1,6 @@
 # Wasl · وصل
 
-**Never forget who you met, or why it mattered.** Wasl is a digital business card with a memory: share the right card in one scan, keep the story of every meeting, and find people later by what you remember, not by their name.
+**Never forget who you met, or why it mattered.** You meet 50 people at an event and remember 5. Wasl keeps the story of every meeting and finds people later by what you remember, not by their name. Swapping cards takes one scan.
 
 - **Live app:** https://wasl-sable.vercel.app. Works in any phone or laptop browser and installs like an app from its sign-in screen (iPhone: Share → Add to Home Screen).
 - **Clickable mockup:** https://antonygkoo.github.io/wasl-prototype/ (sample people, timed user-test mode; source in `public/mockup/index.html`).
@@ -31,7 +31,7 @@ src/app          pages (/ and the shared card page /c/[token]) and the API route
 src/components   screens: network, cards, recall, profile, settings, shared card, QR scanner, today's people
 src/server       API: accounts, cards and swaps, network and albums, recall, card reading, key points, places
 src/lib          shared code: database, auth, validation, card text, QR codes, photos
-db/              SQL migrations, applied in order (001 schema and security, 002 product features)
+db/              SQL migrations, applied in order (001 schema and security, 002 product features, 003 locks the migration log)
 public/          app icons and logo; the clickable mockup (public/mockup)
 scripts/         dev server, OCR files, migrations, connecting the database and OpenAI, mockup screenshots
 tests/           server and HTTP tests (*.test.ts), browser tests (e2e/), sample card photos (fixtures/)

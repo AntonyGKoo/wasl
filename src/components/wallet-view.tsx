@@ -69,9 +69,12 @@ export function WalletView({
     <>
       <section className="page-intro">
         <div>
-          <span className="eyebrow">ONE YOU. DIFFERENT CONTEXTS.</span>
+          <span className="eyebrow">SWAP CARDS IN ONE SCAN</span>
           <h1>Your card wallet</h1>
-          <p>Choose the right identity for the moment.</p>
+          <p>
+            Pick the card that fits the moment. They scan it, and you both have
+            each other.
+          </p>
         </div>
         <Button onClick={() => setEditing(null)}>
           <Plus size={17} /> Create a card
