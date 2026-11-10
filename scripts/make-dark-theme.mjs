@@ -2,8 +2,8 @@
 // dark counterpart that keeps its hue. Backgrounds go dark, text goes light, borders go dim, and
 // colored cards and buttons keep their color. Run it again after changing colors in globals.css:
 //   node scripts/make-dark-theme.mjs
-// Rules written by hand for the dark theme (":root[data-theme=dark] …" in globals.css) win over
-// these and are left alone, and so are custom properties (the dark tokens are set by hand).
+// The dark tokens (":root[data-theme=dark]" in globals.css) and the few rules tuned by hand
+// (src/app/theme-dark-tuning.css, loaded last) are written by hand; custom properties are skipped.
 import { readFile, writeFile } from "node:fs/promises";
 import prettier from "prettier";
 import path from "node:path";
@@ -117,7 +117,7 @@ function darkBackground(c, raw) {
   if (c[3] < 1) {
     // frosted white bars (top bar, tab bar) become frosted dark ones; scrims and the
     // see-through highlights on colored cards already work on dark
-    if (l >= 0.9 && c[3] >= 0.5) return [...CARD.slice(0, 3), c[3]];
+    if (l >= 0.9 && c[3] >= 0.3) return [...CARD.slice(0, 3), c[3]];
     return c;
   }
   if (PAGE_LIGHT.includes(raw.toLowerCase())) return parseColor("#111418");
@@ -236,16 +236,20 @@ function parse(css) {
   }
   return block();
 }
+// :where() adds no weight, so each dark rule beats only its own light twin (it loads later),
+// exactly like the light rules relate to each other
 const scope = (selector) =>
   selector
     .split(",")
     .map((s) => s.trim())
     .map((s) =>
-      s === ":root" || s === "html"
+      s === ":root"
         ? DARK
-        : s.startsWith("html")
-          ? s.replace(/^html/, `html[data-theme="dark"]`)
-          : `${DARK} ${s}`,
+        : s === "html"
+          ? 'html:where([data-theme="dark"])'
+          : s.startsWith("html")
+            ? s.replace(/^html/, 'html:where([data-theme="dark"])')
+            : `:where(${DARK}) ${s}`,
     )
     .join(",\n");
 function emit(nodes, indent = "") {
@@ -265,7 +269,9 @@ function emit(nodes, indent = "") {
       const value = part.slice(at + 1).trim();
       if (!prop || prop.startsWith("--")) continue;
       const next = darken(prop, value);
-      if (next !== value) decls.push(`${indent}  ${prop}: ${next};`);
+      // colors from tokens are repeated too, so the dark rules keep the light rules' order
+      if (next !== value || (kind(prop) && value.includes("var(--")))
+        decls.push(`${indent}  ${prop}: ${next};`);
     }
     if (decls.length)
       out += `${indent}${scope(n.selector).replace(/\n/g, "\n" + indent)} {\n${decls.join("\n")}\n${indent}}\n`;
@@ -275,7 +281,7 @@ function emit(nodes, indent = "") {
 
 const css = await readFile(source, "utf8");
 const out = `/* Dark theme, made by scripts/make-dark-theme.mjs from globals.css. Don't edit by hand:
-   change globals.css (or its hand-written dark rules) and run the script again. */
+   change globals.css and run the script again; hand-tuned dark rules go in theme-dark-tuning.css. */
 ${emit(parse(css))}`;
 await writeFile(target, await prettier.format(out, { parser: "css" }));
 console.log(

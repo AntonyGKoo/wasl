@@ -1593,6 +1593,7 @@ form > label:last-of-type {
 }
 .recall-input input {
   border: 0;
+  background: transparent;
   box-shadow: none;
   font-size: 12px;
   min-width: 0;
@@ -3298,8 +3299,8 @@ label.button {
   }
 }
 /* ---------- Dark theme ----------
-   The colors come from theme-dark.css (made by scripts/make-dark-theme.mjs). These are the dark
-   tokens and the few places a color mapping can't decide; they load after it, so they win. */
+   The dark tokens. The dark colors of every rule come from theme-dark.css (made by
+   scripts/make-dark-theme.mjs) and a few hand-tuned rules from theme-dark-tuning.css. */
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #111418;
@@ -3312,17 +3313,4 @@ label.button {
   --teal-light: #16302f;
   --purple: #a99ae6;
   --coral: #e4977b;
-}
-:root[data-theme="dark"] input,
-:root[data-theme="dark"] textarea,
-:root[data-theme="dark"] select {
-  background: #14181d;
-}
-:root[data-theme="dark"] .modal-backdrop {
-  background: #05070acc;
-}
-/* the QR code needs a light square to scan */
-:root[data-theme="dark"] .qr-wrap img {
-  border-radius: 12px;
-  background: #fff;
 }

@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-// the dark colors load first; the hand-written dark rules at the end of globals.css win over them
-import "./theme-dark.css";
 import "./globals.css";
+// dark colors: each rule weighs the same as its light twin and loads after it
+import "./theme-dark.css";
+import "./theme-dark-tuning.css";
 import { NoZoom } from "@/components/no-zoom";
 import { ThemeWatcher } from "@/components/theme";
 import { themeScript } from "@/lib/theme-script";

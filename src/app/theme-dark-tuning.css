@@ -1,0 +1,14 @@
+/* Dark theme: the few places a color mapping can't decide. Loaded after theme-dark.css. */
+:where(:root[data-theme="dark"]) input,
+:where(:root[data-theme="dark"]) textarea,
+:where(:root[data-theme="dark"]) select {
+  background: #14181d;
+}
+:where(:root[data-theme="dark"]) .modal-backdrop {
+  background: #05070acc;
+}
+/* the QR code needs a light square to scan */
+:where(:root[data-theme="dark"]) .qr-wrap img {
+  border-radius: 12px;
+  background: #fff;
+}

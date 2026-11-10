@@ -55,7 +55,7 @@ To test with two phones on the same Wi-Fi, open the server's **Network** address
 
 ## Styles and the dark theme
 
-Colors live in `src/app/globals.css`. The dark theme in `src/app/theme-dark.css` is made from it: after changing colors, run `node scripts/make-dark-theme.mjs`. Hand-written dark rules go at the end of `globals.css` (`:root[data-theme="dark"] …`) and always win.
+Colors live in `src/app/globals.css`. The dark theme in `src/app/theme-dark.css` is made from it: after changing colors, run `node scripts/make-dark-theme.mjs`. The dark tokens are at the end of `globals.css`; the few dark rules tuned by hand are in `src/app/theme-dark-tuning.css`, which loads last.
 
 ## Deploy
 
