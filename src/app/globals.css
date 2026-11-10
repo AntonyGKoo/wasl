@@ -5,7 +5,10 @@
   /* darker than before so secondary text stays easy to read (about 6.5:1 on white) */
   --muted: #4d606b;
   --line: #e3e9ed;
-  --teal: #087f83;
+  /* teal for text and icons: dark enough to read on the pale teal panels */
+  --teal: #077679;
+  /* the teal behind white text (buttons, switches); in dark mode text teal is lighter, this one isn't */
+  --teal-solid: #087f83;
   --teal-light: #e7f4f1;
   --purple: #7461b5;
   --coral: #cf7759;
@@ -164,7 +167,7 @@ form > label:last-of-type {
   display: block;
   width: 8px;
   border-radius: 8px;
-  background: var(--teal);
+  background: var(--teal-solid);
   height: 19px;
 }
 .brand-mark i:nth-child(1) {
@@ -202,7 +205,7 @@ form > label:last-of-type {
   transform: translateY(-1px);
 }
 .button.primary {
-  background: var(--teal);
+  background: var(--teal-solid);
   color: white;
 }
 .button.primary:hover {
@@ -973,7 +976,7 @@ form > label:last-of-type {
   gap: 9px;
 }
 .section-heading h2 > span {
-  color: #5e7278;
+  color: #5a6d72;
   font-size: 10px;
   background: #eaf0f3;
   border-radius: 5px;
@@ -1551,7 +1554,7 @@ form > label:last-of-type {
   margin: 14px 0 23px;
 }
 .recall-pill {
-  color: #8268b0;
+  color: #7659a8;
   background: #f0eafa;
 }
 .recall-search-panel {
@@ -2227,7 +2230,6 @@ form > label:last-of-type {
   top: -16px;
   width: 75px;
   height: 75px;
-  mix-blend-mode: multiply;
 }
 
 /* Phones: text people can read without zooming, and an app that never zooms. */
@@ -2664,7 +2666,7 @@ input[type="date"]::-webkit-date-and-time-value {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--teal);
+  background: var(--teal-solid);
   transition: width 0.3s;
 }
 .strength p {
@@ -2904,7 +2906,7 @@ label.button {
   font-weight: 600;
 }
 .pill.new-pill {
-  background: var(--teal);
+  background: var(--teal-solid);
   color: white;
 }
 .pill.album-pill {
@@ -3142,7 +3144,7 @@ label.button {
   transition: transform 0.2s;
 }
 .switch.on {
-  background: var(--teal);
+  background: var(--teal-solid);
 }
 .switch.on > span {
   transform: translateX(20px);
@@ -3204,7 +3206,7 @@ label.button {
   color: var(--teal);
 }
 .getting-started li.done .step-icon {
-  background: var(--teal);
+  background: var(--teal-solid);
   color: white;
 }
 @media (max-width: 760px) {
@@ -3258,4 +3260,69 @@ label.button {
 .service-row .pill {
   flex: none;
   white-space: nowrap;
+}
+
+.theme-setting {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.theme-setting button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+.theme-setting button.active {
+  background: var(--surface);
+  color: var(--teal);
+  box-shadow: 0 1px 4px #1c303d1f;
+}
+@media (max-width: 420px) {
+  .theme-setting {
+    grid-template-columns: 1fr;
+  }
+}
+/* ---------- Dark theme ----------
+   The colors come from theme-dark.css (made by scripts/make-dark-theme.mjs). These are the dark
+   tokens and the few places a color mapping can't decide; they load after it, so they win. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111418;
+  --surface: #1b2027;
+  --ink: #e8edf1;
+  --muted: #aab5bc;
+  --line: #2e353e;
+  --teal: #4db8b2;
+  --teal-solid: #087f83;
+  --teal-light: #16302f;
+  --purple: #a99ae6;
+  --coral: #e4977b;
+}
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] select {
+  background: #14181d;
+}
+:root[data-theme="dark"] .modal-backdrop {
+  background: #05070acc;
+}
+/* the QR code needs a light square to scan */
+:root[data-theme="dark"] .qr-wrap img {
+  border-radius: 12px;
+  background: #fff;
 }

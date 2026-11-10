@@ -16,6 +16,8 @@
 
 Without an AI key, every step still works with built-in rules, and nothing pretends to be AI.
 
+**Light and dark:** Wasl follows your phone's light or dark setting, or you pick one in Settings (or with the moon/sun button at the top). The clickable mockup has both looks too: dark by default, light from its Settings.
+
 **Your data stays yours:** notes, tags and albums are private; cards share only what you choose; export everything, change your password or delete your account in Settings.
 
 ## Tech stack
@@ -33,7 +35,7 @@ src/server       API: accounts, cards and swaps, network and albums, recall, car
 src/lib          shared code: database, auth, validation, card text, QR codes, photos
 db/              SQL migrations, applied in order (001 schema and security, 002 product features, 003 locks the migration log)
 public/          app icons and logo; the clickable mockup (public/mockup)
-scripts/         dev server, OCR files, migrations, connecting the database and OpenAI, mockup screenshots
+scripts/         dev server, OCR files, migrations, connecting the database and OpenAI, the dark theme, mockup screenshots
 tests/           server and HTTP tests (*.test.ts), browser tests (e2e/), sample card photos (fixtures/)
 docs/            technical solution, development plan, operations; mockup screenshots; archive of past check-ins
 ```
@@ -50,6 +52,10 @@ npm run dev
 Open the printed address and create an account. A real PostgreSQL database (PGlite) is created in `.wasl-data/`, so accounts and contacts survive restarts. No Docker or cloud keys are needed. To try AI features, copy `.env.example` to `.env.local` and set `OPENAI_API_KEY`.
 
 To test with two phones on the same Wi-Fi, open the server's **Network** address on both; a QR code made on `localhost` doesn't open on another device.
+
+## Styles and the dark theme
+
+Colors live in `src/app/globals.css`. The dark theme in `src/app/theme-dark.css` is made from it: after changing colors, run `node scripts/make-dark-theme.mjs`. Hand-written dark rules go at the end of `globals.css` (`:root[data-theme="dark"] …`) and always win.
 
 ## Deploy
 

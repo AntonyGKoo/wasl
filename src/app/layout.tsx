@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
+// the dark colors load first; the hand-written dark rules at the end of globals.css win over them
+import "./theme-dark.css";
 import "./globals.css";
 import { NoZoom } from "@/components/no-zoom";
+import { ThemeWatcher } from "@/components/theme";
+import { themeScript } from "@/lib/theme-script";
 export const metadata: Metadata = {
   title: "Wasl — memory for your network",
   description: "Remember who you met, why it mattered, and who can help next.",
@@ -10,7 +14,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#087f83",
+  // the browser bar matches the page in light and dark
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f8fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#111418" },
+  ],
   width: "device-width",
   initialScale: 1,
   // an installed app keeps one size: no pinch or double-tap zoom
@@ -20,9 +28,13 @@ export const viewport: Viewport = {
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <NoZoom />
+        <ThemeWatcher />
         {children}
       </body>
     </html>

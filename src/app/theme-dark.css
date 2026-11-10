@@ -1,0 +1,421 @@
+/* Dark theme, made by scripts/make-dark-theme.mjs from globals.css. Don't edit by hand:
+   change globals.css (or its hand-written dark rules) and run the script again. */
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] select {
+  border: 1px solid #434b4e;
+  background: #1b2027;
+}
+:root[data-theme="dark"] input:focus,
+:root[data-theme="dark"] textarea:focus,
+:root[data-theme="dark"] select:focus {
+  box-shadow: 0 0 0 3px #0dd2d82d;
+}
+:root[data-theme="dark"] label > span {
+  color: #bac4c9;
+}
+:root[data-theme="dark"] .button.secondary {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .button.danger {
+  color: #d58b8f;
+  background: #401f1d;
+  border-color: #563837;
+}
+:root[data-theme="dark"] .icon-button:hover {
+  background: #2b3336;
+}
+:root[data-theme="dark"] .pill {
+  background: #2b3436;
+}
+:root[data-theme="dark"] .avatar.violet {
+  color: #ac96cb;
+  background: #2a213e;
+}
+:root[data-theme="dark"] .avatar.coral {
+  color: #d0957f;
+  background: #412a1d;
+}
+:root[data-theme="dark"] .avatar.ink {
+  color: #8ea3bd;
+  background: #252f3b;
+}
+:root[data-theme="dark"] .notice {
+  border: 1px solid #40524d;
+  background: #273832;
+  color: #53b19e;
+}
+:root[data-theme="dark"] .notice.error {
+  color: #d29295;
+  background: #3f1f1c;
+  border-color: #553b38;
+}
+:root[data-theme="dark"] .auth-page {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .auth-story {
+  background: #2a3633;
+}
+:root[data-theme="dark"] .auth-features > div {
+  color: #89a6ae;
+}
+:root[data-theme="dark"] .auth-story footer {
+  color: #bbc8c9;
+}
+:root[data-theme="dark"] .auth-tabs {
+  background: #252e31;
+}
+:root[data-theme="dark"] .auth-tabs .active {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .install-qr {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .install-banner {
+  background: #1b2027;
+  box-shadow: 0 6px 18px #487c9d33;
+}
+:root[data-theme="dark"] .modal {
+  background: #1b2027;
+  box-shadow: 0 20px 100px #3793af55;
+}
+:root[data-theme="dark"] .profile-links a {
+  background: #111418;
+  color: #7fa5b8;
+}
+:root[data-theme="dark"] .sidebar {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .sidebar-caption {
+  color: #bdc3c7;
+}
+:root[data-theme="dark"] .sidebar nav button,
+:root[data-theme="dark"] .settings-nav {
+  color: #bbc3c9;
+}
+:root[data-theme="dark"] .sidebar nav button:hover,
+:root[data-theme="dark"] .settings-nav:hover {
+  background: #2a3133;
+}
+:root[data-theme="dark"] .nav-count {
+  background: #1b202788;
+}
+:root[data-theme="dark"] .sidebar-note {
+  background: #292f32;
+  color: #bcc3c8;
+}
+:root[data-theme="dark"] .sidebar-note strong {
+  color: #bac4c9;
+}
+:root[data-theme="dark"] .app-topbar {
+  background: #1b2027c9;
+}
+:root[data-theme="dark"] .topbar-path {
+  color: #bcc3c8;
+}
+:root[data-theme="dark"] .topbar-divider {
+  color: #5e6e78;
+}
+:root[data-theme="dark"] .workspace-private {
+  color: #bbc4c9;
+}
+:root[data-theme="dark"] .stats-strip > div {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .stat-icon {
+  background: #283833;
+}
+:root[data-theme="dark"] .stat-icon.violet {
+  color: #a899cb;
+  background: #2e253a;
+}
+:root[data-theme="dark"] .stat-icon.coral {
+  color: #cd9274;
+  background: #412a1d;
+}
+:root[data-theme="dark"] .recall-banner {
+  border: 1px solid #3f514e;
+  background: #283732;
+}
+:root[data-theme="dark"] .recall-banner p {
+  color: #bcc8c5;
+}
+:root[data-theme="dark"] .banner-arrow {
+  border: 1px solid #425751;
+}
+:root[data-theme="dark"] .section-heading h2 > span {
+  color: #bbc6c9;
+  background: #2b3337;
+}
+:root[data-theme="dark"] .search-box {
+  background: #1b2027;
+  color: #bcc4c7;
+}
+:root[data-theme="dark"] .filter-chip {
+  background: #1b2027;
+  color: #bdc3c7;
+}
+:root[data-theme="dark"] .filter-chip.active {
+  background: #2a3632;
+  border-color: #465854;
+}
+:root[data-theme="dark"] .contact-card {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .contact-card:hover {
+  border-color: #485a57;
+}
+:root[data-theme="dark"] .contact-arrow {
+  color: #5e7078;
+}
+:root[data-theme="dark"] .favorite.filled {
+  fill: #f1e6c9;
+}
+:root[data-theme="dark"] .contact-tags .pill {
+  color: #bac5c9;
+  background: #2b3234;
+}
+:root[data-theme="dark"] .contact-context {
+  border-top: 1px solid #3d4347;
+  color: #bcc4c7;
+}
+:root[data-theme="dark"] .empty-state {
+  background: #1b2027;
+  border: 1px dashed #434e50;
+}
+:root[data-theme="dark"] .empty-icon {
+  background: #2a3533;
+  color: #6fa9a4;
+}
+:root[data-theme="dark"] .workspace-footer {
+  color: #bec3c6;
+}
+:root[data-theme="dark"] .form-divider {
+  color: #bcc4c8;
+}
+:root[data-theme="dark"] .meeting-context {
+  background: #293732;
+}
+:root[data-theme="dark"] .meeting-context p {
+  color: #bac9c5;
+}
+:root[data-theme="dark"] .timeline time {
+  color: #bcc4c7;
+}
+:root[data-theme="dark"] .danger-zone > p {
+  color: #c59393;
+}
+:root[data-theme="dark"] .profile-editor {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .wallet-guidance {
+  background: #293732;
+  border: 1px solid #40504b;
+}
+:root[data-theme="dark"] .wallet-guidance p {
+  color: #bbc9c4;
+}
+:root[data-theme="dark"] .wallet-item {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .digital-card:after {
+  border: 1px solid #3d3d3d12;
+}
+:root[data-theme="dark"] .wallet-fields span {
+  background: #2a2f33;
+  color: #bbc4c8;
+}
+:root[data-theme="dark"] .field-choice small {
+  color: #bdc3c7;
+}
+:root[data-theme="dark"] .qr-wrap {
+  background: #202b26;
+  border: 1px solid #404b46;
+}
+:root[data-theme="dark"] .qr-caption {
+  color: #bdc7c3;
+}
+:root[data-theme="dark"] .recall-pill {
+  color: #ad9ccb;
+  background: #2d233d;
+}
+:root[data-theme="dark"] .recall-search-panel {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .recall-orb {
+  background: #2e263a;
+  color: #ab9dcd;
+}
+:root[data-theme="dark"] .recall-input {
+  border: 1px solid #455053;
+  color: #bcc4c8;
+}
+:root[data-theme="dark"] .search-privacy {
+  color: #bec3c6;
+}
+:root[data-theme="dark"] .suggestions button {
+  background: #283232;
+  color: #bcc4c7;
+}
+:root[data-theme="dark"] .recall-explainer {
+  color: #bdc4c7;
+}
+:root[data-theme="dark"] .recall-result {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .recall-result blockquote {
+  border-left: 2px solid #475854;
+  background: #29332e;
+  color: #bbc9c4;
+}
+:root[data-theme="dark"] .evidence-label {
+  color: #bec6c3;
+}
+:root[data-theme="dark"] .file-drop {
+  border: 1px dashed #485956;
+  background: #27352f;
+}
+:root[data-theme="dark"] .file-drop > span {
+  color: #bfc5c3;
+}
+:root[data-theme="dark"] .settings-sections section {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .service-row {
+  border-bottom: 1px solid #3c4448;
+}
+:root[data-theme="dark"] .pill.available {
+  background: #293930;
+  color: #6aaf8c;
+}
+:root[data-theme="dark"] .public-page {
+  background: #25312e;
+}
+:root[data-theme="dark"] .public-card-shell {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .public-card-content > .avatar {
+  border: 4px solid #3d3d3d;
+}
+:root[data-theme="dark"] .public-privacy {
+  color: #bdc7c4;
+}
+:root[data-theme="dark"] .public-footer {
+  color: #bdc7c3;
+}
+:root[data-theme="dark"] .saved-connection > span {
+  background: #273a2d;
+  color: #6eae85;
+}
+@media (max-width: 760px) {
+  :root[data-theme="dark"] .app-topbar strong {
+    color: #bdc3c6;
+  }
+  :root[data-theme="dark"] .mobile-nav {
+    background: #1b2027f2;
+  }
+  :root[data-theme="dark"] .mobile-nav button {
+    color: #bcc3c7;
+  }
+}
+:root[data-theme="dark"] .more-fields {
+  border: 1px dashed #485956;
+  background: #27352f;
+}
+:root[data-theme="dark"] .voice-panel {
+  background: #27352f;
+}
+:root[data-theme="dark"] .voice-panel.recording {
+  background: #3e291f;
+}
+:root[data-theme="dark"] .rec-live {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .draft-source.ai {
+  background: #2b233d;
+}
+:root[data-theme="dark"] .avatar.photo {
+  background: #2c3437;
+}
+:root[data-theme="dark"] .swatch {
+  border: 3px solid #3d3d3d;
+}
+:root[data-theme="dark"] .strength {
+  background: #242f35;
+}
+:root[data-theme="dark"] .strength-bar {
+  background: #2c3539;
+}
+:root[data-theme="dark"] .qr-frame {
+  border: 3px solid #3d3d3dd9;
+  box-shadow: 0 0 0 999px #00000099;
+}
+:root[data-theme="dark"] .input-with-action .icon-button {
+  border: 1px solid #434b4e;
+  background: #1b2027;
+}
+:root[data-theme="dark"] .swap-news {
+  border: 1px solid #415550;
+  background: #273833;
+}
+:root[data-theme="dark"] .tonight-banner {
+  border: 1px solid #3f3853;
+  background: #281f3d;
+}
+:root[data-theme="dark"] .tonight-faces .avatar {
+  border: 2px solid #382d52;
+}
+:root[data-theme="dark"] .album-tile {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .album-tile.active {
+  box-shadow: 0 0 0 2px #0dd2d85f;
+}
+:root[data-theme="dark"] .album-cover .avatar {
+  border: 2px solid #3d3d3d;
+}
+:root[data-theme="dark"] .pill.album-pill {
+  background: #2b233d;
+  color: #a89ccf;
+}
+:root[data-theme="dark"] .icon-button.starred svg {
+  fill: #eddfb9;
+}
+:root[data-theme="dark"] .invite-box {
+  border: 1px dashed #485956;
+  background: #273431;
+}
+:root[data-theme="dark"] .invite-message {
+  background: #1b2027;
+}
+:root[data-theme="dark"] .deck-card {
+  background: #1b2027;
+  box-shadow: 0 10px 30px #487c9d32;
+}
+:root[data-theme="dark"] .stamp.fav {
+  color: #cd9b37;
+}
+:root[data-theme="dark"] .deck-button {
+  background: #1b2027;
+  box-shadow: 0 6px 18px #487c9d32;
+}
+:root[data-theme="dark"] .switch {
+  background: #474e52;
+}
+:root[data-theme="dark"] .switch > span {
+  background: #1b2027;
+  box-shadow: 0 1px 3px #00000080;
+}
+:root[data-theme="dark"] .settings-sections .danger-section {
+  border-color: #563837;
+}
+:root[data-theme="dark"] .getting-started {
+  border: 1px solid #415550;
+  background: #1b2027;
+}
+:root[data-theme="dark"] .getting-started li button {
+  background: #27352f;
+}
+:root[data-theme="dark"] .theme-setting button.active {
+  box-shadow: 0 1px 4px #487c9d4e;
+}

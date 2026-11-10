@@ -39,6 +39,7 @@ import { ProfileView, WalletView, profileStrength } from "./wallet-view";
 import { RecallView, ScanModal } from "./recall-view";
 import { QrScanner } from "./qr-scanner";
 import { TonightsPeople, type Choice } from "./tonight";
+import { ThemeSetting, ThemeToggle } from "./theme";
 import { presentationCardToken } from "@/lib/presentation";
 type View = "network" | "wallet" | "recall" | "profile" | "settings";
 const navigation = [
@@ -235,7 +236,9 @@ export function WaslApp() {
         <header className="app-topbar">
           <div>
             <span className="topbar-path">Your workspace</span>
-            <span className="topbar-divider">/</span>
+            <span className="topbar-divider" aria-hidden="true">
+              /
+            </span>
             <strong>
               {navigation.find((n) => n.id === view)?.label || "Settings"}
             </strong>
@@ -255,6 +258,7 @@ export function WaslApp() {
                 Open Mariam's card
               </a>
             ) : null}
+            <ThemeToggle />
             <button
               className="icon-button"
               onClick={() => navigate("profile")}
@@ -478,6 +482,11 @@ function SettingsView({
             </Button>
           </div>
           <PasswordChange />
+        </section>
+        <section>
+          <h3>Appearance</h3>
+          <p>Light or dark. Wasl follows your phone until you pick one.</p>
+          <ThemeSetting />
         </section>
         <section>
           <h3>Recording and location</h3>

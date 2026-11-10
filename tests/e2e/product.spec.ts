@@ -160,3 +160,28 @@ test("text capture always requires review before saving", async ({ page }) => {
     page.getByRole("heading", { name: "Sara Smith", exact: true }).last(),
   ).toBeVisible();
 });
+test("light and dark themes follow the phone or the person's choice", async ({
+  page,
+}) => {
+  const theme = page.locator("html");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await signup(page, "Theme QA");
+  await expect(theme).toHaveAttribute("data-theme", "dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(theme).toHaveAttribute("data-theme", "light");
+  // the top bar switch picks dark, and the choice is kept after a reload
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await expect(theme).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(theme).toHaveAttribute("data-theme", "dark");
+  // Settings can go back to following the phone
+  await page
+    .locator("nav button:visible, aside button:visible")
+    .filter({ hasText: "Settings" })
+    .first()
+    .click();
+  await page.getByRole("radio", { name: "Match my phone" }).click();
+  await expect(theme).toHaveAttribute("data-theme", "light");
+  await page.getByRole("radio", { name: "Dark" }).click();
+  await expect(theme).toHaveAttribute("data-theme", "dark");
+});

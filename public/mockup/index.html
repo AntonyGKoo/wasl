@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Wasl Clickable Mockup</title>
+<script>(function(){try{var q=new URLSearchParams(location.search).get("theme");var t=q==="light"||q==="dark"?q:localStorage.getItem("wasl.mockup.theme");document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark")}catch(e){document.documentElement.setAttribute("data-theme","dark")}})()</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@600;700;800&display=swap">
@@ -40,6 +41,25 @@ html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
   --display: "Manrope", "Avenir Next", system-ui, sans-serif;
   --body: "DM Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
   --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+/* The light look (Settings → Dark mode off, or ?theme=light). Cards keep their colors. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --page: #e8ecf0;
+  --base: #f6f8fa;
+  --surface: #ffffff;
+  --raised: #eef2f5;
+  --line: #d6dee4;
+  --text: #16242d;
+  --text-2: #26363f;
+  --muted: #4a5b65;
+  --teal: #087f83;
+  --violet: #6650b4;
+  --orange: #a8531c;
+  --blue: #2f58c0;
+  --on-accent: #ffffff;
+  --danger: #b4383d;
+  --scrim: rgba(22, 36, 45, 0.45);
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -696,6 +716,16 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 }
+/* light look: white text on the (darker) accent buttons, gold that reads on white, softer shadows */
+:root[data-theme="light"] .btn.blue,
+:root[data-theme="light"] .btn.violet,
+:root[data-theme="light"] .search button,
+:root[data-theme="light"] .search .voice.on { color: #fff; }
+:root[data-theme="light"] .stamp.fav { color: #a76b08; border-color: #a76b08; }
+:root[data-theme="light"] .deck-actions .fav,
+:root[data-theme="light"] .person .star { color: #a76b08; }
+:root[data-theme="light"] .tabbar { background: rgba(255, 255, 255, 0.96); }
+:root[data-theme="light"] .shimmer { background: linear-gradient(90deg, var(--raised), #dfe5ea, var(--raised)); background-size: 200% 100%; }
 </style>
 </head>
 <body>
@@ -1368,6 +1398,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     settings() {
       return `<div class="topline"><h2 class="title">Settings</h2></div>
         <div class="panel" style="margin-top:12px;padding-block:4px">
+          <div class="setting"><div><b>Dark mode</b><span>Switch it off for the light look.</span></div><button class="switch" role="switch" aria-checked="${document.documentElement.getAttribute("data-theme") !== "light"}" data-act="theme" aria-label="Dark mode"></button></div>
           <div class="setting"><div><b>Ask both people before recording</b><span>Always on. Wasl never records one-sided.</span></div><button class="switch" role="switch" aria-checked="true" disabled aria-label="Ask both people before recording"></button></div>
           <div class="setting"><div><b>Delete audio after the summary</b><span>Only the text summary is kept.</span></div><button class="switch" role="switch" aria-checked="true" disabled aria-label="Delete audio after the summary"></button></div>
           <div class="setting"><div><b>Use calendar to fill in events</b><span>Reads event titles and times only.</span></div><button class="switch" role="switch" aria-checked="true" data-act="toggle" aria-label="Use calendar to fill in events"></button></div>
@@ -1768,6 +1799,12 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     "new-album"() { S.sheet = "album"; render(); },
     suggest(el) { typeQuery(el.dataset.q); },
     toggle(el) { el.setAttribute("aria-checked", el.getAttribute("aria-checked") === "true" ? "false" : "true"); },
+    theme(el) {
+      const light = document.documentElement.getAttribute("data-theme") !== "light";
+      document.documentElement.setAttribute("data-theme", light ? "light" : "dark");
+      try { localStorage.setItem("wasl.mockup.theme", light ? "light" : "dark"); } catch (e) {}
+      el.setAttribute("aria-checked", light ? "false" : "true");
+    },
     restart() { resetAll(); render(); },
   };
 
