@@ -1996,7 +1996,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     const roleRe = /\b(engineer|developer|designer|manager|director|founder|co-founder|ceo|cto|cfo|coo|cmo|chief|officer|student|intern|analyst|consultant|scientist|professor|lecturer|partner|lead|head|president|specialist|coordinator|associate|researcher|architect|marketing|sales|product|recruiter|advisor|owner|freelance|photographer|writer|artist|teacher|doctor|nurse|lawyer|accountant|chef|trainer|coach|editor|producer|journalist|executive|assistant|technician)\b/i;
     const orgRe = /\b(inc|llc|ltd|labs?|university|college|school|group|company|co\.|corp|corporation|studio|capital|ventures|technologies|technology|tech|solutions|systems|bank|foundation|institute|analytics|robotics|consulting|agency|partners|holdings|media|qatar|global|international|hub|fintech|center|centre|association|council|ministry|authority|airways|hospital|clinic|hotel|academy|network)\b/i;
     const isName = (l) => /^[A-Za-z][A-Za-z.'-]+(\s[A-Za-z][A-Za-z.'-]+){1,3}$/.test(l) && !roleRe.test(l) && !orgRe.test(l) && !/\bwasl\b/i.test(l) && !/\b([A-Za-z])\1\b/.test(l);
-    // "ghada.alnaimi@…" or "linkedin.com/in/ghadaalnaimi" tells us how the name is spelled
+    // "layla.haddad@…" or "linkedin.com/in/laylahaddad" tells us how the name is spelled
     const handle = ((f.email || "").split("@")[0] + " " + ((f.web || "").match(/\/in\/([a-z0-9-]+)/i) || ["", ""])[1]).toLowerCase();
     const handleLetters = handle.replace(/[^a-z]/g, "");
     const matchesHandle = (l) => {
@@ -2021,7 +2021,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       const base = domain.split(".")[0];
       if (base && !/^(gmail|hotmail|outlook|yahoo|icloud|mail)$/.test(base)) f.org = base.charAt(0).toUpperCase() + base.slice(1);
     }
-    // no line looks like a name that fits the email: spell it from the email ("ghada.alnaimi" → "Ghada Alnaimi")
+    // no line looks like a name that fits the email: spell it from the email ("layla.haddad" → "Layla Haddad")
     if (nameFromEmail() && (!f.name || matchesHandle(f.name) === 0)) {
       const kept = rest.find((r) => r.l === f.name);
       if (kept) kept.taken = false;
