@@ -1,6 +1,6 @@
 // Captures phone-size screenshots of every step of the clickable mockup (public/mockup/index.html)
-// into docs/presentation/mockup-screens, for slides and the user-testing handout.
-// The phone camera is fed docs/presentation/sample-business-card.jpg (needs ffmpeg), so the
+// into docs/mockup-screens, for slides and the user-testing handout.
+// The phone camera is fed tests/fixtures/sample-business-card.jpg (needs ffmpeg), so the
 // paper-card screenshots show a real scan.
 import { chromium } from "@playwright/test";
 import { createServer } from "node:http";
@@ -11,7 +11,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const outDir = path.join(root, "docs/presentation/mockup-screens");
+const outDir = path.join(root, "docs/mockup-screens");
 const page = path.join(root, "public/mockup/index.html");
 
 const server = createServer(async (_req, res) => {
@@ -144,7 +144,7 @@ execFileSync("ffmpeg", [
   "-loop",
   "1",
   "-i",
-  path.join(root, "docs/presentation/sample-business-card.jpg"),
+  path.join(root, "tests/fixtures/sample-business-card.jpg"),
   "-t",
   "2",
   "-r",

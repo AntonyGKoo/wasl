@@ -1,5 +1,5 @@
 // Records a captioned 9:16 walkthrough video of the clickable mockup (public/mockup/index.html).
-// The phone's camera is fed docs/presentation/sample-business-card.jpg, so the paper-card scan
+// The phone's camera is fed tests/fixtures/sample-business-card.jpg, so the paper-card scan
 // in the video is a real OCR read.
 // Usage: node scripts/record-walkthrough.mjs [output.mp4]   (needs Google Chrome and ffmpeg)
 import { chromium } from "@playwright/test";
@@ -27,7 +27,7 @@ execFileSync("ffmpeg", [
   "-loop",
   "1",
   "-i",
-  path.join(root, "docs/presentation/sample-business-card.jpg"),
+  path.join(root, "tests/fixtures/sample-business-card.jpg"),
   "-t",
   "2",
   "-r",
@@ -215,7 +215,7 @@ await caption(
 // For your own card, the camera shows sample-own-card.jpg (drawn into a canvas stream);
 // the paper-card scan later uses Chrome's fake camera with the other sample card.
 const ownCard = (
-  await readFile(path.join(root, "docs/presentation/sample-own-card.jpg"))
+  await readFile(path.join(root, "tests/fixtures/sample-own-card.jpg"))
 ).toString("base64");
 await p.evaluate(async (b64) => {
   const img = new Image();
@@ -272,7 +272,7 @@ await sleep(1100);
 await tap('label[for="photoFile"]', 200);
 await p.setInputFiles(
   "#photoFile",
-  path.join(root, "docs/presentation/sample-avatar.jpg"),
+  path.join(root, "tests/fixtures/sample-avatar.jpg"),
 );
 await sleep(2400);
 

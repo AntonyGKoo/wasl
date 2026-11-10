@@ -1,77 +1,73 @@
 # Wasl technical solution
 
-Draft for the product-market fit check (week of 2 November 2026). It explains how each step of the prototype flow works, what is already built, and what the mockup only simulates.
+How each part of Wasl works in the real app (https://wasl-sable.vercel.app), as of 10 November 2026. The clickable mockup (https://antonygkoo.github.io/wasl-prototype/) shows the same flow with sample people.
 
 ## In one paragraph
 
-Wasl is a mobile-first web app (Next.js) backed by PostgreSQL. Each user has one private profile and several cards that show only the fields they choose. When two people swap cards, the receiver keeps a private snapshot plus the context of the meeting (event, place, time, tags, notes). AI is used in three narrow places: reading a business card, summarizing a recorded conversation, and finding people by description. Every AI answer must point to something the user actually saved, so recall never invents people or facts.
+Wasl is an installable web app (Next.js) backed by PostgreSQL. Each person has one private profile and several cards that show only the details they choose. When two people swap cards, each keeps a private copy plus the story of the meeting: where, when, tags, and what they talked about. AI is used in three narrow places: reading a business card, turning a recorded chat into key points, and finding people by what you remember. Every AI answer must point to something the person actually saved, and each feature still works with simple rules when AI is unavailable.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  phone["Phone browser<br/>(Next.js React UI)"] -->|HTTPS| api["Next.js server routes<br/>auth · cards · network · recall · scan"]
+  subgraph phone["Phone or laptop browser (installable app)"]
+    ui["Next.js React screens"]
+    ocr["Tesseract.js<br/>reads card photos"]
+    qr["jsQR<br/>reads QR codes"]
+    stt["Speech-to-text<br/>(no audio kept)"]
+  end
+  ui -->|HTTPS| api["Next.js API<br/>accounts · cards · swap · network<br/>albums · recall · scan · summary"]
   api --> db[("PostgreSQL + pgvector<br/>row-level security")]
-  api -->|card photo| vision["Google Cloud Vision<br/>(OCR)"]
-  api -->|OCR text, recall question,<br/>retrieved notes| openai["OpenAI<br/>(structured parsing, embeddings,<br/>grounded answers)"]
-  api -. planned .-> stt["Speech-to-text<br/>(conversation memory)"]
+  api -->|card text, chat text,<br/>recall question| openai["OpenAI<br/>gpt-4o-mini · embeddings"]
+  api -->|rounded location| osm["OpenStreetMap<br/>place names"]
 ```
 
 | Layer | Choice | Why |
 |---|---|---|
-| App | Next.js 16 + React 19, responsive web app | One codebase for phone and laptop. Opens from a link or QR code, so a new contact doesn't need to install anything to see a card. |
-| Database | PostgreSQL with pgvector (PGlite locally, Supabase or any hosted Postgres in production) | Relational data for cards and connections, plus vector search for recall, in one place. |
-| Auth | Email + password sessions handled by the app | Works now. Sign in with LinkedIn is not built (see risks). |
-| OCR | Google Cloud Vision | Requested from IT on the tech requirements form. Reads printed business cards. The clickable mockup uses Tesseract.js, a free OCR that runs in the browser: the first scan downloads about 7 MB (about 5 seconds on 4G), later scans take under a second. Google Vision is more accurate on hard cards. |
-| AI | OpenAI: `gpt-4o-mini` for parsing and grounded answers, `text-embedding-3-small` for recall | Cheap, fast, and supports structured outputs. Both are set by environment variables, so they can be swapped. |
-| Hosting | Vercel (or any Node host) + hosted Postgres | Live at https://wasl-sable.vercel.app (Vercel in Mumbai, next to the Supabase database). Every push to main redeploys it, and phones can install it like an app. |
+| App | Next.js 16, React 19, TypeScript; installable from the website (PWA) | One codebase for phones and laptops. A card opens from a QR code or link, so the other person needs nothing installed to see it. |
+| Database | PostgreSQL with pgvector: Supabase in production, PGlite locally | Cards, connections and notes are relational; recall needs vector search. Both in one place. |
+| Security | Row-level security on every user table, plus ownership checks on the server; salted scrypt passwords; revocable sessions; rate limits | One person can never read another's network, even through a bug in a query (tested). |
+| On the phone | Tesseract.js (card text), jsQR (QR codes), the browser's speech-to-text, camera and location | Photos and audio never leave the phone. |
+| AI | OpenAI `gpt-4o-mini` with strict JSON output; `text-embedding-3-small` | Cheap and fast, and the output shape is checked before use. |
+| Hosting | Vercel (Mumbai) + Supabase (Mumbai); every push to `main` redeploys | Fast in Qatar, no servers to manage. A daily check keeps the free database awake. |
 
 ## How each step works
 
-Status key: **Built** = works in the MVP repo today. **Mockup** = shown in the clickable mockup (`public/mockup/index.html`) with sample data and not wired to the backend yet. **Planned** = designed, not started.
+| Step | What the person does | How it works |
+|---|---|---|
+| 1 · Join | Signs up, then fills the profile by scanning their own business card; adds a photo | The card is read on the phone, and the AI sorts the text into fields; the person checks every field before saving. The photo is made small and square on the phone before upload. A first Professional card is made at sign-up. A profile meter shows what's missing. |
+| 2 · Build | Makes cards for different crowds (Professional, Event, Social, Team) and switches each detail on or off | Each card stores the list of details it shows, and a live preview shows exactly what others will see. Shared links only ever expose those details. |
+| 3 · Share | Shows a QR code. The other person scans it with the camera or inside Wasl, saves the card and sends theirs back in one tap. | Each card has a revocable link. Saving it with "send my card too" creates the connection in both networks; the other side sees it marked New. People without Wasl can be invited by email, text or the phone's share sheet. QR codes printed on paper cards (vCard) become new contacts. |
+| 4 · Save | Confirms where they met and adds tags with one tap | The event carries over from the last person saved that day; the place can come from the phone's location (a place name from OpenStreetMap, never shared with the other person). Tags are suggested (Hiring, Intro offered…) next to the person's own. |
+| 5 · Remember | Both people agree, then the chat is written down and turned into key points | The browser's speech-to-text writes the words (no audio is recorded or kept). `gpt-4o-mini` picks the key points, or simple rules do if AI is unavailable. The person edits them before they are saved as a private note. |
+| + Today's people | Swipes through everyone met today | Right = favorite, left = keep, mic = add a memory. Uses the same connections and favorite flag. |
+| 6 · Browse | Albums by event and company appear on their own; people make their own albums; group by event, company or tag | Event and company albums are worked out from the saved connections, so they never need sorting. Albums you make are stored on each person in them. |
+| 7 · Recall | Types or says "the person who offered an intro to a CTO" | Keyword search over saved values, plus vector similarity, makes a shortlist. The AI may only return people from that shortlist and must quote the exact saved text that matches; anything else is dropped. Without AI, keyword search still works. |
 
-| Step | What the user sees | How it works | Status |
-|---|---|---|---|
-| 1 · Join | Scan your own card or import LinkedIn; the profile fills itself and levels up | Card photo → Google Vision OCR → `gpt-4o-mini` turns the text into fields → user reviews before saving. Level = share of profile fields filled. | Scanning a card: works in both the mockup and the live app with the phone camera; the text is read on the phone (Tesseract.js), and Google Vision is used instead when its key is set. Levels: **Mockup**. LinkedIn import: **Planned** (API access uncertain) |
-| 2 · Build | Start with one card, add an Event, Social or Team card; switch each detail on or off (or tap it on the card); pick a color | Each card stores a list of profile fields it shows. Shared links only ever expose those fields. | Field selection: **Built**. Tap-on-card editor, colors and company logos: **Mockup** |
-| 3 · Share | Stacked wallet; "Share card" first asks whether they have Wasl; one scan swaps cards with a buzz | Each card has a revocable share token shown as a QR code. Scanning it saves the card. A two-way swap = both phones scan or one phone confirms on the other. If they have no Wasl, scan their paper card: the mockup does this for real with the phone camera (or a photo), Tesseract.js OCR and an editable review. | QR share + save, and scanning someone else's card (read on the phone, reviewed before saving): **Built**. Wallet stack and two-way swap animation: **Mockup** |
-| 4 · Save | "Wasl already knows where you met"; one-tap tags | On save, the phone suggests event, place and time from the calendar entry happening now and the current location. The user confirms, or taps Change to pick another event or place. Tags are stored on the connection. | Meeting context, categories: **Built** (typed in). Calendar + location suggestions: **Mockup** |
-| 5 · Remember | Tap the mic and talk; Wasl keeps the key points | Both people consent on their phones → audio is transcribed → `gpt-4o-mini` writes 3–5 bullet points → the audio is deleted and only the text is saved as a private note. | Private notes and interaction history: **Built**. Recording + summary: **Built** in the live app and the mockup. The phone's speech-to-text writes down the chat (no audio is kept), `gpt-4o-mini` picks the key points when an OpenAI key is set (otherwise built-in rules do), and the person edits them before saving them as a private note |
-| Bonus · Debrief | Swipe through tonight's people | Lists connections saved during the current event. Swipe right = favorite, left = keep as a contact. | Favorites: **Built**. Swipe debrief: **Mockup** |
-| 6 · Browse | Albums by event and company build themselves | Albums are saved filters (event, company, tag) over the user's connections, so they stay up to date with no sorting. | Search and categories: **Built**. Auto albums: **Mockup** |
-| 7 · Search (recall by memory) | "the engineer who offered me an intro to her CTO" → Mariam, with the reason | Hybrid search: keyword matching plus pgvector similarity over each contact's saved context. The top candidates go to the model, which may only return a contact it was given and must quote the exact saved text that matches. If AI is unavailable, keyword results still work. Before an event, Recall can also list people you've met who are on its guest list (Mockup). In the mockup you can also ask by voice, and Recall searches what was said in recorded chats, the people you scanned, and names (even just a last name). | **Built** (keyword always; AI when an OpenAI key is configured) |
+## Data model
 
-## Data model (built)
-
-`users` → `cards` (which fields each card shows) → `shares` (revocable link and QR tokens) → `connections` (the receiver's private snapshot plus meeting context, category and favorite) → `interactions` (private notes and history) → `embeddings` (one vector per connection version, used for recall). Supporting tables: `sessions`, `usage_buckets` (AI rate limits) and `audit_events`.
+`users` → `cards` (which details each card shows) → `shares` (revocable link and QR tokens) → `connections` (your private copy of someone, with where you met, tags, albums, favorite, how they arrived, and a New marker) → `interactions` (private notes, including chat key points) → `embeddings` (one vector per connection version). Supporting tables: `sessions`, `usage_buckets` (rate limits) and `audit_events`. Migrations are in `db/`.
 
 ## Privacy and safety
 
-- **Selective sharing.** A card link exposes only the fields that card shows. Revoking a link stops future access but cannot erase what someone already saved. The app says this plainly.
-- **Private by default.** Notes, tags and summaries belong only to the person who wrote them. Row-level security in Postgres plus server-side ownership checks keep one user from reading another's data (covered by tests).
-- **Recording needs both people.** A recording starts only after both phones agree. Audio is not stored; only the text summary is kept. This answers the privacy concern raised in the 26 September discussion.
-- **Grounded AI.** Recall answers must cite a saved quote from a contact the user owns. The model has no write access, and missing API keys never produce fake results.
-- **Location and calendar** are read on the user's phone and saved to their own connection record only. They are never shared with the other person.
+- **Selective sharing.** A card link shows only that card's details. Revoking a link stops future access but cannot erase what someone already saved; the app says so.
+- **Private by default.** Notes, tags, albums and key points belong only to the person who wrote them.
+- **Recording needs both people.** Recording starts only after both agree. No audio is kept, only the edited text.
+- **Grounded AI.** Recall must quote a saved line from a person you own. The model can't write anything, and missing keys never produce made-up results.
+- **Location** is turned into a place name only when the person asks (or switches it on), and only rounded coordinates leave the phone.
+- **Your data is yours.** Export everything as a file, change your password, or delete the account and everything in it from Settings.
 
-## What's left, in order
+## What a web app can't do yet
 
-1. **Get API access** from IT (OpenAI key and Google Cloud Vision). Scanning and AI recall are built and waiting on keys.
-2. **Host it properly.** Done on 2 November: the real app is live at https://wasl-sable.vercel.app (Vercel + Supabase Postgres, both in Mumbai) and installs on phones from its sign-in screen.
-3. **Bring the mockup screens into the real app**: wallet stack, tap-to-hide editor, levels, albums.
-4. **Conversation memory**: consent flow → transcription → summary, no audio kept. Done on 2 November in the live app.
-5. **Calendar and location suggestions** at save time.
-6. **Swipe debrief** after an event.
-
-## Risks and open questions
-
-- **LinkedIn API approval is unlikely for a student app.** Card scanning and QR sharing cover the same need; LinkedIn import stays a nice-to-have.
-- **Recording laws and comfort.** Both-party consent and deleting the audio reduce the risk. User testing should check whether people are comfortable using it at all.
-- **AI cost and latency.** Small models and caching keep both low; we should measure real numbers once keys arrive.
-- **Network effect.** Wasl is most useful when both people have it. A shared card still opens as a web page for people without an account, and they can save it into Wasl after signing up.
+- Read the phone's calendar: browsers don't allow it, so Wasl carries the event over from the last person saved that day.
+- Import from LinkedIn: needs an approved LinkedIn developer app, and it only shares name, email and photo.
+- Reset a forgotten password by email: needs an email service and its key. Signed-in people can change their password.
+- NFC tap and push notifications: need a native app. QR works on every phone today.
+- Event guest lists ("who's going"): needs event partners.
 
 ## Where things are
 
-- Clickable mockup: https://antonygkoo.github.io/wasl-prototype/ (source: `public/mockup/index.html`). Card scanning uses the real camera. Open a step directly with `#step-1` … `#step-7` or `#step-bonus`. It has a **User test** mode that times six tasks and counts taps.
-- Screenshots for slides: `docs/presentation/mockup-screens/`. Regenerate them with `node scripts/capture-mockup.mjs`.
-- Walkthrough video: https://antonygkoo.github.io/wasl-prototype/walkthrough.mp4. Re-record it with `node scripts/record-walkthrough.mjs` (needs Chrome and ffmpeg).
-- Working MVP: live at https://wasl-sable.vercel.app. Create an account, then use **Install Wasl** (or Add to Home Screen on iPhone). Setup is in the root `README.md`; operations and hosting are in `docs/OPERATIONS.md`.
+- Live app: https://wasl-sable.vercel.app. Install it from its sign-in screen (or Add to Home Screen on iPhone).
+- Clickable mockup: https://antonygkoo.github.io/wasl-prototype/ (source `public/mockup/index.html`), with a timed **User test** mode.
+- Slide screenshots of the mockup: `docs/mockup-screens/` (`node scripts/capture-mockup.mjs`).
+- Development plan from demo to product: `docs/DEVELOPMENT_PLAN.md`. Hosting and operations: `docs/OPERATIONS.md`.

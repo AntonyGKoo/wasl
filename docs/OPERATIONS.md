@@ -23,7 +23,11 @@ When no providers are configured, contacts, cards, QR sharing, notes, exports, k
 
 AI recall sends the question and relevant saved context to OpenAI. Returned matches must reference a retrieved contact and contain an exact saved quote. The model has no contact-write tools. Embeddings are cached with the source version, so edited notes cannot be matched through stale vectors. At most 20 missing/changed contact embeddings are refreshed per AI request; keyword candidates remain available while a larger network is indexed.
 
-Scanning accepts validated JPEG/PNG files up to 5 MB, requires user approval for the provider transfer, and always opens an editable review form before saving. Wasl processes the image in memory and does not retain it. Provider-side retention follows the account's provider settings. Paste-text extraction runs locally and also requires review.
+Card photos are read on the phone with Tesseract.js (files served from `public/ocr`, copied at build time), so the photo never leaves the device. The text is then sorted into fields by `gpt-4o-mini` when `OPENAI_API_KEY` is set, or by built-in rules otherwise; pasted text works the same way. Every scan opens an editable review form before anything is saved. When `GOOGLE_CLOUD_VISION_API_KEY` is set, photos are read by Google Vision instead (validated JPEG/PNG up to 5 MB, with the person's approval for the transfer; processed in memory, not retained).
+
+QR codes are read on the phone with jsQR. A Wasl card link opens that card; a vCard or MECARD code from a paper card becomes a draft contact.
+
+"Use my location" sends coordinates rounded to about 10 m to the server, which looks up a place name from OpenStreetMap's public Nominatim service (identified by the app's URL, at most 30 lookups per person per hour). Nothing about the lookup is stored.
 
 Per-user and project-wide call limits are stored in PostgreSQL and configured in `.env.example`. They limit request counts rather than an exact dollar amount. Configure provider billing alerts and limits separately. Automated tests do not make paid provider calls.
 
@@ -31,7 +35,7 @@ Per-user and project-wide call limits are stored in PostgreSQL and configured in
 
 1. Provision PostgreSQL with the `vector` extension, such as a Supabase project.
 2. Set the server-only `DATABASE_URL` in `.env.local` to an administrative connection compatible with the host or Supabase pooler.
-3. Run `npm run db:migrate`. The migration script loads Next.js environment files and creates the extension, tables, indexes, policies, and restricted `wasl_member` role. Hosted migrations are explicit; only the local fallback migrates automatically.
+3. Run `npm run db:migrate`. The migration script loads Next.js environment files and applies every `db/NNN_*.sql` file in order, once each: `001_initial.sql` (extension, tables, indexes, policies, restricted `wasl_member` role) and `002_product.sql` (Team cards, albums, two-way swaps). Hosted migrations are explicit; only the local fallback migrates automatically.
 4. Configure `DATABASE_URL`, an HTTPS `APP_URL`, and optional provider credentials on the hosting platform.
 5. Deploy as a Next.js Node application. Build: `npm run build`; ordinary Node startup: `npm start`.
 6. Verify signup, selected-field sharing, private notes, recall, revocation, and logout using two accounts on the deployed domain.
@@ -58,11 +62,11 @@ Private notes never enter a public card. Public routes project only selected pro
 
 Passwords use salted scrypt hashes. Session tokens are hashed in the database, expire after 14 days, and are revoked at logout. Mutations require the app origin, and body sizes and request frequency are bounded. Production uses secure HttpOnly cookies and requires HTTPS.
 
-Set `TRUST_PROXY=true` only if the hosting proxy overwrites `X-Forwarded-For`. Otherwise authentication rate limiting uses a conservative shared bucket rather than trusting a spoofable header. Avoid logging contact payloads, provider response bodies, or credentials.
+Set `TRUST_PROXY=true` only if the hosting proxy overwrites `X-Forwarded-For`. Otherwise authentication rate limiting uses a conservative shared bucket rather than trusting a spoofable header. Sign-up and sign-in allow 150 attempts per network address per 15 minutes (a whole event can share one Wi-Fi), and 10 sign-in attempts per account per 15 minutes against password guessing. Avoid logging contact payloads, provider response bodies, or credentials.
 
-Use Settings to export a user's profile, cards, contacts, and interaction history. Contact deletion cascades to its notes and embeddings. Card deletion revokes its links while preserving copies already saved by someone else. For local backups, stop the application before copying the complete data directory. Protect the backup as private contact data. Hosted deployments should use the database provider's backup and restore facilities.
+Use Settings to export a user's profile, cards, contacts, and interaction history, to change the password (which signs out other devices), or to delete the account: after the password is confirmed, the profile, cards, links, connections, notes and search data are removed. Copies of their card that other people already saved stay with those people. Contact deletion cascades to its notes and embeddings. Card deletion revokes its links while preserving copies already saved by someone else. For local backups, stop the application before copying the complete data directory. Protect the backup as private contact data. Hosted deployments should use the database provider's backup and restore facilities.
 
-This release is for a controlled MVP pilot. Before an unrestricted public launch, add verified email ownership, self-service password recovery, account-deletion workflows, abuse monitoring, and a retention/privacy policy. These are not represented as implemented controls.
+Before an unrestricted public launch, add verified email ownership, self-service password recovery by email (needs an email service such as Resend and its key), abuse monitoring, and a retention/privacy policy. These are not represented as implemented controls.
 
 ## Verification and CI
 
@@ -80,4 +84,4 @@ The CI pipeline runs type checking, application/security tests, the PostgreSQL a
 
 ## Scope
 
-The MVP implements capture, remember, and recall. Deep LinkedIn integrations, scraping, automatic connection import, recording, location discovery, NFC, payments, subscriptions, and Apple Wallet are outside the release. LinkedIn profile URLs can be entered and shared manually. The original proposal treats advanced network discovery and consent-based recording/location as future work.
+The product implements the whole mockup flow: capture (card and QR scanning), share (cards, QR, two-way swap, invites), store (where you met, tags, consent-based chat key points, albums, today's people) and recall (typed or spoken, with AI). LinkedIn import, scraping, calendar reading, event guest lists, NFC, push notifications, payments and Apple Wallet are outside this release; `docs/DEVELOPMENT_PLAN.md` explains why and what Wasl does instead.
