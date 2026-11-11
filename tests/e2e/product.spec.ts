@@ -187,3 +187,60 @@ test("dark by default, with light or the phone's setting as choices", async ({
   await page.getByRole("radio", { name: "Dark" }).click();
   await expect(theme).toHaveAttribute("data-theme", "dark");
 });
+test("search says when there is no one to search; sample people make it work and leave in one tap", async ({
+  page,
+}) => {
+  await signup(page, "Search QA");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  // nobody saved: no search box that can never find anyone
+  await expect(
+    page.getByRole("heading", { name: "There’s no one to search yet." }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Search your memory")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Try it with sample people", exact: true })
+    .click();
+  // the examples come from the saved people, so the first one finds someone
+  const example = page.getByRole("button", {
+    name: "Who did I meet at Web Summit Qatar?",
+  });
+  await example.click();
+  await expect(
+    page.getByRole("heading", { name: "Best matches", exact: true }),
+  ).toBeInViewport();
+  await expect(page.locator(".recall-result")).toHaveCount(3);
+  // a note in your own words finds the person; the start of a name does too
+  const box = page.getByLabel("Search your memory", { exact: true });
+  const go = page.getByRole("button", {
+    name: "Find connections",
+    exact: true,
+  });
+  await box.fill("who offered to review my CV");
+  await go.click();
+  await expect(page.locator(".recall-result")).toHaveCount(1);
+  await expect(page.locator(".recall-result h3")).toHaveText("Sara Nasser");
+  await box.fill("mar");
+  await go.click();
+  await expect(page.locator(".recall-result h3")).toHaveText("Mariam Ali");
+  // small talk finds no one, and says how many people were searched
+  await box.fill("how r u");
+  await go.click();
+  await expect(
+    page.getByRole("heading", { name: "No one matched", exact: true }),
+  ).toBeInViewport();
+  await expect(
+    page.getByText("None of your 5 saved people match that."),
+  ).toBeVisible();
+  // sample people are marked on Network and leave together
+  await page
+    .getByRole("button", { name: /^Network/ })
+    .first()
+    .click();
+  await expect(page.getByText("5 sample people are here")).toBeVisible();
+  await page.getByRole("button", { name: "Remove them", exact: true }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Start with one meaningful connection.",
+    }),
+  ).toBeVisible();
+});

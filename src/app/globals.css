@@ -3689,3 +3689,44 @@ label.button {
   font: inherit;
   cursor: pointer;
 }
+/* Search with nobody saved, and the note that marks sample people */
+.search-empty .text-button,
+.empty-state > .text-button {
+  margin-top: 14px;
+}
+.search-empty .notice {
+  margin-top: 14px;
+  text-align: left;
+}
+.sample-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 14px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 14px;
+}
+.sample-note strong {
+  color: var(--ink);
+}
+.sample-note .text-button {
+  min-height: 40px;
+  font-size: 14px;
+}
+.search-empty .text-button,
+.empty-state > .text-button {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--teal);
+}
+.sample-note .text-button {
+  margin-left: 0;
+}

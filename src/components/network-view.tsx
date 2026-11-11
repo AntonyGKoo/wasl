@@ -118,7 +118,7 @@ export function NetworkView({
   onScanCode: () => void;
   onRecall: () => void;
   onDebrief: () => void;
-  onChanged: () => void;
+  onChanged: () => Promise<void> | void;
 }) {
   const [query, setQuery] = useState("");
   const [group, setGroup] = useState<Group>("recent");
@@ -129,6 +129,22 @@ export function NetworkView({
   const album = albums.find((a) => a.key === albumKey);
   const fresh = contacts.filter((c) => c.unseen);
   const tonight = tonightsPeople(contacts);
+  // sample people (made up, so a new account can try Wasl) arrive and leave together
+  const samples = contacts.filter((c) => c.origin === "sample");
+  const [sampleBusy, setSampleBusy] = useState(false);
+  const [sampleError, setSampleError] = useState("");
+  async function changeSamples(method: "POST" | "DELETE") {
+    setSampleBusy(true);
+    setSampleError("");
+    try {
+      await api("sample-people", method);
+      await onChanged();
+    } catch (e) {
+      setSampleError((e as Error).message);
+    } finally {
+      setSampleBusy(false);
+    }
+  }
   const filtered = (album ? album.people : contacts).filter(
     (c) =>
       (!onlyFavorites || c.favorite) &&
@@ -190,6 +206,25 @@ export function NetworkView({
           </Button>
         </div>
       </section>
+      {samples.length ? (
+        <div className="sample-note" role="note">
+          <span>
+            <strong>
+              {samples.length} sample{" "}
+              {samples.length === 1 ? "person is" : "people are"} here
+            </strong>{" "}
+            so you can try Wasl. They&rsquo;re made up.
+          </span>
+          <button
+            className="text-button"
+            disabled={sampleBusy}
+            onClick={() => changeSamples("DELETE")}
+          >
+            {sampleBusy ? "Removing…" : "Remove them"}
+          </button>
+        </div>
+      ) : null}
+      {sampleError ? <Notice error>{sampleError}</Notice> : null}
       {fresh.length ? (
         <button className="swap-news" onClick={() => onOpen(fresh[0])}>
           <ArrowLeftRight size={18} />
@@ -376,6 +411,15 @@ export function NetworkView({
                 <Plus size={16} /> Add your first connection
               </Button>
             </div>
+            <button
+              className="text-button"
+              disabled={sampleBusy}
+              onClick={() => changeSamples("POST")}
+            >
+              {sampleBusy
+                ? "Adding sample people…"
+                : "Just looking? Try it with sample people"}
+            </button>
           </div>
         ) : !filtered.length ? (
           <div className="empty-state small">
@@ -1144,6 +1188,7 @@ export function ConnectionDetail({
 }
 
 const originText: Record<string, string> = {
+  sample: "A sample person, made up so you can try Wasl",
   swap: "Swapped cards with you",
   link: "Saved from their Wasl card",
   scan: "Scanned from a paper card",

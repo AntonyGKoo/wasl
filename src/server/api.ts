@@ -37,12 +37,14 @@ import {
   setFavorite,
   swapBack,
   deleteNote,
+  addSamplePeople,
   getConnection,
   importCard,
   listCards,
   listConnections,
   publicCard,
   refreshSharedContact,
+  removeSamplePeople,
   revokeShare,
   saveCard,
   saveConnection,
@@ -218,6 +220,10 @@ export async function handleApi(request: Request): Promise<Response> {
       const input = await readJson(request, summarySchema);
       return json(await summarizeConversation(user.id, input.transcript));
     }
+    if (area === "sample-people" && method === "POST")
+      return json({ added: await addSamplePeople(user.id) });
+    if (area === "sample-people" && method === "DELETE")
+      return json({ removed: await removeSamplePeople(user.id) });
     if (area === "search" && method === "POST") {
       const input = await readJson(request, searchSchema);
       return json(await recall(user.id, input.query, input.mode));

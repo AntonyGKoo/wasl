@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp } from "node:fs/promises";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { handleApi } from "../src/server/api";
@@ -461,4 +462,206 @@ test("anyone can ask which build is live, so an installed app knows to update", 
   const { build } = (await response.json()) as { build: string };
   assert.equal(typeof build, "string");
   assert.ok(build.length > 0);
+});
+
+test("a new account can add sample people, find them by search, and remove them", async () => {
+  process.env.WASL_DATA_DIR = await mkdtemp(
+    path.join(tmpdir(), "wasl-samples-"),
+  );
+  const origin = "http://localhost:3000";
+  let cookie = "";
+  const call = async (route: string, method = "GET", body?: unknown) => {
+    const response = await handleApi(
+      new Request(`${origin}/api/${route}`, {
+        method,
+        headers: { origin, "content-type": "application/json", cookie },
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    );
+    const set = response.headers.get("set-cookie");
+    if (set) cookie = set.split(";")[0];
+    return { status: response.status, data: await response.json() };
+  };
+  assert.equal(
+    (
+      await call("auth/register", "POST", {
+        name: "Noor",
+        email: "noor@samples.test",
+        password: "test-password-123",
+      })
+    ).status,
+    201,
+  );
+  const find = async (query: string) =>
+    (
+      (await call("search", "POST", { query, mode: "keyword" })).data as {
+        hits: { connection: Connection }[];
+      }
+    ).hits.map((h) => h.connection.profile.name);
+  // nobody saved: nothing to find
+  assert.deepEqual(await find("who offered to review my CV"), []);
+  assert.equal((await call("sample-people", "POST")).data.added, 5);
+  // asking twice doesn't double them
+  assert.equal((await call("sample-people", "POST")).data.added, 0);
+  const list = (await call("connections")).data as {
+    connections: Connection[];
+  };
+  assert.equal(list.connections.length, 5);
+  assert.ok(list.connections.every((c) => c.origin === "sample"));
+  assert.deepEqual(await find("who offered to review my CV"), ["Sara Nasser"]);
+  assert.deepEqual(await find("mar"), ["Mariam Ali"]);
+  assert.equal((await find("Who did I meet at Web Summit Qatar?")).length, 3);
+  assert.deepEqual(await find("someone in cybersecurity"), ["Sara Nasser"]);
+  assert.deepEqual(await find("how r u"), []);
+  // a real person stays when the samples leave
+  const saved = await call("connections", "POST", {
+    profile: { ...blankProfile, name: "Real Person" },
+    tags: [],
+    event: "",
+    place: "",
+    met_on: "2026-11-11",
+    favorite: false,
+  });
+  assert.equal(saved.status, 201);
+  assert.equal((await call("sample-people", "DELETE")).data.removed, 5);
+  const after = (await call("connections")).data as {
+    connections: Connection[];
+  };
+  assert.deepEqual(
+    after.connections.map((c) => c.profile.name),
+    ["Real Person"],
+  );
+});
+
+test("AI search never shows less than keyword search, whatever the model answers", async () => {
+  // a stand-in for the AI provider: it answers in the provider's shapes, the way this test tells it to
+  let answer: "nothing" | "paraphrase" | "down" = "nothing";
+  const provider = createServer(async (req, res) => {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const data = JSON.parse(body || "{}");
+    res.setHeader("content-type", "application/json");
+    if (req.url?.endsWith("/embeddings")) {
+      const inputs = Array.isArray(data.input) ? data.input : [data.input];
+      const vector = new Float32Array(1536).fill(0.02);
+      return res.end(
+        JSON.stringify({
+          object: "list",
+          model: data.model,
+          data: inputs.map((_: string, index: number) => ({
+            object: "embedding",
+            index,
+            embedding:
+              data.encoding_format === "base64"
+                ? Buffer.from(vector.buffer).toString("base64")
+                : Array.from(vector),
+          })),
+          usage: { prompt_tokens: 1, total_tokens: 1 },
+        }),
+      );
+    }
+    if (answer === "down") {
+      res.statusCode = 500;
+      return res.end(JSON.stringify({ error: { message: "down" } }));
+    }
+    const { contacts } = JSON.parse(data.input) as {
+      contacts: { id: string; context: string }[];
+    };
+    const sara = contacts.find((c) => c.context.includes("Sara Nasser"));
+    const matches =
+      answer === "paraphrase" && sara
+        ? [{ id: sara.id, evidence: "she offered to review the CV" }]
+        : [];
+    res.end(
+      JSON.stringify({
+        id: "resp_test",
+        object: "response",
+        created_at: 0,
+        status: "completed",
+        model: data.model,
+        output: [
+          {
+            type: "message",
+            id: "msg_test",
+            status: "completed",
+            role: "assistant",
+            content: [
+              {
+                type: "output_text",
+                text: JSON.stringify({ matches }),
+                annotations: [],
+              },
+            ],
+          },
+        ],
+        usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+      }),
+    );
+  });
+  await new Promise<void>((ok) => provider.listen(0, "127.0.0.1", ok));
+  const port = (provider.address() as { port: number }).port;
+  process.env.OPENAI_API_KEY = "test-only";
+  process.env.OPENAI_BASE_URL = `http://127.0.0.1:${port}/v1`;
+  process.env.WASL_DATA_DIR = await mkdtemp(path.join(tmpdir(), "wasl-ai-"));
+  try {
+    const origin = "http://localhost:3000";
+    let cookie = "";
+    const call = async (route: string, method = "GET", body?: unknown) => {
+      const response = await handleApi(
+        new Request(`${origin}/api/${route}`, {
+          method,
+          headers: { origin, "content-type": "application/json", cookie },
+          body: body ? JSON.stringify(body) : undefined,
+        }),
+      );
+      const set = response.headers.get("set-cookie");
+      if (set) cookie = set.split(";")[0];
+      return { status: response.status, data: await response.json() };
+    };
+    await call("auth/register", "POST", {
+      name: "Noor",
+      email: "noor@ai.test",
+      password: "test-password-123",
+    });
+    await call("sample-people", "POST");
+    const ask = async () =>
+      (
+        await call("search", "POST", {
+          query: "who offered to review my CV",
+          mode: "ai",
+        })
+      ).data as {
+        hits: { connection: Connection; evidence: string[] }[];
+        mode: string;
+        warning: string;
+      };
+    // the model finds no one: the keyword match still shows
+    let result = await ask();
+    assert.deepEqual(
+      result.hits.map((h) => h.connection.profile.name),
+      ["Sara Nasser"],
+    );
+    assert.equal(result.warning, "");
+    // the model rewords its evidence: the person shows, with the note as it was saved
+    answer = "paraphrase";
+    result = await ask();
+    assert.equal(result.mode, "ai");
+    assert.equal(result.hits[0].connection.profile.name, "Sara Nasser");
+    assert.match(
+      result.hits[0].evidence[0],
+      /^Note \(.*Offered to review my CV/,
+    );
+    // the provider is down: keyword matches, and a line that says so
+    answer = "down";
+    result = await ask();
+    assert.deepEqual(
+      result.hits.map((h) => h.connection.profile.name),
+      ["Sara Nasser"],
+    );
+    assert.match(result.warning, /unavailable/);
+  } finally {
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_BASE_URL;
+    provider.close();
+  }
 });

@@ -4,7 +4,7 @@ import { consumeLimit } from "../lib/auth";
 import type { Connection, SearchHit } from "../lib/types";
 import { HttpError } from "./responses";
 const stop = new Set(
-  "who was is the a an person someone i me my met at in on of for to with and or that do know did we us can help looking find about from last this works working talked remember please".split(
+  "who whom whose what which where when how was were is are am be been the a an person people someone somebody anyone anybody everyone i me my mine you your u r we us our he she his her him they them their met meet at in on of for to with and or but that this these those there here do does did know can could have has had help looking find show list all any some about from last works working work talked told remember please named called tagged tag one ones just also".split(
     " ",
   ),
 );
@@ -35,19 +35,21 @@ const stem = (w: string) =>
   w.length > 4
     ? w.replace(/(ations?|ions?|ings?|ers?|ed|es|s|e)$/, "").slice(0, 5)
     : w.replace(/e$/, "");
-export const tokens = (text: string) => [
+const plain = (text: string) =>
+  text
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+// the words that carry meaning, as typed ("mar", "engineers", "pearl")
+const words = (text: string) => [
   ...new Set(
-    (
-      text
-        .normalize("NFKD")
-        .replace(/\p{Diacritic}/gu, "")
-        .toLowerCase()
-        .match(/[\p{L}\p{N}]+/gu) || []
-    )
-      .filter((w) => !stop.has(w) && w.length > 1)
-      .map((w) => stem(synonyms[w] || w)),
+    (plain(text).match(/[\p{L}\p{N}]+/gu) || []).filter(
+      (w) => !stop.has(w) && w.length > 1,
+    ),
   ),
 ];
+const form = (w: string) => stem(synonyms[w] || w);
+export const tokens = (text: string) => [...new Set(words(text).map(form))];
 const labels: Record<string, string> = {
   name: "Name",
   title: "Role",
@@ -85,33 +87,72 @@ export function contextEntries(contact: Connection) {
 export function contextLines(contact: Connection) {
   return contextEntries(contact).map((e) => `${e.label}: ${e.value}`);
 }
+// "mar" is in "Mariam Ali" from the start of a word; it is not in "Omar"
+const startsWord = (value: string, phrase: string) => {
+  for (let i = value.indexOf(phrase); i >= 0; i = value.indexOf(phrase, i + 1))
+    if (i === 0 || !/[\p{L}\p{N}]/u.test(value[i - 1])) return true;
+  return false;
+};
+// Keyword search. A word in the question finds a saved word in any of its forms ("hire" finds
+// "hiring") or by its beginning ("mar" finds "Mariam"); a typed fragment such as part of a phone
+// number or email finds the detail that contains it.
 export function lexicalRecall(
   query: string,
   contacts: Connection[],
 ): SearchHit[] {
-  const wanted = tokens(query);
+  const wanted = words(query);
+  const phrase = plain(query).trim().replace(/\s+/g, " ");
+  // small talk ("how are you") says nothing about a person
   if (!wanted.length) return [];
-  return contacts
+  const found = (w: string, value: string) => {
+    const saved = words(value);
+    return (
+      saved.some((v) => form(v) === form(w)) ||
+      (w.length >= 3 && saved.some((v) => v.startsWith(w)))
+    );
+  };
+  const scored = contacts
     .map((connection) => {
       const entries = contextEntries(connection);
-      const available = new Set(tokens(entries.map((e) => e.value).join(" ")));
-      const matches = wanted.filter((w) => available.has(w));
-      const evidence = entries
-        .filter((e) => tokens(e.value).some((w) => matches.includes(w)))
+      const whole =
+        phrase.length >= 3
+          ? entries.filter((e) =>
+              startsWord(plain(e.value).replace(/\s+/g, " "), phrase),
+            )
+          : [];
+      const matches = wanted.filter((w) =>
+        entries.some((e) => found(w, e.value)),
+      );
+      const evidence = [
+        ...new Set([
+          ...whole,
+          ...entries.filter((e) => matches.some((w) => found(w, e.value))),
+        ]),
+      ]
         .map((e) => `${e.label}: ${e.value}`)
         .slice(0, 3);
       return {
         connection,
-        score: matches.length / wanted.length,
+        score: whole.length
+          ? 1
+          : wanted.length
+            ? matches.length / wanted.length
+            : 0,
         evidence,
         reason: evidence[0] || "",
       };
     })
+    .filter((hit) => hit.score > 0 && hit.evidence.length)
+    .sort((a, b) => b.score - a.score);
+  // results are judged against the best one: when someone matches every word, people who
+  // match one word in three are noise
+  const best = scored[0]?.score || 0;
+  return scored
     .filter(
       (hit) =>
-        hit.score >= Math.min(0.5, 1 / wanted.length) && hit.evidence.length,
+        hit.score >= best * 0.6 &&
+        hit.score >= Math.min(0.5, 1 / wanted.length),
     )
-    .sort((a, b) => b.score - a.score)
     .slice(0, 10);
 }
 export function groundedMatches(
@@ -131,9 +172,24 @@ export function groundedMatches(
         match.evidence.trim().length < 4
       )
         return [];
-      const quote = match.evidence.trim();
-      if (!contextLines(connection).some((line) => line.includes(quote)))
-        return [];
+      let quote = match.evidence.trim();
+      const lines = contextLines(connection);
+      if (!lines.some((line) => line.includes(quote))) {
+        // not word for word: show the saved line it is closest to, or drop the match when
+        // nothing the person saved supports it
+        const asked = tokens(quote);
+        const [best] = lines
+          .map((line) => ({
+            line,
+            shared: tokens(line.replace(/^[^:]+: /, "")).filter((w) =>
+              asked.includes(w),
+            ).length,
+          }))
+          .sort((a, b) => b.shared - a.shared);
+        if (!best || best.shared < Math.min(2, asked.length) || !best.shared)
+          return [];
+        quote = best.line.slice(0, 400);
+      }
       seen.add(match.id);
       return [{ connection, score: 1, evidence: [quote], reason: quote }];
     })
@@ -194,7 +250,7 @@ export async function recall(
   if (!process.env.OPENAI_API_KEY)
     throw new HttpError(
       503,
-      "AI recall needs an OpenAI API key. Search your saved details using keyword mode for now.",
+      "AI search needs an OpenAI API key. Search your saved details using keyword mode for now.",
     );
   await aiAllowance(userId, "ai", db);
   const client = new OpenAI({
@@ -271,7 +327,10 @@ export async function recall(
     );
     const ids = new Set([
       ...local.map((h) => h.connection.id),
-      ...semantic.filter((h) => h.score > 0.3).map((h) => h.connection_id),
+      // the closest few always get a look: the model, not a fixed cut-off, decides
+      ...semantic
+        .filter((h, i) => h.score > 0.3 || i < 5)
+        .map((h) => h.connection_id),
     ]);
     const candidates = contacts.filter((c) => ids.has(c.id)).slice(0, 15);
     if (!candidates.length) return { hits: [], mode: "ai", warning: "" };
@@ -315,8 +374,17 @@ export async function recall(
         },
       },
     });
+    const found = groundedMatches(JSON.parse(response.output_text), candidates);
+    // AI never shows less than plain keyword search would: with nothing from the model the
+    // keyword matches stand, and a person who matches every word is always listed
+    if (!found.length) return { hits: local, mode: "keyword", warning: "" };
+    const certain = local.filter(
+      (h) =>
+        h.score === 1 &&
+        !found.some((f) => f.connection.id === h.connection.id),
+    );
     return {
-      hits: groundedMatches(JSON.parse(response.output_text), candidates),
+      hits: [...found, ...certain].slice(0, 10),
       mode: "ai",
       warning: "",
     };
@@ -326,7 +394,7 @@ export async function recall(
       hits: local,
       mode: "keyword",
       warning:
-        "AI recall is unavailable right now. These are keyword matches from your saved details.",
+        "AI search is unavailable right now. These are keyword matches from what you saved.",
     };
   }
 }

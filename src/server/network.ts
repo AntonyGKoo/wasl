@@ -505,3 +505,118 @@ export async function deleteNote(
     db,
   );
 }
+
+// Five made-up people, so a new account can try Search, albums and notes before the first real
+// meeting. They are marked origin 'sample' and leave together in one tap.
+const samplePeople = [
+  {
+    name: "Mariam Ali",
+    title: "Software engineer",
+    company: "Pearl Labs",
+    event: "Web Summit Qatar",
+    tags: ["Intro offered"],
+    favorite: true,
+    daysAgo: 3,
+    note: "Offered to introduce me to her CTO. Pearl Labs is hiring summer interns.",
+  },
+  {
+    name: "Omar Haddad",
+    title: "Product designer",
+    company: "Sidra Studio",
+    event: "Web Summit Qatar",
+    tags: ["Follow up"],
+    favorite: false,
+    daysAgo: 3,
+    note: "Showed me his portfolio app and asked for feedback on the sign-up screens.",
+  },
+  {
+    name: "Yousef Al-Kuwari",
+    title: "Founder",
+    company: "Najm Robotics",
+    event: "Web Summit Qatar",
+    tags: ["Co-founder"],
+    favorite: false,
+    daysAgo: 3,
+    note: "Building delivery robots and looking for a first engineer.",
+  },
+  {
+    name: "Lina Farouk",
+    title: "Data scientist",
+    company: "Falcon Analytics",
+    event: "Campus career fair",
+    tags: ["Hiring"],
+    favorite: false,
+    daysAgo: 12,
+    note: "Her team works on fraud detection. She said to send my CV before December.",
+  },
+  {
+    name: "Sara Nasser",
+    title: "Security analyst",
+    company: "Corniche Bank",
+    event: "Campus career fair",
+    tags: ["Mentor"],
+    favorite: false,
+    daysAgo: 12,
+    note: "Works in cybersecurity. Offered to review my CV and do a mock interview.",
+  },
+];
+export async function addSamplePeople(userId: string, db?: Database) {
+  return asUser(
+    userId,
+    async (tx) => {
+      const have = await tx.query(
+        "SELECT 1 FROM connections WHERE owner_id=$1 AND origin='sample' LIMIT 1",
+        [userId],
+      );
+      if (have.length) return 0;
+      for (const person of samplePeople) {
+        const id = randomUUID();
+        const day = new Date(Date.now() - person.daysAgo * 86400000)
+          .toISOString()
+          .slice(0, 10);
+        await tx.query(
+          `INSERT INTO connections(profile,tags,event,place,met_on,favorite,id,owner_id,origin)
+          VALUES($1::jsonb,$2,$3,'Doha',$4,$5,$6,$7,'sample')`,
+          [
+            JSON.stringify({
+              name: person.name,
+              title: person.title,
+              company: person.company,
+              university: "",
+              email: "",
+              phone: "",
+              linkedin: "",
+              instagram: "",
+              website: "",
+              bio: "",
+            }),
+            person.tags,
+            person.event,
+            day,
+            person.favorite,
+            id,
+            userId,
+          ],
+        );
+        await tx.query(
+          "INSERT INTO interactions(id,owner_id,connection_id,body,happened_on) VALUES($1,$2,$3,$4,$5)",
+          [randomUUID(), userId, id, person.note, day],
+        );
+      }
+      return samplePeople.length;
+    },
+    db,
+  );
+}
+export async function removeSamplePeople(userId: string, db?: Database) {
+  const gone = await asUser(
+    userId,
+    (tx) =>
+      tx.query(
+        "DELETE FROM connections WHERE owner_id=$1 AND origin='sample' RETURNING id",
+        [userId],
+      ),
+    db,
+  );
+  return gone.length;
+}

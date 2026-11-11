@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   Mic,
+  Plus,
   Square,
   Search,
   ShieldCheck,
@@ -39,15 +40,57 @@ function describe(line: string) {
     from: names[label] || `Their card · ${label.toLowerCase()}`,
   };
 }
+// Example questions come from what this person has saved, so tapping one always finds someone.
+const commonest = (values: string[]) => {
+  const count = new Map<string, number>();
+  for (const v of values) count.set(v, (count.get(v) || 0) + 1);
+  return [...count.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+};
+function examplesFor(contacts: Connection[]) {
+  const event = commonest(contacts.map((c) => c.event).filter(Boolean));
+  const tag = commonest(contacts.flatMap((c) => c.tags));
+  const company = contacts.find((c) => c.profile.company)?.profile.company;
+  const role = contacts.find((c) => c.profile.title)?.profile.title;
+  return [
+    event ? `Who did I meet at ${event}?` : "",
+    tag ? `People I tagged “${tag}”` : "",
+    company
+      ? `Someone who works at ${company}`
+      : role
+        ? `The ${role.toLowerCase()} I met`
+        : "",
+  ].filter(Boolean);
+}
 export function RecallView({
   capabilities,
   onOpen,
-  contactCount,
+  contacts,
+  onAdd,
+  onScan,
+  onChanged,
 }: {
   capabilities: Capabilities;
   onOpen: (contact: Connection) => void;
-  contactCount: number;
+  contacts: Connection[];
+  onAdd: () => void;
+  onScan: () => void;
+  onChanged: () => Promise<void> | void;
 }) {
+  const contactCount = contacts.length;
+  const examples = examplesFor(contacts);
+  const [adding, setAdding] = useState(false);
+  async function addSamples() {
+    setAdding(true);
+    setError("");
+    try {
+      await api("sample-people", "POST");
+      await onChanged();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setAdding(false);
+    }
+  }
   const [query, setQuery] = useState("");
   // with AI connected, search by meaning is on by default (it can be switched off)
   const [ai, setAi] = useState(capabilities.ai);
@@ -136,6 +179,48 @@ export function RecallView({
       setAnswered((n) => n + 1);
     }
   }
+  // nobody saved yet: say so, instead of a search box that can never find anyone
+  if (!contactCount)
+    return (
+      <>
+        <section className="page-intro">
+          <div>
+            <h1>Search</h1>
+            <p>
+              Find people by what you remember: what they do, where you met, or
+              what you talked about.
+            </p>
+          </div>
+        </section>
+        <div className="empty-state search-empty">
+          <span className="empty-icon">
+            <Search size={28} />
+          </span>
+          <h3>There&rsquo;s no one to search yet.</h3>
+          <p>
+            Search looks through the people you save: their details, where you
+            met and your notes. Save your first person, or add five sample
+            people to see how it works.
+          </p>
+          <div className="row center">
+            <Button variant="secondary" onClick={onScan}>
+              <ScanLine size={16} /> Scan a card
+            </Button>
+            <Button onClick={onAdd}>
+              <Plus size={16} /> Add someone
+            </Button>
+          </div>
+          <button
+            className="text-button"
+            onClick={addSamples}
+            disabled={adding}
+          >
+            {adding ? "Adding sample people…" : "Try it with sample people"}
+          </button>
+          {error ? <Notice error>{error}</Notice> : null}
+        </div>
+      </>
+    );
   return (
     <>
       <section className="page-intro">
@@ -161,7 +246,7 @@ export function RecallView({
               placeholder={
                 listening
                   ? "Listening… say who you're looking for"
-                  : "The software engineer I met at Web Summit…"
+                  : "A role, a place, or something you talked about"
               }
             />
             {canSpeak ? (
@@ -203,12 +288,8 @@ export function RecallView({
                 : "Searches the details, notes and places you saved. Nothing leaves your account."}
           </p>
         </form>
-        <div className="suggestions">
-          {[
-            "Who did I meet at Web Summit?",
-            "Someone who works in cybersecurity",
-            "The person who offered to review my CV",
-          ].map((q) => (
+        <div className="suggestions" aria-label="Examples from your network">
+          {examples.map((q) => (
             <button
               key={q}
               onClick={() => {
@@ -238,23 +319,14 @@ export function RecallView({
             {!hits.length ? (
               <div className="empty-state small">
                 <Search size={27} />
-                {contactCount ? (
-                  <>
-                    <h3>A little more context might help.</h3>
-                    <p>
-                      Try a word from their role, company, the event, or a note
-                      you saved. Wasl only searches what you have saved.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h3>You haven&rsquo;t saved anyone yet.</h3>
-                    <p>
-                      Add or scan a connection and a note about them first, then
-                      find them here by what you remember.
-                    </p>
-                  </>
-                )}
+                <h3>
+                  None of your {contactCount} saved{" "}
+                  {contactCount === 1 ? "person matches" : "people match"} that.
+                </h3>
+                <p>
+                  Try a name, their role or company, the event, or a word from a
+                  note you wrote. Wasl only searches what you have saved.
+                </p>
               </div>
             ) : (
               hits.map((hit) => (

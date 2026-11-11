@@ -4,10 +4,12 @@ import { randomUUID } from "node:crypto";
 import { asUser, migrate, openDatabase } from "../src/lib/db";
 import { blankProfile, type Connection, type User } from "../src/lib/types";
 import {
+  addSamplePeople,
   deleteAlbum,
   getConnection,
   importCard,
   publicCard,
+  removeSamplePeople,
   saveAlbum,
   saveCard,
   saveNote,
@@ -15,6 +17,7 @@ import {
   shareCard,
   swapBack,
 } from "../src/server/network";
+import { recall } from "../src/server/recall";
 test(
   "hosted PostgreSQL driver, vector extension and RLS match local behavior",
   { skip: !process.env.TEST_DATABASE_URL },
@@ -136,6 +139,20 @@ test(
       await saveAlbum(owner.id, { name: "Fair", connection_ids: [] }, db);
       assert.deepEqual((await getConnection(owner.id, id, db)).albums, []);
       await deleteAlbum(owner.id, "Fair", db);
+      // sample people go in and out together through the hosted driver, and search finds them
+      assert.equal(await addSamplePeople(receiver.id, db), 5);
+      assert.equal(await addSamplePeople(receiver.id, db), 0);
+      const found = await recall(
+        receiver.id,
+        "who offered to review my CV",
+        "keyword",
+        db,
+      );
+      assert.deepEqual(
+        found.hits.map((h) => h.connection.profile.name),
+        ["Sara Nasser"],
+      );
+      assert.equal(await removeSamplePeople(receiver.id, db), 5);
     } finally {
       await db.query("DELETE FROM users WHERE id=ANY($1::uuid[])", [
         [owner.id, receiver.id],

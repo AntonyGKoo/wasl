@@ -80,7 +80,7 @@ export type Connection = {
   met_on: string;
   favorite: boolean;
   albums: string[];
-  origin: "" | "scan" | "link" | "swap";
+  origin: "" | "scan" | "link" | "swap" | "sample";
   unseen: boolean;
   source_share_id: string | null;
   created_at: string;

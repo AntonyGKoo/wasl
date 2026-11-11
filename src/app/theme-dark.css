@@ -953,3 +953,10 @@
   background: var(--teal-solid);
   color: white;
 }
+:where(:root[data-theme="dark"]) .sample-note {
+  border: 1px dashed var(--line);
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .sample-note strong {
+  color: var(--ink);
+}

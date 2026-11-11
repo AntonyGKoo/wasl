@@ -314,7 +314,14 @@ export function WaslApp() {
             <RecallView
               capabilities={capabilities}
               onOpen={setDetail}
-              contactCount={contacts.length}
+              contacts={contacts}
+              onAdd={() => {
+                setDraft(undefined);
+                setDraftByAi(undefined);
+                setEditing(null);
+              }}
+              onScan={() => setScanning(true)}
+              onChanged={refresh}
             />
           ) : (
             <SettingsView
@@ -547,7 +554,8 @@ function GettingStarted({
       icon: QrCode,
     },
     {
-      done: contacts.length > 0,
+      // sample people don't count: this step is about a real meeting
+      done: contacts.some((c) => c.origin !== "sample"),
       title: "Save someone you met: scan their code or card",
       action: onMeet,
       icon: UserPlus,

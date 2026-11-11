@@ -95,3 +95,40 @@ test("recall matches different forms of the same word", () => {
     "known",
   );
 });
+test("search finds people by the start of a word, a typed fragment, and ignores small talk", () => {
+  // the beginning of a name or company is enough
+  assert.equal(lexicalRecall("you", [contact]).length, 0);
+  assert.equal(lexicalRecall("yous", [contact])[0]?.connection.id, "known");
+  assert.equal(lexicalRecall("summ", [contact])[0]?.connection.id, "known");
+  // a fragment that runs across words
+  assert.equal(
+    lexicalRecall("introduction to his", [contact])[0]?.connection.id,
+    "known",
+  );
+  // words that say nothing about a person find no one
+  assert.equal(lexicalRecall("how r u", [contact]).length, 0);
+  assert.equal(lexicalRecall("who did I meet", [contact]).length, 0);
+  // example questions built from saved details find the person
+  assert.equal(
+    lexicalRecall("Who did I meet at Web Summit Qatar?", [contact])[0]
+      ?.connection.id,
+    "known",
+  );
+  assert.equal(
+    lexicalRecall("People I tagged Technology", [contact])[0]?.connection.id,
+    "known",
+  );
+});
+test("AI evidence that is not word for word falls back to the saved line it paraphrases", () => {
+  const hits = groundedMatches(
+    {
+      matches: [{ id: "known", evidence: "offered an intro to the CTO" }],
+    },
+    [contact],
+  );
+  assert.equal(hits.length, 1);
+  assert.equal(
+    hits[0].evidence[0],
+    "Note (2026-10-24): Offered an introduction to his CTO",
+  );
+});
