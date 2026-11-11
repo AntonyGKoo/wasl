@@ -108,7 +108,7 @@ export function RecallView({
           <p>Find the person through the things you remember.</p>
         </div>
         <span className="pill recall-pill">
-          <Sparkles size={13} /> Recall
+          <Sparkles size={13} /> Search by memory
         </span>
       </section>
       <div className="recall-search-panel">

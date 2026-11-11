@@ -45,7 +45,7 @@ type View = "network" | "wallet" | "recall" | "profile" | "settings";
 const navigation = [
   { id: "network" as View, label: "Your network", icon: LayoutGrid },
   { id: "wallet" as View, label: "Your cards", icon: CreditCard },
-  { id: "recall" as View, label: "Recall", icon: Sparkles },
+  { id: "recall" as View, label: "Search", icon: Sparkles },
   { id: "profile" as View, label: "Your profile", icon: UserRound },
 ];
 export function WaslApp() {
@@ -485,7 +485,7 @@ function SettingsView({
         </section>
         <section>
           <h3>Appearance</h3>
-          <p>Light or dark. Wasl follows your phone until you pick one.</p>
+          <p>Wasl is dark unless you pick Light, or let it match your phone.</p>
           <ThemeSetting />
         </section>
         <section>
@@ -517,7 +517,7 @@ function SettingsView({
         <section>
           <h3>Connected features</h3>
           <div className="service-row">
-            <span>AI memory recall</span>
+            <span>AI search by memory</span>
             <span className={`pill ${capabilities.ai ? "available" : ""}`}>
               {capabilities.ai ? "Connected" : "Not connected"}
             </span>

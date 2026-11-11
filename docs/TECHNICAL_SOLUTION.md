@@ -24,7 +24,7 @@ flowchart LR
 
 | Layer | Choice | Why |
 |---|---|---|
-| App | Next.js 16, React 19, TypeScript; installable from the website (PWA); light and dark themes | One codebase for phones and laptops. A card opens from a QR code or link, so the other person needs nothing installed to see it. The theme follows the phone or the person's choice in Settings. |
+| App | Next.js 16, React 19, TypeScript; installable from the website (PWA); light and dark themes | One codebase for phones and laptops. A card opens from a QR code or link, so the other person needs nothing installed to see it. Dark by default; light or the phone's setting can be picked in Settings. |
 | Database | PostgreSQL with pgvector: Supabase in production, PGlite locally | Cards, connections and notes are relational; recall needs vector search. Both in one place. |
 | Security | Row-level security on every user table, plus ownership checks on the server; salted scrypt passwords; revocable sessions; rate limits | One person can never read another's network, even through a bug in a query (tested). |
 | On the phone | Tesseract.js (card text), jsQR (QR codes), the browser's speech-to-text, camera and location | Photos and audio never leave the phone. |

@@ -42,7 +42,7 @@ test("two people share selected details, retain private memory, recall and revok
     page.getByText("Offered to introduce me to his CTO", { exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Close dialog", exact: true }).click();
-  await page.getByRole("button", { name: "Recall", exact: true }).click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
   await page
     .getByLabel("Search your memory", { exact: true })
     .fill("software engineer Web Summit");
@@ -160,21 +160,20 @@ test("text capture always requires review before saving", async ({ page }) => {
     page.getByRole("heading", { name: "Sara Smith", exact: true }).last(),
   ).toBeVisible();
 });
-test("light and dark themes follow the phone or the person's choice", async ({
+test("dark by default, with light or the phone's setting as choices", async ({
   page,
 }) => {
   const theme = page.locator("html");
-  await page.emulateMedia({ colorScheme: "dark" });
+  // a phone in light mode still opens Wasl dark until the person picks otherwise
+  await page.emulateMedia({ colorScheme: "light" });
   await signup(page, "Theme QA");
   await expect(theme).toHaveAttribute("data-theme", "dark");
-  await page.emulateMedia({ colorScheme: "light" });
+  // the top bar switch picks light, and the choice is kept after a reload
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
   await expect(theme).toHaveAttribute("data-theme", "light");
-  // the top bar switch picks dark, and the choice is kept after a reload
-  await page.getByRole("button", { name: "Switch to dark mode" }).click();
-  await expect(theme).toHaveAttribute("data-theme", "dark");
   await page.reload();
-  await expect(theme).toHaveAttribute("data-theme", "dark");
-  // Settings can go back to following the phone
+  await expect(theme).toHaveAttribute("data-theme", "light");
+  // Settings: follow the phone, then back to dark
   await page
     .locator("nav button:visible, aside button:visible")
     .filter({ hasText: "Settings" })
@@ -182,6 +181,9 @@ test("light and dark themes follow the phone or the person's choice", async ({
     .click();
   await page.getByRole("radio", { name: "Match my phone" }).click();
   await expect(theme).toHaveAttribute("data-theme", "light");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(theme).toHaveAttribute("data-theme", "dark");
+  await page.emulateMedia({ colorScheme: "light" });
   await page.getByRole("radio", { name: "Dark" }).click();
   await expect(theme).toHaveAttribute("data-theme", "dark");
 });

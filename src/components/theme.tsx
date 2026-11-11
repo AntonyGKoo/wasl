@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { Moon, Smartphone, Sun } from "lucide-react";
 
-// Light or dark: follows the phone's setting until the person picks one, and is remembered on
-// this device. The page is themed before it first paints by the script in app/layout.tsx.
+// Dark by default; the person can pick Light or "Match my phone", remembered on this device.
+// The page is themed before it first paints by the script in app/layout.tsx.
 import { THEME_KEY as KEY } from "@/lib/theme-script";
 export type ThemeChoice = "system" | "light" | "dark";
 const systemDark = () =>
@@ -12,28 +12,31 @@ const systemDark = () =>
 function readChoice(): ThemeChoice {
   try {
     const v = window.localStorage.getItem(KEY);
-    return v === "light" || v === "dark" ? v : "system";
+    return v === "light" || v === "system" ? v : "dark";
   } catch {
-    return "system";
+    return "dark";
   }
 }
 function apply(choice: ThemeChoice) {
   const dark = choice === "dark" || (choice === "system" && systemDark());
   document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  // the browser bar and phone status area match the page
+  document
+    .querySelectorAll('meta[name="theme-color"]')
+    .forEach((m) => m.setAttribute("content", dark ? "#111418" : "#f6f8fa"));
   return dark;
 }
 function save(choice: ThemeChoice) {
   try {
-    if (choice === "system") window.localStorage.removeItem(KEY);
-    else window.localStorage.setItem(KEY, choice);
+    window.localStorage.setItem(KEY, choice);
   } catch {}
   apply(choice);
   window.dispatchEvent(new Event("wasl-theme"));
 }
 
 export function useTheme() {
-  const [choice, setChoice] = useState<ThemeChoice>("system");
-  const [dark, setDark] = useState(false);
+  const [choice, setChoice] = useState<ThemeChoice>("dark");
+  const [dark, setDark] = useState(true);
   useEffect(() => {
     const sync = () => {
       const c = readChoice();
@@ -79,9 +82,9 @@ export function ThemeToggle() {
 export function ThemeSetting() {
   const { choice, choose } = useTheme();
   const options: [ThemeChoice, string, typeof Sun][] = [
-    ["system", "Match my phone", Smartphone],
-    ["light", "Light", Sun],
     ["dark", "Dark", Moon],
+    ["light", "Light", Sun],
+    ["system", "Match my phone", Smartphone],
   ];
   return (
     <div className="theme-setting" role="radiogroup" aria-label="Appearance">

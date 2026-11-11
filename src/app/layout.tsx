@@ -11,15 +11,13 @@ export const metadata: Metadata = {
   description: "Remember who you met, why it mattered, and who can help next.",
   applicationName: "Wasl",
   // opened from the home screen, it runs full screen with its own name
-  appleWebApp: { capable: true, title: "Wasl", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Wasl", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = {
   // the browser bar matches the page in light and dark
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f8fa" },
-    { media: "(prefers-color-scheme: dark)", color: "#111418" },
-  ],
+  // dark by default; the theme switch updates it
+  themeColor: "#111418",
   width: "device-width",
   initialScale: 1,
   // an installed app keeps one size: no pinch or double-tap zoom

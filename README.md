@@ -16,7 +16,7 @@
 
 Without an AI key, every step still works with built-in rules, and nothing pretends to be AI.
 
-**Light and dark:** Wasl follows your phone's light or dark setting, or you pick one in Settings (or with the moon/sun button at the top). The clickable mockup has both looks too: dark by default, light from its Settings.
+**Light and dark:** Wasl opens in dark mode on phones and laptops. Pick Light, or let it match your phone, in Settings (or tap the moon/sun button at the top); the choice is remembered. The clickable mockup has both looks too: dark by default, light from its Settings.
 
 **Your data stays yours:** notes, tags and albums are private; cards share only what you choose; export everything, change your password or delete your account in Settings.
 

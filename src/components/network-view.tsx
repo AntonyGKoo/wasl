@@ -428,7 +428,8 @@ export function NetworkView({
             <Search size={27} />
             <h3>No connections match this filter.</h3>
             <p>
-              Try another name or category, or use Recall to search your notes.
+              Try another name or category, or use Search to look through your
+              notes.
             </p>
           </div>
         ) : (
