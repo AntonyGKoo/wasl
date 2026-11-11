@@ -43,10 +43,10 @@ import { ThemeSetting, ThemeToggle } from "./theme";
 import { presentationCardToken } from "@/lib/presentation";
 type View = "network" | "wallet" | "recall" | "profile" | "settings";
 const navigation = [
-  { id: "network" as View, label: "Your network", icon: LayoutGrid },
-  { id: "wallet" as View, label: "Your cards", icon: CreditCard },
+  { id: "network" as View, label: "Network", icon: LayoutGrid },
+  { id: "wallet" as View, label: "Cards", icon: CreditCard },
   { id: "recall" as View, label: "Search", icon: Sparkles },
-  { id: "profile" as View, label: "Your profile", icon: UserRound },
+  { id: "profile" as View, label: "Profile", icon: UserRound },
 ];
 export function WaslApp() {
   const [user, setUser] = useState<User | null>(null);
@@ -176,7 +176,6 @@ export function WaslApp() {
         <a href="/" aria-label="Wasl home">
           <Brand />
         </a>
-        <div className="sidebar-caption">YOUR PERSONAL NETWORK</div>
         <nav aria-label="Main navigation">
           {navigation.map((n) => (
             <button
@@ -189,19 +188,10 @@ export function WaslApp() {
               {n.id === "network" ? (
                 <span className="nav-count">{contacts.length}</span>
               ) : null}
-              {n.id === "recall" ? <span className="nav-dot" /> : null}
             </button>
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <ShieldCheck size={17} />
-            <p>
-              Your connections.
-              <br />
-              <strong>Your private context.</strong>
-            </p>
-          </div>
           <button
             className={`settings-nav ${view === "settings" ? "active" : ""}`}
             onClick={() => navigate("settings")}
@@ -235,21 +225,11 @@ export function WaslApp() {
       <div className="app-main">
         <header className="app-topbar">
           <div>
-            <span className="topbar-path">Your workspace</span>
-            <span className="topbar-divider" aria-hidden="true">
-              /
-            </span>
             <strong>
               {navigation.find((n) => n.id === view)?.label || "Settings"}
             </strong>
           </div>
           <div className="row">
-            <span className="workspace-private">
-              <ShieldCheck size={13} />{" "}
-              {capabilities.presentation
-                ? "Demo · fictional data"
-                : "Private workspace"}
-            </span>
             {capabilities.presentation ? (
               <a
                 className="text-button presentation-card-link"
@@ -272,7 +252,8 @@ export function WaslApp() {
           </div>
         </header>
         <main className="workspace-content">
-          <InstallApp banner />
+          {/* the install prompt lives on the home screen only, not on every page */}
+          {view === "network" ? <InstallApp banner /> : null}
           {error ? (
             <Notice error>
               {error}
@@ -341,10 +322,6 @@ export function WaslApp() {
               onLogout={logout}
             />
           )}
-          <footer className="workspace-footer">
-            <span>More than contacts. A network with memory.</span>
-            <span>wasl · وصل</span>
-          </footer>
         </main>
       </div>
       <nav className="mobile-nav" aria-label="Mobile navigation">
@@ -355,15 +332,7 @@ export function WaslApp() {
             onClick={() => navigate(n.id)}
           >
             <n.icon size={20} />
-            <span>
-              {n.id === "network"
-                ? "Network"
-                : n.id === "wallet"
-                  ? "Cards"
-                  : n.id === "profile"
-                    ? "Profile"
-                    : n.label}
-            </span>
+            <span>{n.label}</span>
           </button>
         ))}
         <button
@@ -465,9 +434,7 @@ function SettingsView({
     <>
       <section className="page-intro">
         <div>
-          <span className="eyebrow">YOUR WORKSPACE, YOUR CHOICE</span>
           <h1>Settings</h1>
-          <p>A little clarity about your account and your data.</p>
         </div>
       </section>
       <div className="settings-sections">
@@ -505,17 +472,16 @@ function SettingsView({
           <InstallApp />
         </section>
         <section>
-          <h3>Your data belongs to you.</h3>
+          <h3>Your data</h3>
           <p>
-            Download your profile, cards, connections and private notes as a
-            JSON file.
+            Download everything as one file: profile, cards, people and notes.
           </p>
           <a className="button secondary" href="/api/export">
             <ArrowDownToLine size={16} /> Export my network
           </a>
         </section>
         <section>
-          <h3>Connected features</h3>
+          <h3>AI and scanning</h3>
           <div className="service-row">
             <span>AI search by memory</span>
             <span className={`pill ${capabilities.ai ? "available" : ""}`}>
@@ -528,27 +494,16 @@ function SettingsView({
               {capabilities.ocr ? "Connected" : "On your phone"}
             </span>
           </div>
+        </section>
+        <section>
+          <h3>Privacy</h3>
           <p>
-            {capabilities.ocr
-              ? "Manual entry, private memories, keyword recall and QR sharing work independently of these services."
-              : "Card photos are read on your phone, so they never leave it. Private memories, keyword recall and QR sharing work without any AI service."}
+            Only you see your notes. A card shows only the details you switch
+            on. Turning off a link stops new people opening it; copies people
+            already saved stay with them.
           </p>
         </section>
         <DeleteAccount onDeleted={onLogout} />
-        <section>
-          <h3>Sharing and privacy</h3>
-          <p>
-            Your notes are only visible to you. Public cards contain only the
-            fields you choose. Changing your profile updates active card links;
-            people can refresh saved shared details from their connection
-            screen. Revoking a link stops future access through that link, but
-            cannot remove copies someone already saved.
-          </p>
-          <p>
-            Wasl never scrapes LinkedIn. Add your own profile link to a card if
-            you want to share it.
-          </p>
-        </section>
       </div>
     </>
   );
@@ -780,11 +735,7 @@ function DeleteAccount({ onDeleted }: { onDeleted: () => void }) {
   return (
     <section className="danger-section">
       <h3>Delete my account</h3>
-      <p>
-        Removes your profile, cards, sharing links, connections and every
-        private memory. This cannot be undone. Export your network first if you
-        want a copy.
-      </p>
+      <p>Removes your profile, cards, links, people and notes for good.</p>
       {open ? (
         <form onSubmit={submit} className="settings-form">
           <label>

@@ -4,12 +4,20 @@
   color: var(--ink);
   background: var(--bg);
 }
+:where(:root[data-theme="dark"]) a {
+  color: inherit;
+}
+:where(:root[data-theme="dark"]) button:focus-visible,
+:where(:root[data-theme="dark"]) a:focus-visible {
+  outline: 3px solid #7bc9ca;
+}
 :where(:root[data-theme="dark"]) input,
 :where(:root[data-theme="dark"]) textarea,
 :where(:root[data-theme="dark"]) select {
   border: 1px solid #434b4e;
   background: #1b2027;
   color: var(--ink);
+  outline: none;
 }
 :where(:root[data-theme="dark"]) input:focus,
 :where(:root[data-theme="dark"]) textarea:focus,
@@ -32,8 +40,24 @@
 :where(:root[data-theme="dark"]) .brand-mark i {
   background: var(--teal-solid);
 }
+:where(:root[data-theme="dark"]) .brand-mark i:nth-child(1) {
+  background: #e79a72;
+}
+:where(:root[data-theme="dark"]) .brand-mark i:nth-child(2) {
+  background: #9680d8;
+}
+:where(:root[data-theme="dark"]) .brand-mark i:nth-child(3) {
+  background: #26b7b1;
+}
+:where(:root[data-theme="dark"]) .button {
+  border: 1px solid transparent;
+}
 :where(:root[data-theme="dark"]) .button.primary {
   background: var(--teal-solid);
+  color: white;
+}
+:where(:root[data-theme="dark"]) .button.primary:hover {
+  background: #056c70;
 }
 :where(:root[data-theme="dark"]) .button.secondary {
   background: #1b2027;
@@ -41,6 +65,7 @@
   color: var(--ink);
 }
 :where(:root[data-theme="dark"]) .button.ghost {
+  background: transparent;
   color: var(--muted);
 }
 :where(:root[data-theme="dark"]) .button.danger {
@@ -49,6 +74,8 @@
   border-color: #563837;
 }
 :where(:root[data-theme="dark"]) .icon-button {
+  border: 0;
+  background: transparent;
   color: var(--muted);
 }
 :where(:root[data-theme="dark"]) .icon-button:hover {
@@ -111,7 +138,9 @@
   background: #252e31;
 }
 :where(:root[data-theme="dark"]) .auth-tabs button {
+  border: 0;
   color: var(--muted);
+  background: transparent;
 }
 :where(:root[data-theme="dark"]) .auth-tabs .active {
   color: var(--teal);
@@ -156,6 +185,9 @@
 :where(:root[data-theme="dark"]) .install-app.done {
   color: var(--teal);
 }
+:where(:root[data-theme="dark"]) .modal-backdrop {
+  background: #172b416b;
+}
 :where(:root[data-theme="dark"]) .modal {
   background: #1b2027;
   box-shadow: 0 20px 100px #3793af55;
@@ -183,6 +215,8 @@
 }
 :where(:root[data-theme="dark"]) .sidebar nav button,
 :where(:root[data-theme="dark"]) .settings-nav {
+  border: 0;
+  background: transparent;
   color: #bbc3c9;
 }
 :where(:root[data-theme="dark"]) .sidebar nav button:hover,
@@ -197,6 +231,9 @@
 :where(:root[data-theme="dark"]) .nav-count {
   background: #1b202788;
 }
+:where(:root[data-theme="dark"]) .nav-dot {
+  background: #ab93db;
+}
 :where(:root[data-theme="dark"]) .sidebar-note {
   background: #292f32;
   color: #bcc3c8;
@@ -208,6 +245,8 @@
   border-top: 1px solid var(--line);
 }
 :where(:root[data-theme="dark"]) .account-button {
+  background: none;
+  border: 0;
   color: var(--ink);
 }
 :where(:root[data-theme="dark"]) .account-button small {
@@ -270,6 +309,11 @@
   border: 1px solid var(--line);
   color: #bcc4c7;
 }
+:where(:root[data-theme="dark"]) .search-box input {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
 :where(:root[data-theme="dark"]) .filter-chip {
   border: 1px solid var(--line);
   background: #1b2027;
@@ -290,6 +334,9 @@
 }
 :where(:root[data-theme="dark"]) .contact-arrow {
   color: #5e7078;
+}
+:where(:root[data-theme="dark"]) .favorite {
+  color: #cba96b;
 }
 :where(:root[data-theme="dark"]) .favorite.filled {
   fill: #f1e6c9;
@@ -322,6 +369,11 @@
 :where(:root[data-theme="dark"]) .workspace-footer {
   color: #bec3c6;
 }
+:where(:root[data-theme="dark"]) .text-button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
 :where(:root[data-theme="dark"]) .form-divider {
   border-top: 1px solid var(--line);
   color: #bcc4c8;
@@ -347,6 +399,9 @@
 }
 :where(:root[data-theme="dark"]) .timeline article:not(:last-child):before {
   background: var(--line);
+}
+:where(:root[data-theme="dark"]) .timeline-dot {
+  background: #91b9b1;
 }
 :where(:root[data-theme="dark"]) .timeline time {
   color: #bcc4c7;
@@ -376,8 +431,31 @@
   background: #1b2027;
   border: 1px solid var(--line);
 }
+:where(:root[data-theme="dark"]) .digital-card {
+  color: white;
+  background: #167a82;
+}
+:where(:root[data-theme="dark"]) .digital-card.violet,
+:where(:root[data-theme="dark"]) .public-card-cover.violet {
+  background: #7765a9;
+}
+:where(:root[data-theme="dark"]) .digital-card.coral,
+:where(:root[data-theme="dark"]) .public-card-cover.coral {
+  background: #bb7b63;
+}
+:where(:root[data-theme="dark"]) .digital-card.ink,
+:where(:root[data-theme="dark"]) .public-card-cover.ink {
+  background: #293c53;
+}
 :where(:root[data-theme="dark"]) .digital-card:after {
   border: 1px solid #3d3d3d12;
+}
+:where(:root[data-theme="dark"]) .digital-card-top > span:last-child {
+  color: #fffd;
+}
+:where(:root[data-theme="dark"]) .digital-card > .avatar {
+  color: white;
+  background: #ffffff26;
 }
 :where(:root[data-theme="dark"]) .wallet-card-info span {
   color: var(--muted);
@@ -424,6 +502,11 @@
   border: 1px solid #455053;
   color: #bcc4c8;
 }
+:where(:root[data-theme="dark"]) .recall-input input {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
 :where(:root[data-theme="dark"]) .search-privacy {
   color: #bec3c6;
 }
@@ -439,6 +522,9 @@
   background: #1b2027;
   border: 1px solid var(--line);
   color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .recall-result > svg {
+  color: #9db5bc;
 }
 :where(:root[data-theme="dark"]) .recall-result blockquote {
   border-left: 2px solid #475854;
@@ -466,6 +552,9 @@
 :where(:root[data-theme="dark"]) .service-row {
   border-bottom: 1px solid #3c4448;
 }
+:where(:root[data-theme="dark"]) .service-row:last-of-type {
+  border: 0;
+}
 :where(:root[data-theme="dark"]) .pill.available {
   background: #293930;
   color: #6aaf8c;
@@ -476,6 +565,10 @@
 :where(:root[data-theme="dark"]) .public-card-shell {
   background: #1b2027;
   border: 1px solid var(--line);
+}
+:where(:root[data-theme="dark"]) .public-card-cover {
+  background: #167a82;
+  color: #fff;
 }
 :where(:root[data-theme="dark"]) .public-card-content > .avatar {
   border: 4px solid #3d3d3d;
@@ -508,6 +601,8 @@
     border-top: 1px solid var(--line);
   }
   :where(:root[data-theme="dark"]) .mobile-nav button {
+    border: 0;
+    background: none;
     color: #bcc3c7;
   }
   :where(:root[data-theme="dark"]) .mobile-nav .active {
@@ -562,9 +657,22 @@
 :where(:root[data-theme="dark"]) .avatar.photo {
   background: #2c3437;
 }
+:where(:root[data-theme="dark"]) .digital-card > .avatar.photo {
+  background: #ffffff26;
+}
 :where(:root[data-theme="dark"]) .swatch {
   border: 3px solid #3d3d3d;
   box-shadow: 0 0 0 1px var(--line);
+  background: #167a82;
+}
+:where(:root[data-theme="dark"]) .swatch.violet {
+  background: #7765a9;
+}
+:where(:root[data-theme="dark"]) .swatch.coral {
+  background: #bb7b63;
+}
+:where(:root[data-theme="dark"]) .swatch.ink {
+  background: #293c53;
 }
 :where(:root[data-theme="dark"]) .swatch[aria-checked="true"] {
   box-shadow: 0 0 0 2px var(--ink);
@@ -593,6 +701,12 @@
 }
 :where(:root[data-theme="dark"]) .strength-bar i {
   background: var(--teal-solid);
+}
+:where(:root[data-theme="dark"]) .qr-viewfinder {
+  background: #16262f;
+}
+:where(:root[data-theme="dark"]) .qr-viewfinder-msg {
+  color: #d9e4e8;
 }
 :where(:root[data-theme="dark"]) .qr-frame {
   border: 3px solid #3d3d3dd9;
@@ -664,6 +778,7 @@
 }
 :where(:root[data-theme="dark"]) .pill.new-pill {
   background: var(--teal-solid);
+  color: white;
 }
 :where(:root[data-theme="dark"]) .pill.album-pill {
   background: #2b233d;
@@ -671,6 +786,9 @@
 }
 :where(:root[data-theme="dark"]) .origin-line {
   color: var(--teal);
+}
+:where(:root[data-theme="dark"]) .icon-button.starred {
+  color: #c49a3c;
 }
 :where(:root[data-theme="dark"]) .icon-button.starred svg {
   fill: #eddfb9;
@@ -700,6 +818,9 @@
 :where(:root[data-theme="dark"]) .deck-memory {
   color: var(--purple);
 }
+:where(:root[data-theme="dark"]) .stamp {
+  border: 3px solid;
+}
 :where(:root[data-theme="dark"]) .stamp.fav {
   color: #cd9b37;
 }
@@ -717,6 +838,9 @@
 :where(:root[data-theme="dark"]) .deck-button.memory {
   color: var(--purple);
 }
+:where(:root[data-theme="dark"]) .deck-button.fav {
+  color: #c49a3c;
+}
 :where(:root[data-theme="dark"]) .deck-done {
   background: var(--teal-light);
   color: var(--teal);
@@ -725,9 +849,11 @@
   color: var(--teal);
 }
 :where(:root[data-theme="dark"]) .recall-input .voice-search.on {
+  color: white;
   background: var(--coral);
 }
 :where(:root[data-theme="dark"]) .switch {
+  border: 0;
   background: #474e52;
 }
 :where(:root[data-theme="dark"]) .switch > span {
@@ -745,10 +871,12 @@
   background: #1b2027;
 }
 :where(:root[data-theme="dark"]) .getting-started li button {
+  border: 0;
   background: #27352f;
   color: var(--ink);
 }
 :where(:root[data-theme="dark"]) .getting-started li.done button {
+  background: transparent;
   color: var(--muted);
 }
 :where(:root[data-theme="dark"]) .step-icon {
@@ -757,6 +885,7 @@
 }
 :where(:root[data-theme="dark"]) .getting-started li.done .step-icon {
   background: var(--teal-solid);
+  color: white;
 }
 :where(:root[data-theme="dark"]) .photo-actions .text-button,
 :where(:root[data-theme="dark"]) .album-bar .text-button {
@@ -767,10 +896,37 @@
   background: var(--bg);
 }
 :where(:root[data-theme="dark"]) .theme-setting button {
+  border: 0;
+  background: transparent;
   color: var(--muted);
 }
 :where(:root[data-theme="dark"]) .theme-setting button.active {
   background: var(--surface);
   color: var(--teal);
   box-shadow: 0 1px 4px #487c9d4e;
+}
+:where(:root[data-theme="dark"]) .page-intro p {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .recall-result blockquote {
+  color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .evidence-label {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .contact-context {
+  border-top: 0;
+}
+@media (max-width: 760px) {
+  :where(:root[data-theme="dark"]) .contact-grid {
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  :where(:root[data-theme="dark"]) .contact-card {
+    border: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  :where(:root[data-theme="dark"]) .contact-card:last-child {
+    border-bottom: 0;
+  }
 }

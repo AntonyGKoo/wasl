@@ -94,18 +94,15 @@ export function AuthScreen({
       </section>
       <section className="auth-form-panel">
         <div className="auth-form-wrap">
-          <span className="pill muted">CAPTURE · REMEMBER · RECALL</span>
           <h2>
-            {mode === "register"
-              ? "A more thoughtful network."
-              : "Welcome back."}
+            {mode === "register" ? "Create your account" : "Welcome back"}
           </h2>
           <p className="muted">
             {returnTo
               ? "Sign in or create an account to save this connection."
               : mode === "register"
-                ? "Start with the next person you don’t want to forget."
-                : "Your people and their stories are waiting."}
+                ? "Free, and it takes a minute."
+                : "Sign in to see your people."}
           </p>
           <div className="auth-tabs">
             <button

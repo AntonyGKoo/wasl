@@ -269,9 +269,9 @@ function emit(nodes, indent = "") {
       const value = part.slice(at + 1).trim();
       if (!prop || prop.startsWith("--")) continue;
       const next = darken(prop, value);
-      // colors from tokens are repeated too, so the dark rules keep the light rules' order
-      if (next !== value || (kind(prop) && value.includes("var(--")))
-        decls.push(`${indent}  ${prop}: ${next};`);
+      // every color, background, border and shadow is repeated (changed or not), so the
+      // dark rules keep the light rules' order exactly
+      if (kind(prop)) decls.push(`${indent}  ${prop}: ${next};`);
     }
     if (decls.length)
       out += `${indent}${scope(n.selector).replace(/\n/g, "\n" + indent)} {\n${decls.join("\n")}\n${indent}}\n`;

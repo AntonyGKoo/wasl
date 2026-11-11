@@ -136,7 +136,7 @@ form > label:last-of-type {
   color: var(--muted);
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 2px;
   color: var(--teal);
@@ -251,7 +251,7 @@ form > label:last-of-type {
   border-radius: 6px;
   padding: 4px 8px;
   background: #edf3f4;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
   font-weight: 600;
   letter-spacing: 0.15px;
@@ -364,7 +364,7 @@ form > label:last-of-type {
   color: var(--teal);
 }
 .auth-story footer {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.3px;
   color: #5d7375;
 }
@@ -412,7 +412,7 @@ form > label:last-of-type {
   justify-content: center;
   gap: 6px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 20px;
 }
 .presentation-entry {
@@ -535,7 +535,7 @@ form > label:last-of-type {
 }
 .presentation-card-link {
   max-width: 112px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   text-align: right;
 }
@@ -705,7 +705,7 @@ form > label:last-of-type {
   padding-left: 10px;
 }
 .sidebar-caption {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1.6px;
   color: #667177;
   margin: 46px 12px 16px;
@@ -766,7 +766,7 @@ form > label:last-of-type {
   color: #647179;
 }
 .sidebar-note p {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.7;
 }
 .sidebar-note strong {
@@ -797,21 +797,21 @@ form > label:last-of-type {
   width: 33px;
   height: 33px;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .account-button > span:last-child {
   min-width: 0;
 }
 .account-button strong {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .account-button small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
   max-width: 115px;
   overflow: hidden;
@@ -830,7 +830,7 @@ form > label:last-of-type {
   padding: 0 40px;
 }
 .app-topbar > div:first-child {
-  font-size: 11px;
+  font-size: 12px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -845,7 +845,7 @@ form > label:last-of-type {
   font-weight: 500;
 }
 .workspace-private {
-  font-size: 10px;
+  font-size: 12px;
   color: #607179;
   display: flex;
   align-items: center;
@@ -854,7 +854,7 @@ form > label:last-of-type {
 .app-topbar .avatar {
   width: 31px;
   height: 31px;
-  font-size: 11px;
+  font-size: 12px;
   border-radius: 50%;
 }
 .workspace-content {
@@ -922,7 +922,7 @@ form > label:last-of-type {
 .stats-strip > div > div > span {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 5px;
 }
 .recall-banner {
@@ -939,7 +939,7 @@ form > label:last-of-type {
   color: var(--ink);
 }
 .recall-banner .eyebrow {
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 1.3px;
 }
 .recall-banner h3 {
@@ -948,7 +948,7 @@ form > label:last-of-type {
   letter-spacing: -0.35px;
 }
 .recall-banner p {
-  font-size: 11px;
+  font-size: 12px;
   color: #5f736f;
 }
 .banner-arrow {
@@ -977,7 +977,7 @@ form > label:last-of-type {
 }
 .section-heading h2 > span {
   color: #5a6d72;
-  font-size: 10px;
+  font-size: 12px;
   background: #eaf0f3;
   border-radius: 5px;
   padding: 2px 6px;
@@ -1001,7 +1001,7 @@ form > label:last-of-type {
   background: transparent;
   padding: 8px 0;
   min-height: 36px;
-  font-size: 11px;
+  font-size: 12px;
   box-shadow: none;
 }
 .search-box .icon-button {
@@ -1023,7 +1023,7 @@ form > label:last-of-type {
   background: white;
   color: #657177;
   border-radius: 7px;
-  font-size: 10px;
+  font-size: 12px;
   padding: 7px 12px;
 }
 .filter-chip.active {
@@ -1074,7 +1074,7 @@ form > label:last-of-type {
   overflow: hidden;
 }
 .contact-role {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   margin-top: 4px;
   min-height: 16px;
@@ -1089,7 +1089,7 @@ form > label:last-of-type {
   margin: 12px 0;
 }
 .contact-tags .pill {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 500;
   color: #5c7178;
   background: #f1f5f6;
@@ -1100,7 +1100,7 @@ form > label:last-of-type {
   margin-top: 20px;
   padding-top: 14px;
   border-top: 1px solid #eff2f4;
-  font-size: 9px;
+  font-size: 11px;
   color: #647177;
 }
 .contact-context > span {
@@ -1151,7 +1151,7 @@ form > label:last-of-type {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 9px;
+  font-size: 11px;
   color: #667075;
   gap: 20px;
 }
@@ -1168,7 +1168,7 @@ form > label:last-of-type {
   text-decoration: underline;
   color: inherit;
   margin-left: 10px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .form-divider {
   border-top: 1px solid var(--line);
@@ -1176,7 +1176,7 @@ form > label:last-of-type {
   margin: 22px 0 18px;
   color: #627178;
   letter-spacing: 1.4px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -1198,7 +1198,7 @@ form > label:last-of-type {
   flex-shrink: 0;
 }
 .checkbox-label span {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.7;
 }
@@ -1243,12 +1243,12 @@ form > label:last-of-type {
   font-weight: 600;
 }
 .meeting-context p {
-  font-size: 11px;
+  font-size: 12px;
   color: #59746d;
   margin-top: 3px;
 }
 .meeting-context .muted {
-  font-size: 9px;
+  font-size: 11px;
 }
 .detail-actions {
   display: flex;
@@ -1256,7 +1256,7 @@ form > label:last-of-type {
   flex-wrap: wrap;
 }
 .private-copy {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   margin: -7px 0 18px;
 }
@@ -1268,7 +1268,7 @@ form > label:last-of-type {
 }
 .note-actions input {
   width: 160px;
-  font-size: 11px;
+  font-size: 12px;
   min-height: 39px;
 }
 .timeline {
@@ -1304,7 +1304,7 @@ form > label:last-of-type {
   min-width: 0;
 }
 .timeline time {
-  font-size: 9px;
+  font-size: 11px;
   color: #647177;
 }
 .timeline p {
@@ -1343,7 +1343,7 @@ form > label:last-of-type {
   border-bottom: 1px solid var(--line);
 }
 .profile-editor-heading p {
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 5px;
 }
 .wallet-guidance {
@@ -1361,7 +1361,7 @@ form > label:last-of-type {
   font-size: 12px;
 }
 .wallet-guidance p {
-  font-size: 10px;
+  font-size: 12px;
   color: #5d746d;
   margin-top: 3px;
 }
@@ -1381,13 +1381,15 @@ form > label:last-of-type {
   border-radius: 17px;
 }
 .digital-card {
-  height: 230px;
+  min-height: 230px;
   border-radius: 14px;
   padding: 20px 23px;
   color: white;
   background: #167a82;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .digital-card.violet,
 .public-card-cover.violet {
@@ -1450,10 +1452,8 @@ form > label:last-of-type {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: absolute;
-  bottom: 20px;
-  left: 23px;
-  right: 23px;
+  margin-top: auto;
+  padding-top: 12px;
   font-size: 9px;
   opacity: 0.9;
 }
@@ -1468,7 +1468,7 @@ form > label:last-of-type {
 }
 .wallet-card-info span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
 }
 .wallet-fields {
   display: flex;
@@ -1477,7 +1477,7 @@ form > label:last-of-type {
   min-height: 30px;
 }
 .wallet-fields span {
-  font-size: 9px;
+  font-size: 11px;
   padding: 2px 6px;
   border-radius: 5px;
   background: #f4f6f8;
@@ -1516,13 +1516,13 @@ form > label:last-of-type {
   min-width: 0;
 }
 .field-choice strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 }
 .field-choice small {
   display: block;
   color: #657076;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 400;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1550,7 +1550,7 @@ form > label:last-of-type {
   justify-content: center;
   gap: 6px;
   color: #60726b;
-  font-size: 10px;
+  font-size: 12px;
   margin: 14px 0 23px;
 }
 .recall-pill {
@@ -1603,17 +1603,17 @@ form > label:last-of-type {
   padding: 9px 12px;
 }
 .ai-toggle {
-  justify-content: center;
+  justify-content: flex-start;
   margin: 15px 0 7px;
 }
 .ai-toggle span {
-  font-size: 11px;
+  font-size: 12px;
 }
 .search-privacy {
-  font-size: 10px;
+  font-size: 12px;
   color: #667075;
   max-width: 570px;
-  margin: 0 auto;
+  margin: 0;
 }
 .suggestions {
   display: flex;
@@ -1632,14 +1632,14 @@ form > label:last-of-type {
   background: #fafcfc;
   color: #637177;
   padding: 7px 8px;
-  font-size: 9px;
+  font-size: 11px;
 }
 .recall-explainer {
   display: flex;
   gap: 10px;
   max-width: 640px;
   color: #647075;
-  font-size: 11px;
+  font-size: 12px;
   margin: 25px auto;
 }
 .recall-results {
@@ -1665,7 +1665,7 @@ form > label:last-of-type {
   font-size: 15px;
 }
 .recall-result p {
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 4px;
 }
 .recall-result > svg {
@@ -1677,7 +1677,7 @@ form > label:last-of-type {
   border-left: 2px solid #bcd9d2;
   background: #f5f9f7;
   color: #5d746c;
-  font-size: 11px;
+  font-size: 12px;
 }
 .recall-result blockquote span {
   display: block;
@@ -1688,7 +1688,7 @@ form > label:last-of-type {
   align-items: center;
   gap: 5px;
   color: #64726d;
-  font-size: 9px;
+  font-size: 11px;
 }
 .file-drop {
   align-items: center;
@@ -1706,7 +1706,7 @@ form > label:last-of-type {
   word-break: break-word;
 }
 .file-drop > span {
-  font-size: 10px;
+  font-size: 12px;
   color: #66716d;
 }
 /* the whole box opens the camera or photos; the browser's own "Choose File" control stays invisible */
@@ -1792,7 +1792,7 @@ form > label:last-of-type {
   justify-content: space-between;
   align-items: flex-start;
   padding: 22px;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.3px;
 }
 .public-card-content {
@@ -1820,7 +1820,7 @@ form > label:last-of-type {
   align-items: flex-start;
   justify-content: center;
   gap: 6px;
-  font-size: 9px;
+  font-size: 11px;
   color: #61726d;
   margin-top: 22px;
 }
@@ -1828,7 +1828,7 @@ form > label:last-of-type {
   flex-shrink: 0;
 }
 .public-footer {
-  font-size: 10px;
+  font-size: 12px;
   color: #61726c;
   margin-top: 25px;
 }
@@ -1851,7 +1851,7 @@ form > label:last-of-type {
   margin: 12px 0 7px;
 }
 .saved-connection p {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   margin-bottom: 16px;
 }
@@ -1942,7 +1942,7 @@ form > label:last-of-type {
     margin-right: 6px;
   }
   .app-topbar strong {
-    font-size: 10px;
+    font-size: 12px;
     color: #667176;
   }
   .workspace-content {
@@ -1954,7 +1954,7 @@ form > label:last-of-type {
     margin-bottom: 23px;
   }
   .page-intro .eyebrow {
-    font-size: 8px;
+    font-size: 11px;
     letter-spacing: 1.6px;
   }
   .page-intro h1 {
@@ -1962,7 +1962,7 @@ form > label:last-of-type {
     margin-top: 9px;
   }
   .page-intro p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .page-intro > .row {
     flex-direction: row;
@@ -1991,7 +1991,7 @@ form > label:last-of-type {
     border-radius: 8px;
   }
   .stats-strip > div > div > span {
-    font-size: 8px;
+    font-size: 11px;
   }
   .stats-strip strong {
     font-size: 23px;
@@ -2004,7 +2004,7 @@ form > label:last-of-type {
     font-size: 16px;
   }
   .recall-banner p {
-    font-size: 9px;
+    font-size: 11px;
     max-width: 220px;
   }
   .section-heading {
@@ -2028,15 +2028,15 @@ form > label:last-of-type {
     font-size: 13px;
   }
   .contact-role {
-    font-size: 9px;
+    font-size: 11px;
   }
   .contact-context {
-    font-size: 8px;
+    font-size: 11px;
     margin-top: 15px;
     gap: 5px;
   }
   .contact-tags .pill {
-    font-size: 8px;
+    font-size: 11px;
     padding: 3px 5px;
   }
   .contact-top {
@@ -2046,14 +2046,14 @@ form > label:last-of-type {
     width: 36px;
     height: 36px;
     border-radius: 11px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .contact-arrow {
     display: none;
   }
   .filter-chip {
     padding: 7px 9px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .filter-row {
     gap: 6px;
@@ -2090,7 +2090,7 @@ form > label:last-of-type {
     padding: 3px;
   }
   .mobile-nav button span {
-    font-size: 9px;
+    font-size: 11px;
   }
   .mobile-nav .active {
     color: var(--teal);
@@ -2114,16 +2114,16 @@ form > label:last-of-type {
     gap: 10px;
   }
   .wallet-guidance p {
-    font-size: 9px;
+    font-size: 11px;
   }
   .wallet-guidance strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .wallet-guidance > .button {
     display: none;
   }
   .digital-card {
-    height: 230px;
+    min-height: 230px;
   }
   .detail-profile {
     gap: 12px;
@@ -2156,20 +2156,20 @@ form > label:last-of-type {
     gap: 7px;
   }
   .recall-input input {
-    font-size: 11px;
+    font-size: 12px;
   }
   .recall-input > .button {
     min-height: 35px;
     padding: 7px 9px;
   }
   .recall-search-panel > .muted {
-    font-size: 11px;
+    font-size: 12px;
   }
   .suggestions {
     gap: 7px;
   }
   .suggestions button {
-    font-size: 9px;
+    font-size: 11px;
     text-align: left;
   }
   .recall-results .section-heading h2 {
@@ -2181,7 +2181,7 @@ form > label:last-of-type {
   }
   .recall-result blockquote {
     padding: 8px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .recall-result > svg {
     display: none;
@@ -2238,7 +2238,7 @@ form > label:last-of-type {
   .recall-banner .eyebrow,
   .digital-card-top > span:last-child,
   .page-intro .eyebrow {
-    font-size: 11px;
+    font-size: 12px;
   }
   .eyebrow,
   .pill,
@@ -2538,8 +2538,6 @@ input[type="date"]::-webkit-date-and-time-value {
   gap: 1px;
   font-size: 10px;
   opacity: 0.95;
-  overflow: hidden;
-  max-height: 64px;
 }
 .digital-card-lines li {
   white-space: nowrap;
@@ -2559,7 +2557,7 @@ input[type="date"]::-webkit-date-and-time-value {
   top: 0;
 }
 .card-preview .digital-card {
-  height: 250px;
+  min-height: 250px;
 }
 .card-settings {
   min-width: 0;
@@ -2592,7 +2590,7 @@ input[type="date"]::-webkit-date-and-time-value {
 }
 .field-selection .field-choice em {
   font-style: normal;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--muted);
 }
@@ -2800,7 +2798,7 @@ label.button {
 .tonight-faces .avatar {
   width: 34px;
   height: 34px;
-  font-size: 11px;
+  font-size: 12px;
   border: 2px solid #f6f3fd;
   border-radius: 50%;
 }
@@ -2811,7 +2809,7 @@ label.button {
   margin-bottom: 28px;
 }
 .auto-label {
-  font-size: 11px !important;
+  font-size: 12px !important;
   letter-spacing: 1.4px;
   color: var(--teal) !important;
   background: var(--teal-light);
@@ -2867,7 +2865,7 @@ label.button {
 .album-cover .avatar {
   width: 36px;
   height: 36px;
-  font-size: 11px;
+  font-size: 12px;
   border-radius: 50%;
   border: 2px solid white;
 }
@@ -2929,7 +2927,7 @@ label.button {
   font-size: 13px;
 }
 .people-picker .field-choice small {
-  font-size: 11px;
+  font-size: 12px;
 }
 .tag-picker {
   display: flex;
@@ -3219,7 +3217,7 @@ label.button {
     position: static;
   }
   .card-preview .digital-card {
-    height: 220px;
+    min-height: 220px;
   }
   .page-intro > .row.intro-actions {
     display: grid;
@@ -3296,6 +3294,120 @@ label.button {
 @media (max-width: 420px) {
   .theme-setting {
     grid-template-columns: 1fr;
+  }
+}
+/* ---------- A calmer layout (design pass, Nov 11) ---------- */
+.app-topbar strong {
+  display: none;
+}
+.page-intro h1 {
+  margin: 0 0 6px;
+}
+.page-intro p {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 560px;
+}
+.recall-search-panel {
+  text-align: left;
+  padding: 20px;
+}
+.recall-input {
+  margin: 0;
+  max-width: none;
+}
+.suggestions {
+  justify-content: flex-start;
+}
+.recall-explainer {
+  align-items: center;
+  max-width: none;
+  margin: 18px 0 0;
+  font-size: 13px;
+}
+.recall-result blockquote {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+.evidence-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.contact-role {
+  font-size: 13px;
+}
+.contact-context {
+  margin-top: 12px;
+  padding-top: 0;
+  border-top: 0;
+  font-size: 12px;
+}
+/* phones: people as a plain list, like the phone's own contacts */
+@media (max-width: 760px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .contact-card {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "avatar name side"
+      "avatar role side"
+      "avatar meta side";
+    column-gap: 12px;
+    row-gap: 1px;
+    padding: 12px 14px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+  }
+  .contact-card:last-child {
+    border-bottom: 0;
+  }
+  .contact-card:hover {
+    transform: none;
+  }
+  .contact-top {
+    display: contents;
+  }
+  .contact-top > .avatar {
+    grid-area: avatar;
+    align-self: center;
+  }
+  .contact-top > :not(.avatar) {
+    grid-area: side;
+    align-self: center;
+  }
+  .contact-card h3 {
+    grid-area: name;
+    margin: 0;
+    font-size: 15px;
+  }
+  .contact-card .contact-role {
+    grid-area: role;
+    margin: 0;
+    min-height: 0;
+  }
+  .contact-card .contact-tags {
+    display: none;
+  }
+  .contact-card .contact-context {
+    grid-area: meta;
+    display: flex;
+    gap: 12px;
+    margin: 2px 0 0;
+    min-width: 0;
+  }
+  .contact-group + .contact-group {
+    margin-top: 18px;
   }
 }
 /* ---------- Dark theme ----------

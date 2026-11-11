@@ -12,7 +12,7 @@ async function signup(page: Page, name: string) {
     .getByRole("button", { name: "Create your Wasl account", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Your network", exact: true }),
+    page.getByRole("heading", { name: "Network", exact: true }),
   ).toBeVisible();
   return email;
 }
@@ -54,7 +54,7 @@ test("two people share selected details, retain private memory, recall and revok
   ).toBeVisible();
   await page
     .getByRole("button", {
-      name: info.project.name === "mobile" ? "Cards" : "Your cards",
+      name: "Cards",
       exact: true,
     })
     .click();
@@ -119,7 +119,7 @@ test("two people share selected details, retain private memory, recall and revok
     await page.reload();
     await page
       .getByRole("button", {
-        name: info.project.name === "mobile" ? "Network" : "Your network 2",
+        name: info.project.name === "mobile" ? "Network" : "Network 2",
         exact: true,
       })
       .click();

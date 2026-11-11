@@ -11,11 +11,34 @@ import {
   ScanLine,
   FileText,
 } from "lucide-react";
-import { api } from "@/lib/client";
+import { api, shortDate } from "@/lib/client";
 import type { Capabilities, Connection, Profile, SearchHit } from "@/lib/types";
 import type { OcrLine } from "@/lib/card-text";
 import { Avatar, Button, Modal, Notice } from "./ui";
 import { micProblem, speechApi, type Recognizer } from "./voice-memory";
+// "Note (2026-11-11): Offered to review our deck" → the words, plus where they came from
+function describe(line: string) {
+  const note = line.match(/^Note \((\d{4}-\d{2}-\d{2})\): ([\s\S]*)$/);
+  if (note)
+    return { quote: note[2], from: `Your note · ${shortDate(note[1])}` };
+  const field = line.match(
+    /^(Name|Role|Company|University|Email|Phone|About|Tags|Albums|Met at|Place|Met on): ([\s\S]*)$/,
+  );
+  if (!field) return { quote: line, from: "What you saved" };
+  const [, label, value] = field;
+  if (label === "Met on")
+    return { quote: shortDate(value), from: "When you met" };
+  const names: Record<string, string> = {
+    Tags: "Your tags",
+    Albums: "Your albums",
+    "Met at": "Where you met",
+    About: "Their card",
+  };
+  return {
+    quote: value,
+    from: names[label] || `Their card · ${label.toLowerCase()}`,
+  };
+}
 export function RecallView({
   capabilities,
   onOpen,
@@ -103,20 +126,14 @@ export function RecallView({
     <>
       <section className="page-intro">
         <div>
-          <span className="eyebrow">SEARCH BY MEMORY, NOT BY NAME</span>
-          <h1>A familiar story. A forgotten name.</h1>
-          <p>Find the person through the things you remember.</p>
+          <h1>Search</h1>
+          <p>
+            Describe who you&rsquo;re looking for: what they do, where you met,
+            or what you talked about.
+          </p>
         </div>
-        <span className="pill recall-pill">
-          <Sparkles size={13} /> Search by memory
-        </span>
       </section>
       <div className="recall-search-panel">
-        <span className="recall-orb">
-          <Sparkles size={25} />
-        </span>
-        <h2>Who are you thinking of?</h2>
-        <p>Try a role, an event, a place or a conversation you saved.</p>
         <form onSubmit={search}>
           <div className="recall-input">
             <Search size={20} />
@@ -196,15 +213,11 @@ export function RecallView({
       {hits !== null ? (
         <section className="recall-results">
           <div className="section-heading">
-            <h2>
-              {hits.length
-                ? "People behind that memory"
-                : "No matching saved memories"}
-            </h2>
+            <h2>{hits.length ? "Best matches" : "No one matched"}</h2>
             <span className="muted small-copy">
               {resultMode === "ai"
-                ? "AI matches · checked against your saved context"
-                : "Matches from your saved details"}
+                ? "Found by Wasl's AI in what you saved"
+                : "From what you saved"}
             </span>
           </div>
           {!hits.length ? (
@@ -249,14 +262,15 @@ export function RecallView({
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
-                  <blockquote>
-                    {hit.evidence.map((text, i) => (
-                      <span key={i}>{text}</span>
-                    ))}
-                  </blockquote>
-                  <span className="evidence-label">
-                    <ShieldCheck size={12} /> From your saved context
-                  </span>
+                  {hit.evidence.map((text, i) => {
+                    const { quote, from } = describe(text);
+                    return (
+                      <blockquote key={i}>
+                        <span>&ldquo;{quote}&rdquo;</span>
+                        <small className="evidence-label">{from}</small>
+                      </blockquote>
+                    );
+                  })}
                 </div>
                 <ArrowRight size={18} />
               </button>
@@ -264,13 +278,10 @@ export function RecallView({
           )}
         </section>
       ) : (
-        <div className="recall-explainer">
-          <ShieldCheck size={18} />
-          <p>
-            Your network stays yours. Results come from your own saved contacts
-            and memories. Wasl does not search or scrape LinkedIn.
-          </p>
-        </div>
+        <p className="recall-explainer">
+          <ShieldCheck size={15} /> Wasl only searches what you saved. Nothing
+          leaves your account unless AI search is on.
+        </p>
       )}
     </>
   );

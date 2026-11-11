@@ -69,30 +69,16 @@ export function WalletView({
     <>
       <section className="page-intro">
         <div>
-          <span className="eyebrow">SWAP CARDS IN ONE SCAN</span>
-          <h1>Your card wallet</h1>
+          <h1>Cards</h1>
           <p>
-            Pick the card that fits the moment. They scan it, and you both have
-            each other.
+            Each card shares only what you switch on. Your notes never leave
+            your phone.
           </p>
         </div>
         <Button onClick={() => setEditing(null)}>
           <Plus size={17} /> Create a card
         </Button>
       </section>
-      <div className="wallet-guidance">
-        <ShieldCheck size={21} />
-        <div>
-          <strong>You decide what leaves your wallet.</strong>
-          <p>
-            Each card shares only the fields you select. Your private notes
-            always stay with you.
-          </p>
-        </div>
-        <Button variant="ghost" onClick={onProfile}>
-          Edit your details <ArrowUpRight size={15} />
-        </Button>
-      </div>
       {error ? <Notice error>{error}</Notice> : null}
       {!cards.length ? (
         <div className="empty-state">
@@ -117,8 +103,8 @@ export function WalletView({
                 <div>
                   <h3>{card.label}</h3>
                   <span>
-                    {card.fields.length} selected fields ·{" "}
-                    {card.token ? "Link active" : "Link not shared"}
+                    Shares {card.fields.length} details ·{" "}
+                    {card.token ? "link on" : "not shared yet"}
                   </span>
                 </div>
                 <button
@@ -128,11 +114,6 @@ export function WalletView({
                 >
                   <Pencil size={16} />
                 </button>
-              </div>
-              <div className="wallet-fields">
-                {card.fields.map((f) => (
-                  <span key={f}>{cardFieldLabels[f]}</span>
-                ))}
               </div>
               <div className="wallet-card-actions">
                 <Button onClick={() => setSharing(card)}>
@@ -677,9 +658,8 @@ export function ProfileView({
     <>
       <section className="page-intro">
         <div>
-          <span className="eyebrow">THE STARTING POINT FOR EVERY CARD</span>
-          <h1>Your profile</h1>
-          <p>Update once. Your active cards stay up to date.</p>
+          <h1>Profile</h1>
+          <p>Your cards take their details from here.</p>
         </div>
         <Button variant="secondary" onClick={() => setScanning(true)}>
           <ScanLine size={16} /> Fill from my business card

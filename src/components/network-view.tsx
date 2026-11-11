@@ -166,18 +166,17 @@ export function NetworkView({
             Number(a[0].startsWith("No ")) - Number(b[0].startsWith("No ")) ||
             b[1].length - a[1].length,
         );
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-  const recent = contacts.filter(
-    (c) => new Date(c.created_at).getTime() >= monthStart,
-  ).length;
+  const memories = contacts.reduce((n, c) => n + (c.note_count || 0), 0);
   return (
     <>
       <section className="page-intro">
         <div>
-          <span className="eyebrow">YOUR PEOPLE, IN ONE PLACE</span>
-          <h1>Your network</h1>
-          <p>Good connections deserve more than a name in your phone.</p>
+          <h1>Network</h1>
+          <p>
+            {contacts.length
+              ? `${contacts.length} ${contacts.length === 1 ? "person" : "people"} · ${memories} ${memories === 1 ? "memory" : "memories"}`
+              : "Everyone you meet, and what you talked about."}
+          </p>
         </div>
         <div className="row intro-actions">
           <Button variant="secondary" onClick={onScanCode}>
@@ -209,37 +208,6 @@ export function NetworkView({
           <ArrowRight size={17} />
         </button>
       ) : null}
-      <div className="stats-strip">
-        <div>
-          <span className="stat-icon">
-            <Users size={18} />
-          </span>
-          <div>
-            <strong>{contacts.length}</strong>
-            <span>Connections</span>
-          </div>
-        </div>
-        <div>
-          <span className="stat-icon violet">
-            <CalendarDays size={18} />
-          </span>
-          <div>
-            <strong>{recent}</strong>
-            <span>Added this month</span>
-          </div>
-        </div>
-        <div>
-          <span className="stat-icon coral">
-            <MessageSquare size={18} />
-          </span>
-          <div>
-            <strong>
-              {contacts.reduce((n, c) => n + (c.note_count || 0), 0)}
-            </strong>
-            <span>Memories saved</span>
-          </div>
-        </div>
-      </div>
       {tonight.people.length ? (
         <button className="tonight-banner" onClick={onDebrief}>
           <span className="tonight-faces" aria-hidden="true">
@@ -258,29 +226,15 @@ export function NetworkView({
                 ? `You met ${tonight.people.length} ${tonight.people.length === 1 ? "person" : "people"} today`
                 : `Your last event: ${tonight.people[0].event || shortDate(tonight.people[0].met_on)}`}
             </strong>
-            <span>
-              Go through them while you remember: favorite, keep, add a memory.
-            </span>
+            <span>Go through them while it&rsquo;s fresh</span>
           </span>
           <ArrowRight size={18} />
         </button>
       ) : null}
-      <button className="recall-banner" onClick={onRecall}>
-        <div>
-          <span className="eyebrow">REMEMBER THE CONVERSATION?</span>
-          <h3>Find the person behind it.</h3>
-          <p>Search your saved details, notes and the places you met.</p>
-        </div>
-        <span className="banner-arrow">
-          <ArrowRight size={20} />
-        </span>
-      </button>
       {contacts.length ? (
         <section className="albums-section">
           <div className="section-heading">
-            <h2>
-              Albums <span className="auto-label">BUILD THEMSELVES</span>
-            </h2>
+            <h2>Albums</h2>
           </div>
           <div className="album-strip">
             {albums.map((a) => (
@@ -337,7 +291,7 @@ export function NetworkView({
       <section className="network-section">
         <div className="section-heading">
           <h2>
-            {album ? album.name : "Your connections"}{" "}
+            {album ? album.name : "People"}{" "}
             <span>{album ? album.people.length : contacts.length}</span>
           </h2>
           <div className="search-box">
