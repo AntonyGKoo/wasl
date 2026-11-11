@@ -3426,3 +3426,266 @@ label.button {
   --purple: #a99ae6;
   --coral: #e4977b;
 }
+
+/* ---------- Sizes in balance (Nov 11) ----------
+   What a screen is for is the biggest thing on it; helper text is smaller and quieter.
+   One scale: 12 badges · 13 secondary (roles, dates, hints, chips) · 14 everyday text and buttons
+   · 15–16 names and search · 20 section headings · 30 page titles.
+   Laptops get real reading sizes instead of shrunken phone text; phones get 44px tap targets. */
+.getting-started-head {
+  gap: 10px;
+  justify-content: flex-start;
+}
+.getting-started-head .icon-button {
+  margin-left: auto;
+}
+.getting-started-count {
+  font-size: 13px;
+  color: var(--muted);
+}
+.getting-started-bar {
+  display: flex;
+  gap: 4px;
+}
+.getting-started-bar i {
+  width: 18px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+.getting-started-bar i.on {
+  background: var(--teal-solid);
+}
+.getting-started {
+  padding: 12px 14px;
+}
+.getting-started-head {
+  margin-bottom: 6px;
+}
+/* the install banner is one line: it helps, but it isn't what the screen is for */
+.install-banner {
+  padding: 8px 8px 8px 10px;
+  margin-bottom: 14px;
+}
+.install-banner .install-banner-button {
+  order: 0;
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+}
+.install-banner-row img {
+  border-radius: 8px;
+}
+@media (min-width: 761px) {
+  h1 {
+    font-size: 30px;
+    letter-spacing: -0.8px;
+  }
+  .button,
+  .text-button,
+  .notice,
+  .auth-tabs button,
+  .modal-heading p,
+  .profile-links a,
+  .sidebar nav button,
+  .settings-nav,
+  .account-button strong,
+  .search-box input,
+  .empty-state p,
+  .checkbox-label span,
+  .detail-profile p,
+  .bio,
+  .meeting-context strong,
+  .meeting-context p,
+  .note-actions input,
+  .timeline p,
+  .danger-zone > p,
+  .profile-editor-heading p,
+  .field-choice strong,
+  .recall-search-panel > p,
+  .ai-toggle span,
+  .recall-result blockquote,
+  .file-drop strong,
+  .settings-sections p,
+  .saved-connection p,
+  .auth-features > div,
+  .auth-form-wrap > .muted,
+  .voice-transcript p,
+  .strength-top,
+  .people-picker .field-choice strong,
+  .invite-message,
+  .getting-started li button,
+  .theme-setting button,
+  .install-banner-row strong {
+    font-size: 14px;
+  }
+  .page-intro p,
+  .recall-input input {
+    font-size: 15px;
+  }
+  label > span,
+  .eyebrow,
+  .pill,
+  .auth-note,
+  .auth-story footer,
+  .small-copy,
+  .install-steps .install-hint,
+  .contact-role,
+  .contact-context,
+  .filter-chip,
+  .tag-picker .filter-chip,
+  .section-heading h2 > span,
+  .group-heading span,
+  .album-tile > span:last-child,
+  .album-bar,
+  .origin-line,
+  .invite-head span,
+  .evidence-label,
+  .qr-caption,
+  .search-privacy,
+  .recall-explainer,
+  .recall-result p,
+  .field-hint,
+  .more-fields span,
+  .field-selection .field-choice em,
+  .people-picker .field-choice small,
+  .field-choice small,
+  .private-copy,
+  .timeline > .muted,
+  .timeline time,
+  .meeting-context .muted,
+  .swap-news > span > span,
+  .tonight-banner > span:nth-child(2) > span,
+  .wallet-card-info span,
+  .suggestions button,
+  .account-button small,
+  .file-drop > span,
+  .draft-source,
+  .swap-hint,
+  .photo-actions .text-button,
+  .album-bar .text-button,
+  .deck-memory,
+  .service-row,
+  .public-role,
+  .public-footer,
+  .public-privacy,
+  .form-divider,
+  .auto-label,
+  .contact-tags .pill,
+  .install-banner-row > span > span {
+    font-size: 13px;
+  }
+  .nav-count,
+  .app-topbar .avatar,
+  .account-button .avatar {
+    font-size: 12px;
+  }
+  .section-heading h2 {
+    font-size: 20px;
+  }
+  .contact-card h3,
+  .recall-result h3 {
+    font-size: 16px;
+  }
+  .wallet-card-info h3 {
+    font-size: 15px;
+  }
+}
+@media (max-width: 760px) {
+  .icon-button {
+    width: 44px;
+    height: 44px;
+    flex: none;
+  }
+  .filter-chip {
+    min-height: 40px;
+  }
+  .suggestions button {
+    min-height: 44px;
+    font-size: 13px;
+  }
+  .recall-input .button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .swatch {
+    width: 40px;
+    height: 40px;
+  }
+  .contact-role,
+  .recall-result p {
+    font-size: 13px;
+  }
+}
+
+/* labels in plain sentence case, not spaced-out capitals */
+.eyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.form-divider {
+  letter-spacing: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+/* the card face reads at a glance on a laptop too (phones have their own sizes) */
+@media (min-width: 761px) {
+  .digital-card p {
+    font-size: 12px;
+  }
+  .digital-card-lines {
+    font-size: 11.5px;
+  }
+  .digital-card-bottom {
+    font-size: 11px;
+  }
+  .digital-card-top > span:last-child {
+    font-size: 9.5px;
+  }
+}
+@media (max-width: 760px) {
+  .wallet-card-actions > .button:not(.primary) {
+    min-width: 44px;
+  }
+}
+
+/* a finished search scrolls its answer into view, clear of the top bar */
+.recall-answer {
+  scroll-margin-top: 84px;
+}
+/* a newer version is live: a slim bar at the top with one button */
+.update-ready {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 6px 6px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(16, 24, 32, 0.18);
+  font-size: 14px;
+  font-weight: 600;
+}
+.update-ready button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--teal-solid);
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}

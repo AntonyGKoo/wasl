@@ -1058,7 +1058,7 @@ export function ConnectionDetail({
       </div>
       {!contact.source_share_id ? <Invite contact={contact} /> : null}
       <div className="form-divider">
-        <MessageSquare size={15} /> YOUR PRIVATE MEMORY
+        <MessageSquare size={15} /> Your private memory
       </div>
       <p className="private-copy">
         Only you can see these notes. They are never included in a shared card.

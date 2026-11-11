@@ -727,6 +727,24 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 :root[data-theme="light"] .person .star { color: #a76b08; }
 :root[data-theme="light"] .tabbar { background: rgba(255, 255, 255, 0.96); }
 :root[data-theme="light"] .shimmer { background: linear-gradient(90deg, var(--raised), #dfe5ea, var(--raised)); background-size: 200% 100%; }
+
+/* A calmer look, as testers asked: labels in plain sentence case and the body font, card details
+   in the body font too, and pop-up messages at the very top (over the clock, like a phone notification)
+   where they cover neither the back button nor the next thing to tap */
+.label, .task-card .eyebrow, .exchange .slot .who { font-family: var(--body); font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 600; }
+.card .c-mono { font-family: var(--body); font-size: 12.5px; font-weight: 500; }
+.card .c-peek, .choice .shares, .steps .num, .meter, .auto, .xp, .match { font-family: var(--body); }
+.wow { font-family: var(--body); font-size: 11.5px; letter-spacing: 0; }
+.toast { top: 10px; }
+@media (max-width: 760px) { .toast { top: calc(4px + env(safe-area-inset-top, 0px)); width: calc(100% - 24px); justify-content: center; } }
+/* sizes in balance: section labels hold their section together, the tab bar steps back so the
+   screen's content leads, and everything you tap is at least 44px */
+.label { font-size: 14px; font-weight: 700; color: var(--text-2); }
+.tabbar button { font-size: 12px; font-weight: 600; }
+.tabbar svg { width: 24px; height: 24px; }
+.chip { min-height: 40px; }
+.back { min-height: 44px; }
+.search .voice, .search button[type="submit"] { min-height: 44px; min-width: 44px; }
 </style>
 </head>
 <body>
@@ -1061,7 +1079,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
                 : f !== "photo" ? `<button class="edit-btn" data-act="edit-detail" data-f="${f}" aria-label="Edit ${label(f)}">${ic("pencil")}</button>` : ""}
             </div>`;
       const initialsOf = (n) => n.split(/\s+/).map((w) => w[0] || "").join("").slice(0, 2).toUpperCase();
-      return `<div class="topline"><h2 class="title">Profile</h2><span class="label">Tap ✎ to edit</span></div>
+      return `<div class="topline"><h2 class="title">Profile</h2></div>
         ${S.flags.newProfile ? `<div class="next-step">${ic("check")}<span><b>Your profile is ready</b><span>Wasl made your first card from it.</span></span><button class="btn small" data-go="wallet">See my card${ic("right")}</button></div>` : ""}
         <div class="panel" style="margin-top:10px">
           <div class="level">
@@ -1250,7 +1268,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           ${confirmed ? `<div class="confirmed" style="margin-top:6px">${ic("check")}Saved to Mariam's story</div>` : `<div class="row" style="margin-top:8px"><button class="btn small" data-act="confirm-ctx">${ic("check")}That's right</button><button class="btn small secondary" data-act="change-ctx">Change</button></div>`}
         </div>
         ${confirmed ? `<div class="stack" style="margin-top:16px">
-          <div class="label">Add a tag · one tap</div>
+          <div class="label">Add a tag</div>
           <div class="chips">${TAGS.map((t) => `<button class="chip" data-act="tag" data-t="${t}" aria-pressed="${S.tags.includes(t)}">${S.tags.includes(t) ? ic("check") : ic("tag")}${t}</button>`).join("")}</div>
           <button class="btn" style="margin-top:8px" data-go="remember">${ic("mic")}Add a memory</button>
         </div>` : ""}`;
@@ -1334,8 +1352,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         list = Object.entries(groups).map(([g, ps]) => `<div class="label group-h">${esc(g)} · ${ps.length}</div><ul class="people">${ps.map(personRow).join("")}</ul>`).join("");
       }
       return `<div class="topline"><h2 class="title">Network</h2><button class="round quiet" data-go="debrief" aria-label="Tonight's people">${ic("star")}</button></div>
-        <p class="sub">${all.length + 31} people · albums build themselves</p>
-        <div class="label" style="margin-top:16px">Albums <span class="auto">· AUTO</span></div>
+        <p class="sub">${all.length + 31} people · grouped by where you met</p>
+        <div class="label" style="margin-top:16px">Albums</div>
         <div class="albums" style="margin-top:8px">
           ${albums().map((a) => `<button class="album" data-act="album" data-a="${esc(a.name)}"><div class="cover">${a.colors.map((c) => `<i style="background:var(--card-${c})"></i>`).join("")}</div><b>${esc(a.name)}</b><span>${a.count} people</span></button>`).join("")}
           <button class="album new" data-act="new-album"><div class="cover">${ic("plus")}</div><b>New album</b><span>Make your own</span></button>
@@ -1379,14 +1397,14 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
         const r = recallMatch(q);
         results = r.length
           ? r.map((m, i) => `<div style="margin-top:${i ? 18 : 16}px">
-              <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">${m.label || (i ? "Also possible" : "Best match")}</span><span class="match">${m.score}% match</span></div>
+              <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">${m.label || (i ? "Also possible" : "Best match")}</span></div>
               ${personCard(m.p)}
-              <div class="panel why" style="margin-top:10px"><span class="label" style="color:var(--violet)">Why it matched</span><q>${esc(m.why)}</q><span class="src" style="color:var(--muted);font-size:12px;display:block;margin-top:6px">${esc(m.src)}</span></div>
+              <div class="panel why" style="margin-top:10px"><span class="label" style="color:var(--violet)">Why Wasl picked them</span><q>${esc(m.why)}</q><span class="src" style="color:var(--muted);font-size:12px;display:block;margin-top:6px">${esc(m.src)}</span></div>
             </div>`).join("")
           : `<div class="panel stack" style="margin-top:16px"><b>No one matched that</b><p class="sub">Try what they did, where you met, or what you talked about.</p></div>`;
       }
       return `<div class="topline"><h2 class="title">Search</h2></div>
-        <p class="sub">Ask like you remember it, by typing or with the mic. No names needed.</p>
+        <p class="sub">Describe who you’re looking for: what they do, where you met, or what you talked about.</p>
         <form class="search" id="recallForm" style="margin-top:16px" autocomplete="off">
           ${ic("recall")}
           <input id="recallInput" name="q" value="${esc(q)}" placeholder="Describe who you're looking for" aria-label="Describe who you're looking for">
@@ -1462,7 +1480,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     const older = (i, contacts, kind) => ({ ...OLDER[i], contacts, kind });
     if (has("going", "attend", "summit")) {
       // network opportunity discovery: people you already met who are going to the same event
-      out.push({ p: older(4, ["karim@corniche.example"], "PROFESSIONAL"), label: "Going · worth meeting", score: 92, why: "Investor you met at Web Summit Qatar. You tagged him Investor.", src: "Event guest list · Web Summit Qatar, Nov 4" });
+      out.push({ p: older(4, ["karim@corniche.example"], "PROFESSIONAL"), label: "Going, and worth meeting", score: 92, why: "Investor you met at Web Summit Qatar. You tagged him Investor.", src: "Event guest list · Web Summit Qatar, Nov 4" });
       out.push({ p: older(0, ["linkedin.com/in/hamadalthani"], "PROFESSIONAL"), label: "Also going", score: 80, why: "Mentor at Bayt Ventures. Offered to review your pitch.", src: "Event guest list · Web Summit Qatar, Nov 4" });
     } else if (has("cto", "intro", "engineer", "pearl", "payments")) {
       // rank by what you actually saved: a memory or an "Intro offered" tag beats a job title
@@ -2351,7 +2369,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     { n: "4", t: "Save", wow: 2, h: "Confirm where you met. Add a tag.", screen: "save" },
     { n: "5", t: "Remember", wow: 2, h: "Tap the mic and talk. Wasl keeps only what mattered.", screen: "remember" },
     { n: "+", t: "Debrief", wow: 2, h: "Bonus: swipe through tonight's people.", screen: "debrief" },
-    { n: "6", t: "Browse", wow: 3, h: "Albums by event and company build themselves.", screen: "network" },
+    { n: "6", t: "Browse", wow: 3, h: "Albums group people by event and company.", screen: "network" },
     { n: "7", t: "Search", wow: 3, h: "Find someone by memory, not by name.", screen: "recall" },
   ];
   const WOW = { 1: "WOW 1", 2: "WOW 2", 3: "WOW 3" };

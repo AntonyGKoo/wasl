@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowDownToLine,
   Check,
+  UserPlus,
   KeyRound,
   LocateFixed,
   QrCode,
@@ -549,7 +550,7 @@ function GettingStarted({
       done: contacts.length > 0,
       title: "Save someone you met: scan their code or card",
       action: onMeet,
-      icon: Check,
+      icon: UserPlus,
     },
   ];
   const left = steps.filter((s) => !s.done).length;
@@ -557,9 +558,15 @@ function GettingStarted({
   return (
     <section className="getting-started" aria-label="Getting started">
       <div className="getting-started-head">
-        <strong>
-          Get started · {steps.length - left} of {steps.length}
-        </strong>
+        <strong>Get started</strong>
+        <span className="getting-started-count">
+          {steps.length - left} of {steps.length} done
+        </span>
+        <span className="getting-started-bar" aria-hidden="true">
+          {steps.map((s) => (
+            <i key={s.title} className={s.done ? "on" : ""} />
+          ))}
+        </span>
         <button
           className="icon-button"
           aria-label="Hide getting started"
@@ -573,17 +580,20 @@ function GettingStarted({
           <X size={15} />
         </button>
       </div>
+      {/* only what's left: finished steps show in the count and the bar */}
       <ol>
-        {steps.map((s) => (
-          <li key={s.title} className={s.done ? "done" : ""}>
-            <button onClick={s.action} disabled={s.done}>
-              <span className="step-icon">
-                {s.done ? <Check size={15} /> : <s.icon size={15} />}
-              </span>
-              {s.title}
-            </button>
-          </li>
-        ))}
+        {steps
+          .filter((s) => !s.done)
+          .map((s) => (
+            <li key={s.title}>
+              <button onClick={s.action}>
+                <span className="step-icon">
+                  <s.icon size={15} />
+                </span>
+                {s.title}
+              </button>
+            </li>
+          ))}
       </ol>
     </section>
   );

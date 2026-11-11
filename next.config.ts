@@ -6,6 +6,12 @@ const config: NextConfig = {
     "postgres",
   ],
   poweredByHeader: false,
+  // which build this is, baked into the page and the server alike: an installed app that has been
+  // open since an older build notices the difference and loads the new one
+  env: {
+    WASL_BUILD:
+      process.env.VERCEL_GIT_COMMIT_SHA || process.env.WASL_BUILD || "dev",
+  },
   devIndicators: false,
   outputFileTracingRoot: process.cwd(),
   outputFileTracingIncludes: { "/api/*": ["./db/*.sql"] },

@@ -284,7 +284,7 @@ function CardForm({
       <form onSubmit={submit}>
         <div className="card-editor">
           <div className="card-preview">
-            <span className="eyebrow">WHAT THEY&rsquo;LL SEE</span>
+            <span className="eyebrow">What they&rsquo;ll see</span>
             <CardFace
               card={{ label, kind, color, fields }}
               profile={profile}

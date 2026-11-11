@@ -930,3 +930,26 @@
     border-bottom: 0;
   }
 }
+:where(:root[data-theme="dark"]) .getting-started-count {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .getting-started-bar i {
+  background: var(--line);
+}
+:where(:root[data-theme="dark"]) .getting-started-bar i.on {
+  background: var(--teal-solid);
+}
+:where(:root[data-theme="dark"]) .form-divider {
+  color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .update-ready {
+  border: 1px solid var(--line);
+  background: #1b2027;
+  color: var(--ink);
+  box-shadow: 0 8px 24px #4d739973;
+}
+:where(:root[data-theme="dark"]) .update-ready button {
+  border: 0;
+  background: var(--teal-solid);
+  color: white;
+}

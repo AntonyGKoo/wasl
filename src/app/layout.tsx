@@ -5,6 +5,7 @@ import "./theme-dark.css";
 import "./theme-dark-tuning.css";
 import { NoZoom } from "@/components/no-zoom";
 import { ThemeWatcher } from "@/components/theme";
+import { UpdateWatcher } from "@/components/update-watcher";
 import { themeScript } from "@/lib/theme-script";
 export const metadata: Metadata = {
   title: "Wasl — memory for your network",
@@ -34,6 +35,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <body>
         <NoZoom />
         <ThemeWatcher />
+        <UpdateWatcher />
         {children}
       </body>
     </html>

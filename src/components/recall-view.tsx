@@ -56,6 +56,19 @@ export function RecallView({
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [resultMode, setResultMode] = useState("keyword");
+  // the answer (people, "no one matched" or a problem) appears under the search box; on a phone that
+  // can be below the screen, so each finished search brings it into view
+  const answerRef = useRef<HTMLDivElement>(null);
+  const [answered, setAnswered] = useState(0);
+  useEffect(() => {
+    const el = answerRef.current;
+    if (!answered || !el) return;
+    if (el.getBoundingClientRect().top < window.innerHeight * 0.55) return;
+    const calm = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    el.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "start" });
+  }, [answered]);
   const [listening, setListening] = useState(false);
   const [canSpeak, setCanSpeak] = useState(false);
   const recognizer = useRef<Recognizer | null>(null);
@@ -120,6 +133,7 @@ export function RecallView({
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      setAnswered((n) => n + 1);
     }
   }
   return (
@@ -208,81 +222,83 @@ export function RecallView({
           ))}
         </div>
       </div>
-      {error ? <Notice error>{error}</Notice> : null}
-      {warning ? <Notice>{warning}</Notice> : null}
-      {hits !== null ? (
-        <section className="recall-results">
-          <div className="section-heading">
-            <h2>{hits.length ? "Best matches" : "No one matched"}</h2>
-            <span className="muted small-copy">
-              {resultMode === "ai"
-                ? "Found by Wasl's AI in what you saved"
-                : "From what you saved"}
-            </span>
-          </div>
-          {!hits.length ? (
-            <div className="empty-state small">
-              <Search size={27} />
-              {contactCount ? (
-                <>
-                  <h3>A little more context might help.</h3>
-                  <p>
-                    Try a word from their role, company, the event, or a note
-                    you saved. Wasl only searches what you have saved.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h3>You haven&rsquo;t saved anyone yet.</h3>
-                  <p>
-                    Add or scan a connection and a note about them first, then
-                    find them here by what you remember.
-                  </p>
-                </>
-              )}
+      <div ref={answerRef} className="recall-answer" aria-live="polite">
+        {error ? <Notice error>{error}</Notice> : null}
+        {warning ? <Notice>{warning}</Notice> : null}
+        {hits !== null ? (
+          <section className="recall-results">
+            <div className="section-heading">
+              <h2>{hits.length ? "Best matches" : "No one matched"}</h2>
+              <span className="muted small-copy">
+                {resultMode === "ai"
+                  ? "Found by Wasl's AI in what you saved"
+                  : "From what you saved"}
+              </span>
             </div>
-          ) : (
-            hits.map((hit) => (
-              <button
-                className="recall-result"
-                key={hit.connection.id}
-                onClick={() => onOpen(hit.connection)}
-              >
-                <Avatar
-                  name={hit.connection.profile.name || "Contact"}
-                  photo={hit.connection.profile.photo}
-                />
-                <div>
-                  <h3>{hit.connection.profile.name}</h3>
-                  <p className="muted">
-                    {[
-                      hit.connection.profile.title,
-                      hit.connection.profile.company,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                  {hit.evidence.map((text, i) => {
-                    const { quote, from } = describe(text);
-                    return (
-                      <blockquote key={i}>
-                        <span>&ldquo;{quote}&rdquo;</span>
-                        <small className="evidence-label">{from}</small>
-                      </blockquote>
-                    );
-                  })}
-                </div>
-                <ArrowRight size={18} />
-              </button>
-            ))
-          )}
-        </section>
-      ) : (
-        <p className="recall-explainer">
-          <ShieldCheck size={15} /> Wasl only searches what you saved. Nothing
-          leaves your account unless AI search is on.
-        </p>
-      )}
+            {!hits.length ? (
+              <div className="empty-state small">
+                <Search size={27} />
+                {contactCount ? (
+                  <>
+                    <h3>A little more context might help.</h3>
+                    <p>
+                      Try a word from their role, company, the event, or a note
+                      you saved. Wasl only searches what you have saved.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3>You haven&rsquo;t saved anyone yet.</h3>
+                    <p>
+                      Add or scan a connection and a note about them first, then
+                      find them here by what you remember.
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              hits.map((hit) => (
+                <button
+                  className="recall-result"
+                  key={hit.connection.id}
+                  onClick={() => onOpen(hit.connection)}
+                >
+                  <Avatar
+                    name={hit.connection.profile.name || "Contact"}
+                    photo={hit.connection.profile.photo}
+                  />
+                  <div>
+                    <h3>{hit.connection.profile.name}</h3>
+                    <p className="muted">
+                      {[
+                        hit.connection.profile.title,
+                        hit.connection.profile.company,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                    {hit.evidence.map((text, i) => {
+                      const { quote, from } = describe(text);
+                      return (
+                        <blockquote key={i}>
+                          <span>&ldquo;{quote}&rdquo;</span>
+                          <small className="evidence-label">{from}</small>
+                        </blockquote>
+                      );
+                    })}
+                  </div>
+                  <ArrowRight size={18} />
+                </button>
+              ))
+            )}
+          </section>
+        ) : (
+          <p className="recall-explainer">
+            <ShieldCheck size={15} /> Wasl only searches what you saved. Nothing
+            leaves your account unless AI search is on.
+          </p>
+        )}
+      </div>
     </>
   );
 }

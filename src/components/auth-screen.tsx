@@ -62,7 +62,7 @@ export function AuthScreen({
         <InstallApp banner />
         <Brand />
         <div className="auth-story-body">
-          <span className="eyebrow">THE MEMORY FOR YOUR NETWORK</span>
+          <span className="eyebrow">The memory for your network</span>
           <h1>
             Every connection
             <br />

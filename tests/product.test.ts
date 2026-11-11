@@ -448,3 +448,17 @@ test("password guessing is limited per account, not for everyone on the same Wi-
     200,
   );
 });
+
+test("anyone can ask which build is live, so an installed app knows to update", async () => {
+  process.env.WASL_DATA_DIR = await mkdtemp(
+    path.join(tmpdir(), "wasl-version-"),
+  );
+  const response = await handleApi(
+    new Request("http://localhost:3000/api/version"),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  const { build } = (await response.json()) as { build: string };
+  assert.equal(typeof build, "string");
+  assert.ok(build.length > 0);
+});

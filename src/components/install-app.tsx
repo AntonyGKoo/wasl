@@ -126,10 +126,10 @@ export function InstallApp({
     return (
       <div className="install-banner" role="region" aria-label="Get the app">
         <div className="install-banner-row">
-          <img src="/icon-192.png" alt="" width={40} height={40} />
+          <img src="/icon-192.png" alt="" width={34} height={34} />
           <span>
-            <strong>Get the Wasl app</strong>
-            <span>Add to your home screen</span>
+            <strong>Get the app</strong>
+            <span>Add it to your home screen</span>
           </span>
           <Button
             className="install-banner-button"

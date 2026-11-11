@@ -70,6 +70,8 @@ export async function handleApi(request: Request): Promise<Response> {
       if (action === "vcard") return vcardResponse(card.profile);
       return json({ card });
     }
+    if (area === "version" && method === "GET")
+      return json({ build: process.env.WASL_BUILD || "dev" });
     if (area === "health" && method === "GET") {
       // One tiny query: the daily uptime check also keeps a free hosted database from pausing.
       await (await database()).query("SELECT 1");

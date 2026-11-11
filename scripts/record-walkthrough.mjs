@@ -414,7 +414,7 @@ await swipe(1);
 await caption(
   "Step 6 · Browse",
   3,
-  "Albums build themselves",
+  "Albums by event and company",
   "Everyone you meet is sorted by event, company and tag. The card you just scanned is already here.",
   600,
 );
