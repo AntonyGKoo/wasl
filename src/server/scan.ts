@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { aiAllowance } from "./recall";
 import { noteAiFailure } from "./ai-status";
+import { askLanguageModel } from "./ai-models";
 import { HttpError, limitedBody } from "./responses";
 import { blankProfile, profileFields, type Profile } from "../lib/types";
 import { profileSchema } from "../lib/validation";
@@ -16,8 +17,7 @@ async function aiCardFields(text: string) {
     maxRetries: 0,
   });
   try {
-    const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    const response = await askLanguageModel(client, {
       store: false,
       max_output_tokens: 1500,
       instructions:

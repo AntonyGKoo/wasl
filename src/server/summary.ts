@@ -3,6 +3,7 @@ import type { Database } from "../lib/db";
 import { keyPoints } from "../lib/key-points";
 import { aiAllowance } from "./recall";
 import { noteAiFailure } from "./ai-status";
+import { askLanguageModel } from "./ai-models";
 
 // Turns the text of a recorded conversation into a few key points. Only the text reaches the
 // server (speech is turned into text on the phone, no audio is sent or kept), and nothing is
@@ -32,8 +33,7 @@ export async function summarizeConversation(
       timeout: 12000,
       maxRetries: 0,
     });
-    const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    const response = await askLanguageModel(client, {
       store: false,
       max_output_tokens: 600,
       instructions:

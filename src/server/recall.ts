@@ -4,6 +4,7 @@ import { consumeLimit } from "../lib/auth";
 import type { Connection, SearchHit } from "../lib/types";
 import { HttpError } from "./responses";
 import { noteAiFailure } from "./ai-status";
+import { askLanguageModel, embedText } from "./ai-models";
 const stop = new Set(
   "who whom whose what which where when how was were is are am be been the a an person people someone somebody anyone anybody everyone i me my mine you your u r we us our he she his her him they them their met meet at in on of for to with and or but that this these those there here do does did know can could have has had help looking find show list all any some about from last works working work talked told remember please named called tagged tag one ones just also".split(
     " ",
@@ -271,7 +272,6 @@ export async function recall(
     timeout: 10000,
     maxRetries: 0,
   });
-  const model = process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
   const withAi = async () => {
     // Step 1, the meaning index: every saved person as a list of numbers, so "someone in
     // security" can find "works on fraud detection". Some AI accounts refuse this step alone;
@@ -299,7 +299,7 @@ export async function recall(
     // Step 2, the language model reads the shortlist and picks who really matches.
     let response;
     try {
-      response = await client.responses.create(askModel(candidates));
+      response = await askLanguageModel(client, askModel(candidates));
     } catch (error) {
       await noteAiFailure(error, db, "search-model");
       throw new AiAlreadyNoted();
@@ -320,6 +320,9 @@ export async function recall(
     };
   };
   const meaningMatches = async () => {
+    // the question first: it settles which model this account may use for the index
+    const asked = await embedText(client, query);
+    const model = asked.model;
     const cached = await asUser(
       userId,
       (tx) =>
@@ -342,11 +345,11 @@ export async function recall(
       )
       .slice(0, 20);
     if (pending.length) {
-      const response = await client.embeddings.create({
+      const { result: response } = await embedText(
+        client,
+        pending.map((c) => contextLines(c).join("\n").slice(0, 8000)),
         model,
-        dimensions: 1536,
-        input: pending.map((c) => contextLines(c).join("\n").slice(0, 8000)),
-      });
+      );
       await asUser(
         userId,
         async (tx) => {
@@ -368,12 +371,7 @@ export async function recall(
         db,
       );
     }
-    const embedded = await client.embeddings.create({
-      model,
-      dimensions: 1536,
-      input: query,
-    });
-    const semantic = await asUser(
+    return asUser(
       userId,
       (tx) =>
         tx.query<{ connection_id: string; score: number }>(
@@ -381,15 +379,13 @@ export async function recall(
       SELECT e.connection_id,1-(e.embedding <=> $1::vector) AS score FROM embeddings e
       JOIN connections c ON c.id=e.connection_id AND c.version=e.source_version
       WHERE e.model=$2 ORDER BY e.embedding <=> $1::vector LIMIT 10`,
-          [JSON.stringify(embedded.data[0].embedding), model],
+          [JSON.stringify(asked.result.data[0].embedding), model],
         ),
       db,
     );
-    return semantic;
   };
   const askModel = (candidates: Connection[]) =>
     ({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       store: false,
       max_output_tokens: 1000,
       instructions:

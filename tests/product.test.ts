@@ -543,7 +543,8 @@ test("AI search never shows less than keyword search, whatever the model answers
     | "slow"
     | "nokey"
     | "nocredit"
-    | "noindex" = "nothing";
+    | "noindex"
+    | "oldmodels" = "nothing";
   const provider = createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
@@ -566,6 +567,22 @@ test("AI search never shows less than keyword search, whatever the model answers
                   type: "insufficient_quota",
                   code: "insufficient_quota",
                 },
+        }),
+      );
+    }
+    // an account that may not use the two models Wasl asks for first, but may use newer ones
+    if (
+      answer === "oldmodels" &&
+      ["gpt-4o-mini", "text-embedding-3-small"].includes(data.model)
+    ) {
+      res.statusCode = 403;
+      return res.end(
+        JSON.stringify({
+          error: {
+            message: "Project does not have access to model.",
+            type: "invalid_request_error",
+            code: "model_not_found",
+          },
         }),
       );
     }
@@ -616,7 +633,7 @@ test("AI search never shows less than keyword search, whatever the model answers
     const matches =
       answer === "paraphrase" && sara
         ? [{ id: sara.id, evidence: "she offered to review the CV" }]
-        : answer === "noindex" && sara
+        : (answer === "noindex" || answer === "oldmodels") && sara
           ? [{ id: sara.id, evidence: "Offered to review my CV" }]
           : [];
     res.end(
@@ -791,9 +808,32 @@ test("AI search never shows less than keyword search, whatever the model answers
     assert.equal(seen.state, "working");
     for (let i = 0; i < 4; i++) await health();
     assert.equal((await health()).state, "unknown");
+    // The account refuses the two models Wasl asks for first but allows newer ones: Wasl
+    // switches by itself, AI search works, and Settings says which models it is using
+    answer = "oldmodels";
+    result = await ask();
+    assert.equal(result.mode, "ai");
+    assert.equal(result.warning, "");
+    assert.equal(result.hits[0].connection.profile.name, "Sara Nasser");
+    const [reindexed] = await (
+      await database()
+    ).query<{ n: number }>(
+      "SELECT count(*)::int AS n FROM embeddings e JOIN users u ON u.id=e.owner_id WHERE u.email='noor@ai.test' AND e.model='text-embedding-3-large'",
+    );
+    assert.equal(reindexed.n, 5);
+    check = (await call("ai-check")).data;
+    assert.equal(check.state, "working");
+    assert.deepEqual(
+      check.parts.map((part: { model: string }) => part.model),
+      ["text-embedding-3-large", "gpt-6-luna"],
+    );
+    assert.match(
+      check.parts[1].detail,
+      /can't use gpt-4o-mini, so Wasl uses gpt-6-luna/,
+    );
     // the day's AI searches are used up: search still answers, by keyword
     answer = "nothing";
-    process.env.WASL_DAILY_AI_LIMIT = "6";
+    process.env.WASL_DAILY_AI_LIMIT = "7";
     result = await ask();
     assert.deepEqual(
       result.hits.map((h) => h.connection.profile.name),

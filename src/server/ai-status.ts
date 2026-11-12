@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { consumeLimit } from "../lib/auth";
 import type { Database } from "../lib/db";
+import { askLanguageModel, configuredModels, embedText } from "./ai-models";
 
 // When a call to the AI provider fails, Wasl carries on without AI (keyword search, built-in
 // rules). This file works out WHY it failed, in words the person running Wasl can act on, and
@@ -23,7 +24,7 @@ const reasons: Record<AiProblem, string> = {
   access:
     "This OpenAI key isn't allowed to use the model or project Wasl asks for.",
   model:
-    "The AI model Wasl asks for isn't available to this OpenAI account. Set OPENAI_MODEL to one that is.",
+    "OpenAI says this account's project isn't allowed to use the model. Usually the account has no paid credit yet (an account without it can use very few models), or the project's list of allowed models leaves it out.",
   busy: "OpenAI is limiting how many requests this account can make right now.",
   request: "OpenAI didn't accept Wasl's request.",
   network: "Wasl couldn't reach OpenAI.",
@@ -105,27 +106,25 @@ export async function checkAi(userId: string | null, db?: Database) {
     timeout: 9000,
     maxRetries: 0,
   });
-  const index = process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
-  const language = process.env.OPENAI_MODEL || "gpt-4o-mini";
-  const tries: [string, string, string, () => Promise<unknown>][] = [
+  const wanted = configuredModels();
+  const tries: [
+    string,
+    string,
+    string,
+    () => Promise<{ waslModel: string }>,
+  ][] = [
     [
       "Search by meaning",
-      index,
+      wanted.index,
       "check-index",
-      () =>
-        client.embeddings.create({
-          model: index,
-          dimensions: 1536,
-          input: "Wasl",
-        }),
+      async () => ({ waslModel: (await embedText(client, "Wasl")).model }),
     ],
     [
       "Reading cards, summaries and picking matches",
-      language,
+      wanted.language,
       "check-model",
       () =>
-        client.responses.create({
-          model: language,
+        askLanguageModel(client, {
           store: false,
           max_output_tokens: 16,
           input: "Reply with the word OK.",
@@ -134,16 +133,25 @@ export async function checkAi(userId: string | null, db?: Database) {
   ];
   const parts: { name: string; model: string; ok: boolean; detail: string }[] =
     [];
-  for (const [name, model, step, run] of tries) {
+  for (const [name, asked, step, run] of tries) {
     try {
-      await run();
-      parts.push({ name, model, ok: true, detail: "" });
+      const { waslModel } = await run();
+      parts.push({
+        name,
+        model: waslModel,
+        ok: true,
+        // the account refused the usual model and a spare one answered
+        detail:
+          waslModel === asked
+            ? ""
+            : `This account can't use ${asked}, so Wasl uses ${waslModel} instead.`,
+      });
     } catch (error) {
       const problem = await noteAiFailure(error, db, step);
       const { status, code } = said(error);
       parts.push({
         name,
-        model,
+        model: asked,
         ok: false,
         detail: `${reasons[problem]}${status || code ? ` (OpenAI answered: ${[status || "", code].filter(Boolean).join(" ")})` : ""}`,
       });

@@ -606,6 +606,16 @@ function AiStatus({ connected }: { connected: boolean }) {
           {label}
         </span>
       </div>
+      {connected && state === "working" && parts.some((p) => p.detail) ? (
+        // working, but on a spare model because the account refused the usual one
+        <div className="ai-reason" role="status">
+          {parts
+            .filter((part) => part.detail)
+            .map((part) => (
+              <p key={part.name}>{part.detail}</p>
+            ))}
+        </div>
+      ) : null}
       {connected && (state === "failing" || state === "unknown") ? (
         <div className="ai-reason" role="status">
           {state === "failing" && parts.length ? (
