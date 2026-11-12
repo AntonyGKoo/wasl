@@ -222,6 +222,19 @@ test("search says when there is no one to search; sample people make it work and
   await go.click();
   await expect(page.locator(".recall-result")).toHaveCount(1);
   await expect(page.locator(".recall-result h3")).toHaveText("Sara Nasser");
+  // the box empties itself, ready for the next search; what was asked shows with the results
+  await expect(box).toHaveValue("");
+  await expect(page.locator(".asked q")).toHaveText(
+    "who offered to review my CV",
+  );
+  // Edit brings a long description back instead of making you retype it
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(box).toHaveValue("who offered to review my CV");
+  // Enter searches too, and clears the box the same way
+  await box.fill("cybersecurity");
+  await box.press("Enter");
+  await expect(page.locator(".asked q")).toHaveText("cybersecurity");
+  await expect(box).toHaveValue("");
   await box.fill("mar");
   await go.click();
   await expect(page.locator(".recall-result h3")).toHaveText("Mariam Ali");

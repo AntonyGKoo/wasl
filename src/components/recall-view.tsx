@@ -157,6 +157,9 @@ export function RecallView({
       setError("The microphone couldn't start. Type your search instead.");
     }
   }
+  // what the results on screen were a search for
+  const [asked, setAsked] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   async function search(e?: FormEvent, value = query) {
     e?.preventDefault();
     if (value.trim().length < 2) return;
@@ -172,6 +175,13 @@ export function RecallView({
       setHits(result.hits);
       setWarning(result.warning);
       setResultMode(result.mode);
+      // The box empties itself, ready for the next search; what was asked shows beside the
+      // results. (If the search failed, the words stay so it can be tried again.)
+      setAsked(value.trim());
+      setQuery("");
+      // on a phone, put the keyboard away so the results aren't hidden behind it
+      if (window.matchMedia?.("(pointer: coarse)").matches)
+        inputRef.current?.blur();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -237,6 +247,7 @@ export function RecallView({
           <div className="recall-input">
             <Search size={20} />
             <input
+              ref={inputRef}
               aria-label="Search your memory"
               value={query}
               minLength={2}
@@ -316,6 +327,25 @@ export function RecallView({
                   : "From what you saved"}
               </span>
             </div>
+            {asked ? (
+              <p className="asked">
+                <span>
+                  You searched for{" "}
+                  <q>{asked.length > 80 ? `${asked.slice(0, 80)}…` : asked}</q>
+                </span>
+                {/* a long description shouldn't have to be typed again to fix one word */}
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => {
+                    setQuery(asked);
+                    inputRef.current?.focus();
+                  }}
+                >
+                  Edit
+                </button>
+              </p>
+            ) : null}
             {!hits.length ? (
               <div className="empty-state small">
                 <Search size={27} />

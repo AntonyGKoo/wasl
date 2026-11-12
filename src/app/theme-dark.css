@@ -970,3 +970,12 @@
 :where(:root[data-theme="dark"]) .forgot .text-button {
   color: var(--muted);
 }
+:where(:root[data-theme="dark"]) .asked {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .asked q {
+  color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .asked .text-button {
+  color: var(--teal);
+}
