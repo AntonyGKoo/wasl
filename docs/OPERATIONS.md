@@ -17,7 +17,7 @@ Copy `.env.example` to `.env.local` and add credentials there. Never commit or p
 - `OPENAI_EMBEDDING_MODEL`: defaults to `text-embedding-3-small`, requested at 1536 dimensions. Changing this setting causes saved contacts to be re-embedded as needed.
 - `GOOGLE_CLOUD_VISION_API_KEY`: a Google Cloud key restricted to the enabled Vision API.
 
-Restart after changing environment values. Settings reports configured feature availability. A configured key is not proof of a valid account, billing, quota, or model entitlement: test each provider against synthetic or consented data before a pilot.
+Restart after changing environment values. A configured key is not proof of a valid account, billing, quota, or model entitlement, so **Settings → AI and scanning makes one tiny real call** (`/api/ai-check`) and shows "Working", or "Not working" with the reason in plain words: the key was rejected, the account has no credit, the model isn't available to it, or OpenAI couldn't be reached. Every failed AI call is also counted per reason per day in `usage_buckets` (rows named `ai-fail:<reason>:<date>`) and logged as one line without any content.
 
 When no providers are configured, contacts, cards, QR sharing, notes, exports, keyword recall, and paste-text capture work. There is no simulated AI response. AI service failures return a clearly labeled keyword fallback. Photo-scan failures leave manual entry available.
 

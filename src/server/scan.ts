@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { aiAllowance } from "./recall";
+import { noteAiFailure } from "./ai-status";
 import { HttpError, limitedBody } from "./responses";
 import { blankProfile, profileFields, type Profile } from "../lib/types";
 import { profileSchema } from "../lib/validation";
@@ -39,7 +40,8 @@ async function aiCardFields(text: string) {
       },
     });
     return keepValidFields(JSON.parse(response.output_text));
-  } catch {
+  } catch (error) {
+    await noteAiFailure(error);
     return null;
   }
 }

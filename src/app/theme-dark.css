@@ -979,3 +979,13 @@
 :where(:root[data-theme="dark"]) .asked .text-button {
   color: var(--teal);
 }
+:where(:root[data-theme="dark"]) .pill.failing {
+  background: #423220;
+  color: #cf933f;
+}
+:where(:root[data-theme="dark"]) .ai-reason {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .ai-reason .text-button {
+  color: var(--teal);
+}

@@ -3,6 +3,7 @@ import { asUser, type Database } from "../lib/db";
 import { consumeLimit } from "../lib/auth";
 import type { Connection, SearchHit } from "../lib/types";
 import { HttpError } from "./responses";
+import { noteAiFailure } from "./ai-status";
 const stop = new Set(
   "who whom whose what which where when how was were is are am be been the a an person people someone somebody anyone anybody everyone i me my mine you your u r we us our he she his her him they them their met meet at in on of for to with and or but that this these those there here do does did know can could have has had help looking find show list all any some about from last works working work talked told remember please named called tagged tag one ones just also".split(
     " ",
@@ -412,6 +413,7 @@ export async function recall(
   try {
     const answer = await Promise.race([work, tooSlow]);
     if (answer) return answer;
+    await noteAiFailure("slow", db);
     return {
       hits: local,
       mode: "keyword",
@@ -420,6 +422,8 @@ export async function recall(
     };
   } catch (error) {
     if (error instanceof HttpError) throw error;
+    // why it failed is kept for Settings and the server log
+    await noteAiFailure(error, db);
     return {
       hits: local,
       mode: "keyword",

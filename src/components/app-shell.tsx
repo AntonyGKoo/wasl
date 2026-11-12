@@ -527,12 +527,7 @@ function SettingsView({
         </section>
         <section>
           <h3>AI and scanning</h3>
-          <div className="service-row">
-            <span>AI search by memory</span>
-            <span className={`pill ${capabilities.ai ? "available" : ""}`}>
-              {capabilities.ai ? "Connected" : "Not connected"}
-            </span>
-          </div>
+          <AiStatus connected={capabilities.ai} />
           <div className="service-row">
             <span>Business-card photo scanning</span>
             <span className="pill available">
@@ -550,6 +545,67 @@ function SettingsView({
         </section>
         <DeleteAccount onDeleted={onLogout} />
       </div>
+    </>
+  );
+}
+
+// Whether Wasl's AI really works right now: a key being set doesn't mean the AI account accepts
+// it or has credit, so this asks the server to make one tiny real call and says what came back.
+function AiStatus({ connected }: { connected: boolean }) {
+  const [state, setState] = useState<
+    "checking" | "working" | "failing" | "unknown"
+  >("checking");
+  const [reason, setReason] = useState("");
+  async function check() {
+    setState("checking");
+    try {
+      const result = await api<{ state: string; reason: string }>("ai-check");
+      setState(
+        result.state === "working"
+          ? "working"
+          : result.state === "failing"
+            ? "failing"
+            : "unknown",
+      );
+      setReason(result.reason);
+    } catch (e) {
+      setState("unknown");
+      setReason((e as Error).message);
+    }
+  }
+  useEffect(() => {
+    if (connected) void check();
+  }, [connected]);
+  const label = !connected
+    ? "Not connected"
+    : state === "checking"
+      ? "Checking…"
+      : state === "working"
+        ? "Working"
+        : state === "failing"
+          ? "Not working"
+          : "Couldn’t check";
+  return (
+    <>
+      <div className="service-row">
+        <span>Wasl&rsquo;s AI (search, card reading, chat summaries)</span>
+        <span
+          className={`pill ${state === "working" && connected ? "available" : state === "failing" ? "failing" : ""}`}
+        >
+          {label}
+        </span>
+      </div>
+      {connected && (state === "failing" || state === "unknown") ? (
+        <p className="ai-reason" role="status">
+          {reason}{" "}
+          {state === "failing"
+            ? "Until this is fixed, Wasl searches by keyword and reads cards with its built-in rules. "
+            : ""}
+          <button className="text-button" onClick={() => void check()}>
+            Check again
+          </button>
+        </p>
+      ) : null}
     </>
   );
 }

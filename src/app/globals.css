@@ -3840,3 +3840,19 @@ label.button {
   font-size: 13px;
   color: var(--teal);
 }
+/* Settings: is the AI really working, and if not, why */
+.pill.failing {
+  background: #fbefe2;
+  color: #8a5a17;
+}
+.ai-reason {
+  margin: 2px 0 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.ai-reason .text-button {
+  margin-left: 0;
+  min-height: 36px;
+  font-size: 14px;
+  color: var(--teal);
+}

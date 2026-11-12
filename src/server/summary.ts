@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import type { Database } from "../lib/db";
 import { keyPoints } from "../lib/key-points";
 import { aiAllowance } from "./recall";
+import { noteAiFailure } from "./ai-status";
 
 // Turns the text of a recorded conversation into a few key points. Only the text reaches the
 // server (speech is turned into text on the phone, no audio is sent or kept), and nothing is
@@ -64,8 +65,9 @@ export async function summarizeConversation(
           .slice(0, 5)
       : [];
     if (clean.length) return { points: clean, mode: "ai", warning: "" };
-  } catch {
-    // fall through to the rules below
+  } catch (error) {
+    // fall through to the rules below; why it failed is kept for Settings and the server log
+    await noteAiFailure(error, db);
   }
   return {
     points: rules(),

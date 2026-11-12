@@ -55,6 +55,7 @@ import {
 import { recall, searchableContacts } from "./recall";
 import { readCardText, scanCard } from "./scan";
 import { summarizeConversation } from "./summary";
+import { checkAi } from "./ai-status";
 import { makeVcard } from "../lib/vcard";
 export async function handleApi(request: Request): Promise<Response> {
   try {
@@ -233,6 +234,8 @@ export async function handleApi(request: Request): Promise<Response> {
       const input = await readJson(request, summarySchema);
       return json(await summarizeConversation(user.id, input.transcript));
     }
+    if (area === "ai-check" && method === "GET")
+      return json(await checkAi(user.id));
     if (area === "sample-people" && method === "POST")
       return json({ added: await addSamplePeople(user.id) });
     if (area === "sample-people" && method === "DELETE")

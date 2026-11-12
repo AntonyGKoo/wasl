@@ -536,12 +536,34 @@ test("a new account can add sample people, find them by search, and remove them"
 
 test("AI search never shows less than keyword search, whatever the model answers", async () => {
   // a stand-in for the AI provider: it answers in the provider's shapes, the way this test tells it to
-  let answer: "nothing" | "paraphrase" | "down" | "slow" = "nothing";
+  let answer:
+    "nothing" | "paraphrase" | "down" | "slow" | "nokey" | "nocredit" =
+    "nothing";
   const provider = createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
     const data = JSON.parse(body || "{}");
     res.setHeader("content-type", "application/json");
+    // the two ways a real AI account most often refuses: a bad key, or no credit
+    if (answer === "nokey" || answer === "nocredit") {
+      res.statusCode = answer === "nokey" ? 401 : 429;
+      return res.end(
+        JSON.stringify({
+          error:
+            answer === "nokey"
+              ? {
+                  message: "Incorrect API key provided.",
+                  type: "invalid_request_error",
+                  code: "invalid_api_key",
+                }
+              : {
+                  message: "You exceeded your current quota.",
+                  type: "insufficient_quota",
+                  code: "insufficient_quota",
+                },
+        }),
+      );
+    }
     if (req.url?.endsWith("/embeddings")) {
       const inputs = Array.isArray(data.input) ? data.input : [data.input];
       const vector = new Float32Array(1536).fill(0.02);
@@ -566,9 +588,12 @@ test("AI search never shows less than keyword search, whatever the model answers
       res.statusCode = 500;
       return res.end(JSON.stringify({ error: { message: "down" } }));
     }
-    const { contacts } = JSON.parse(data.input) as {
-      contacts: { id: string; context: string }[];
-    };
+    // only a search sends saved people; the "is AI working?" check sends a plain sentence
+    const { contacts } = (
+      data.text?.format?.name === "contact_matches"
+        ? JSON.parse(data.input)
+        : { contacts: [] }
+    ) as { contacts: { id: string; context: string }[] };
     const sara = contacts.find((c) => c.context.includes("Sara Nasser"));
     const matches =
       answer === "paraphrase" && sara
@@ -673,9 +698,33 @@ test("AI search never shows less than keyword search, whatever the model answers
     );
     assert.match(result.warning, /too long/);
     await new Promise((ok) => setTimeout(ok, 1000));
+    // Settings can say whether the AI really works, and why not
+    answer = "nothing";
+    assert.equal((await call("ai-check")).data.state, "working");
+    answer = "nokey";
+    let check = (await call("ai-check")).data;
+    assert.equal(check.state, "failing");
+    assert.match(check.reason, /rejected the API key/);
+    answer = "nocredit";
+    check = (await call("ai-check")).data;
+    assert.equal(check.state, "failing");
+    assert.match(check.reason, /no credit/);
+    // a search in that state still answers by keyword, and the reason is counted for the day
+    result = await ask();
+    assert.deepEqual(
+      result.hits.map((h) => h.connection.profile.name),
+      ["Sara Nasser"],
+    );
+    assert.match(result.warning, /unavailable/);
+    const [counted] = await (
+      await database()
+    ).query<{ count: number }>(
+      "SELECT count FROM usage_buckets WHERE bucket LIKE 'ai-fail:credit:%'",
+    );
+    assert.ok(counted.count >= 2);
     // the day's AI searches are used up: search still answers, by keyword
     answer = "nothing";
-    process.env.WASL_DAILY_AI_LIMIT = "4";
+    process.env.WASL_DAILY_AI_LIMIT = "5";
     result = await ask();
     assert.deepEqual(
       result.hits.map((h) => h.connection.profile.name),
