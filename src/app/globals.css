@@ -3810,3 +3810,12 @@ label.button {
 .people-picker .field-choice small {
   text-align: left;
 }
+/* on a phone the headline says it; without the small line above it the Sign in button fits too */
+@media (max-width: 760px) {
+  .auth-story .eyebrow {
+    display: none;
+  }
+  .auth-story-body {
+    padding-top: 12px;
+  }
+}
