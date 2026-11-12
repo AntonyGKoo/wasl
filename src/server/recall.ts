@@ -238,6 +238,7 @@ export async function aiAllowance(
       "The daily usage limit has been reached. Keyword search and manual entry are still available.",
     );
 }
+class AiAlreadyNoted extends Error {}
 export async function recall(
   userId: string,
   query: string,
@@ -272,6 +273,53 @@ export async function recall(
   });
   const model = process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
   const withAi = async () => {
+    // Step 1, the meaning index: every saved person as a list of numbers, so "someone in
+    // security" can find "works on fraud detection". Some AI accounts refuse this step alone;
+    // then search carries on without it (step 2 reads a small network whole).
+    let semantic: { connection_id: string; score: number }[] = [];
+    let indexed = true;
+    try {
+      semantic = await meaningMatches();
+    } catch (error) {
+      if (error instanceof HttpError) throw error;
+      indexed = false;
+      await noteAiFailure(error, db, "search-index");
+    }
+    const ids = new Set([
+      ...local.map((h) => h.connection.id),
+      // the closest few always get a look: the model, not a fixed cut-off, decides
+      ...semantic
+        .filter((h, i) => h.score > 0.3 || i < 5)
+        .map((h) => h.connection_id),
+    ]);
+    if (!indexed && contacts.length <= 25)
+      contacts.forEach((c) => ids.add(c.id));
+    const candidates = contacts.filter((c) => ids.has(c.id)).slice(0, 25);
+    if (!candidates.length) return { hits: [], mode: "ai", warning: "" };
+    // Step 2, the language model reads the shortlist and picks who really matches.
+    let response;
+    try {
+      response = await client.responses.create(askModel(candidates));
+    } catch (error) {
+      await noteAiFailure(error, db, "search-model");
+      throw new AiAlreadyNoted();
+    }
+    const found = groundedMatches(JSON.parse(response.output_text), candidates);
+    // AI never shows less than plain keyword search would: with nothing from the model the
+    // keyword matches stand, and a person who matches every word is always listed
+    if (!found.length) return { hits: local, mode: "keyword", warning: "" };
+    const certain = local.filter(
+      (h) =>
+        h.score === 1 &&
+        !found.some((f) => f.connection.id === h.connection.id),
+    );
+    return {
+      hits: [...found, ...certain].slice(0, 10),
+      mode: "ai",
+      warning: "",
+    };
+  };
+  const meaningMatches = async () => {
     const cached = await asUser(
       userId,
       (tx) =>
@@ -337,16 +385,10 @@ export async function recall(
         ),
       db,
     );
-    const ids = new Set([
-      ...local.map((h) => h.connection.id),
-      // the closest few always get a look: the model, not a fixed cut-off, decides
-      ...semantic
-        .filter((h, i) => h.score > 0.3 || i < 5)
-        .map((h) => h.connection_id),
-    ]);
-    const candidates = contacts.filter((c) => ids.has(c.id)).slice(0, 15);
-    if (!candidates.length) return { hits: [], mode: "ai", warning: "" };
-    const response = await client.responses.create({
+    return semantic;
+  };
+  const askModel = (candidates: Connection[]) =>
+    ({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       store: false,
       max_output_tokens: 1000,
@@ -385,22 +427,7 @@ export async function recall(
           },
         },
       },
-    });
-    const found = groundedMatches(JSON.parse(response.output_text), candidates);
-    // AI never shows less than plain keyword search would: with nothing from the model the
-    // keyword matches stand, and a person who matches every word is always listed
-    if (!found.length) return { hits: local, mode: "keyword", warning: "" };
-    const certain = local.filter(
-      (h) =>
-        h.score === 1 &&
-        !found.some((f) => f.connection.id === h.connection.id),
-    );
-    return {
-      hits: [...found, ...certain].slice(0, 10),
-      mode: "ai",
-      warning: "",
-    };
-  };
+    }) as const;
   // A search always answers: if the AI provider is slow or down, the keyword matches show
   // instead, with a line that says so.
   const budget = Number(process.env.WASL_AI_SEARCH_MS || 12000);
@@ -413,7 +440,7 @@ export async function recall(
   try {
     const answer = await Promise.race([work, tooSlow]);
     if (answer) return answer;
-    await noteAiFailure("slow", db);
+    await noteAiFailure("slow", db, "search");
     return {
       hits: local,
       mode: "keyword",
@@ -423,7 +450,8 @@ export async function recall(
   } catch (error) {
     if (error instanceof HttpError) throw error;
     // why it failed is kept for Settings and the server log
-    await noteAiFailure(error, db);
+    if (!(error instanceof AiAlreadyNoted))
+      await noteAiFailure(error, db, "search");
     return {
       hits: local,
       mode: "keyword",

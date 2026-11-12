@@ -537,8 +537,13 @@ test("a new account can add sample people, find them by search, and remove them"
 test("AI search never shows less than keyword search, whatever the model answers", async () => {
   // a stand-in for the AI provider: it answers in the provider's shapes, the way this test tells it to
   let answer:
-    "nothing" | "paraphrase" | "down" | "slow" | "nokey" | "nocredit" =
-    "nothing";
+    | "nothing"
+    | "paraphrase"
+    | "down"
+    | "slow"
+    | "nokey"
+    | "nocredit"
+    | "noindex" = "nothing";
   const provider = createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
@@ -561,6 +566,19 @@ test("AI search never shows less than keyword search, whatever the model answers
                   type: "insufficient_quota",
                   code: "insufficient_quota",
                 },
+        }),
+      );
+    }
+    // an account that refuses only the "meaning index" model, as some OpenAI projects do
+    if (answer === "noindex" && req.url?.endsWith("/embeddings")) {
+      res.statusCode = 403;
+      return res.end(
+        JSON.stringify({
+          error: {
+            message: "Project does not have access to model.",
+            type: "invalid_request_error",
+            code: "model_not_found",
+          },
         }),
       );
     }
@@ -598,7 +616,9 @@ test("AI search never shows less than keyword search, whatever the model answers
     const matches =
       answer === "paraphrase" && sara
         ? [{ id: sara.id, evidence: "she offered to review the CV" }]
-        : [];
+        : answer === "noindex" && sara
+          ? [{ id: sara.id, evidence: "Offered to review my CV" }]
+          : [];
     res.end(
       JSON.stringify({
         id: "resp_test",
@@ -716,15 +736,41 @@ test("AI search never shows less than keyword search, whatever the model answers
       ["Sara Nasser"],
     );
     assert.match(result.warning, /unavailable/);
-    const [counted] = await (
-      await database()
-    ).query<{ count: number }>(
-      "SELECT count FROM usage_buckets WHERE bucket LIKE 'ai-fail:credit:%'",
+    const counter = async (like: string) =>
+      (
+        await (
+          await database()
+        ).query<{ count: number }>(
+          "SELECT coalesce(sum(count),0)::int AS count FROM usage_buckets WHERE bucket LIKE $1",
+          [like],
+        )
+      )[0].count;
+    assert.ok(
+      (await counter("ai-fail:credit:%:429:insufficient_quota:%")) >= 2,
     );
-    assert.ok(counted.count >= 2);
+    // Only the meaning index is refused (the language model works): AI search still answers by
+    // reading the small network whole, and Settings names the part and the model that failed
+    answer = "noindex";
+    result = await ask();
+    assert.equal(result.mode, "ai");
+    assert.equal(result.warning, "");
+    assert.equal(result.hits[0].connection.profile.name, "Sara Nasser");
+    check = (await call("ai-check")).data;
+    assert.equal(check.state, "failing");
+    assert.match(check.reason, /^Search by meaning isn't working: /);
+    assert.deepEqual(
+      check.parts.map((part: { ok: boolean }) => part.ok),
+      [false, true],
+    );
+    assert.equal(check.parts[0].model, "text-embedding-3-small");
+    assert.match(check.parts[0].detail, /403 model_not_found/);
+    assert.equal(
+      await counter("ai-fail:model:search-index:403:model_not_found:%"),
+      1,
+    );
     // the day's AI searches are used up: search still answers, by keyword
     answer = "nothing";
-    process.env.WASL_DAILY_AI_LIMIT = "5";
+    process.env.WASL_DAILY_AI_LIMIT = "6";
     result = await ask();
     assert.deepEqual(
       result.hits.map((h) => h.connection.profile.name),

@@ -556,10 +556,21 @@ function AiStatus({ connected }: { connected: boolean }) {
     "checking" | "working" | "failing" | "unknown"
   >("checking");
   const [reason, setReason] = useState("");
+  const [parts, setParts] = useState<
+    { name: string; model: string; ok: boolean; detail: string }[]
+  >([]);
+  const [address, setAddress] = useState("");
   async function check() {
     setState("checking");
     try {
-      const result = await api<{ state: string; reason: string }>("ai-check");
+      const result = await api<{
+        state: string;
+        reason: string;
+        parts?: { name: string; model: string; ok: boolean; detail: string }[];
+        address?: string;
+      }>("ai-check");
+      setParts(result.parts || []);
+      setAddress(result.address || "");
       setState(
         result.state === "working"
           ? "working"
@@ -596,15 +607,37 @@ function AiStatus({ connected }: { connected: boolean }) {
         </span>
       </div>
       {connected && (state === "failing" || state === "unknown") ? (
-        <p className="ai-reason" role="status">
-          {reason}{" "}
-          {state === "failing"
-            ? "Until this is fixed, Wasl searches by keyword and reads cards with its built-in rules. "
-            : ""}
-          <button className="text-button" onClick={() => void check()}>
-            Check again
-          </button>
-        </p>
+        <div className="ai-reason" role="status">
+          {state === "failing" && parts.length ? (
+            // which of the two AI services was refused, with the model it asked for
+            <ul>
+              {parts.map((part) => (
+                <li key={part.name}>
+                  <strong>
+                    {part.name} ({part.model})
+                  </strong>
+                  : {part.ok ? "working." : part.detail}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>{reason}</p>
+          )}
+          {address ? (
+            <p>
+              Wasl is set to reach the AI at <strong>{address}</strong>, not at
+              OpenAI itself (OPENAI_BASE_URL).
+            </p>
+          ) : null}
+          <p>
+            {state === "failing"
+              ? "Until this is fixed, Wasl searches by keyword and reads cards with its built-in rules. "
+              : ""}
+            <button className="text-button" onClick={() => void check()}>
+              Check again
+            </button>
+          </p>
+        </div>
       ) : null}
     </>
   );

@@ -41,7 +41,7 @@ async function aiCardFields(text: string) {
     });
     return keepValidFields(JSON.parse(response.output_text));
   } catch (error) {
-    await noteAiFailure(error);
+    await noteAiFailure(error, undefined, "card");
     return null;
   }
 }

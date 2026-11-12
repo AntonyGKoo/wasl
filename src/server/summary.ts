@@ -67,7 +67,7 @@ export async function summarizeConversation(
     if (clean.length) return { points: clean, mode: "ai", warning: "" };
   } catch (error) {
     // fall through to the rules below; why it failed is kept for Settings and the server log
-    await noteAiFailure(error, db);
+    await noteAiFailure(error, db, "summary");
   }
   return {
     points: rules(),

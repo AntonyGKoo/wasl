@@ -989,3 +989,6 @@
 :where(:root[data-theme="dark"]) .ai-reason .text-button {
   color: var(--teal);
 }
+:where(:root[data-theme="dark"]) .ai-reason strong {
+  color: var(--ink);
+}

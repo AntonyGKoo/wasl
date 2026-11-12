@@ -51,18 +51,29 @@ export function aiProblem(error: unknown): AiProblem {
 }
 export const aiReason = (problem: AiProblem) => reasons[problem];
 
-// one line in the server log and one counter per reason per day
-export async function noteAiFailure(error: unknown, db?: Database) {
+// what the provider said, as two short codes ("403", "model_not_found"): no message, no content
+const said = (error: unknown) => {
+  const status = Number((error as { status?: number })?.status) || 0;
+  const code = String((error as { code?: unknown })?.code || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 40);
+  return { status, code };
+};
+// One line in the server log and one counter per day, named after the reason, the step that
+// failed and what the provider said: "ai-fail:model:search-index:403:model_not_found:2026-11-12".
+export async function noteAiFailure(
+  error: unknown,
+  db?: Database,
+  step = "other",
+) {
   const problem = error === "slow" ? "slow" : aiProblem(error);
-  console.error(
-    "Wasl AI call failed:",
-    problem,
-    (error as { status?: number })?.status ?? "",
-  );
+  const { status, code } = said(error);
+  console.error("Wasl AI call failed:", problem, step, status || "", code);
   try {
     const day = new Date().toISOString().slice(0, 10);
     await consumeLimit(
-      `ai-fail:${problem}:${day}`,
+      `ai-fail:${problem}:${step}:${status || "-"}:${code || "-"}:${day}`,
       Number.MAX_SAFE_INTEGER,
       7 * 86400,
       db,
@@ -73,34 +84,83 @@ export async function noteAiFailure(error: unknown, db?: Database) {
   return problem;
 }
 
-// A real, tiny call to each AI service Wasl uses, so Settings can say "Working" and mean it.
+// A real, tiny call to each of the two AI services Wasl uses, so Settings can say "Working" and
+// mean it, and when one is refused, say which one, which model, and what the provider answered.
 export async function checkAi(userId: string, db?: Database) {
-  if (!process.env.OPENAI_API_KEY) return { state: "off" as const, reason: "" };
+  if (!process.env.OPENAI_API_KEY)
+    return { state: "off" as const, reason: "", parts: [] };
   if (!(await consumeLimit(`ai-check:${userId}`, 12, 3600, db)))
     return {
       state: "unknown" as const,
       reason: "Checked a lot just now. Try again in a little while.",
+      parts: [],
     };
   const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
     timeout: 9000,
     maxRetries: 0,
   });
-  try {
-    await client.embeddings.create({
-      model: process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small",
-      dimensions: 1536,
-      input: "Wasl",
-    });
-    await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      store: false,
-      max_output_tokens: 16,
-      input: "Reply with the word OK.",
-    });
-    return { state: "working" as const, reason: "" };
-  } catch (error) {
-    const problem = await noteAiFailure(error, db);
-    return { state: "failing" as const, reason: reasons[problem], problem };
+  const index = process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
+  const language = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const tries: [string, string, string, () => Promise<unknown>][] = [
+    [
+      "Search by meaning",
+      index,
+      "check-index",
+      () =>
+        client.embeddings.create({
+          model: index,
+          dimensions: 1536,
+          input: "Wasl",
+        }),
+    ],
+    [
+      "Reading cards, summaries and picking matches",
+      language,
+      "check-model",
+      () =>
+        client.responses.create({
+          model: language,
+          store: false,
+          max_output_tokens: 16,
+          input: "Reply with the word OK.",
+        }),
+    ],
+  ];
+  const parts: { name: string; model: string; ok: boolean; detail: string }[] =
+    [];
+  for (const [name, model, step, run] of tries) {
+    try {
+      await run();
+      parts.push({ name, model, ok: true, detail: "" });
+    } catch (error) {
+      const problem = await noteAiFailure(error, db, step);
+      const { status, code } = said(error);
+      parts.push({
+        name,
+        model,
+        ok: false,
+        detail: `${reasons[problem]}${status || code ? ` (OpenAI answered: ${[status || "", code].filter(Boolean).join(" ")})` : ""}`,
+      });
+    }
   }
+  // set only when the AI address was changed from OpenAI's own; the host name is not a secret
+  let address = "";
+  try {
+    if (process.env.OPENAI_BASE_URL)
+      address = new URL(process.env.OPENAI_BASE_URL).host;
+  } catch {
+    address = "an address that isn't a valid link";
+  }
+  const failed = parts.filter((part) => !part.ok);
+  return {
+    state: failed.length ? ("failing" as const) : ("working" as const),
+    reason: failed.length
+      ? failed.length === parts.length
+        ? failed[0].detail
+        : `${failed[0].name} isn't working: ${failed[0].detail}`
+      : "",
+    parts,
+    address,
+  };
 }
