@@ -252,14 +252,25 @@ export async function recall(
       503,
       "AI search needs an OpenAI API key. Search your saved details using keyword mode for now.",
     );
-  await aiAllowance(userId, "ai", db);
+  try {
+    await aiAllowance(userId, "ai", db);
+  } catch (error) {
+    if (!(error instanceof HttpError) || error.status !== 429) throw error;
+    // today's AI searches are used up: search still answers, by keyword
+    return {
+      hits: local,
+      mode: "keyword",
+      warning:
+        "Today's AI searches are used up. These are keyword matches from what you saved.",
+    };
+  }
   const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
-    timeout: 20000,
-    maxRetries: 1,
+    timeout: 10000,
+    maxRetries: 0,
   });
   const model = process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
-  try {
+  const withAi = async () => {
     const cached = await asUser(
       userId,
       (tx) =>
@@ -388,6 +399,25 @@ export async function recall(
       mode: "ai",
       warning: "",
     };
+  };
+  // A search always answers: if the AI provider is slow or down, the keyword matches show
+  // instead, with a line that says so.
+  const budget = Number(process.env.WASL_AI_SEARCH_MS || 12000);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const tooSlow = new Promise<null>((done) => {
+    timer = setTimeout(() => done(null), budget);
+  });
+  const work = withAi();
+  work.catch(() => {});
+  try {
+    const answer = await Promise.race([work, tooSlow]);
+    if (answer) return answer;
+    return {
+      hits: local,
+      mode: "keyword",
+      warning:
+        "AI search is taking too long right now. These are keyword matches from what you saved.",
+    };
   } catch (error) {
     if (error instanceof HttpError) throw error;
     return {
@@ -396,5 +426,7 @@ export async function recall(
       warning:
         "AI search is unavailable right now. These are keyword matches from what you saved.",
     };
+  } finally {
+    clearTimeout(timer);
   }
 }

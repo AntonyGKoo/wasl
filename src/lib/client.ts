@@ -12,14 +12,32 @@ export async function api<T = Record<string, unknown>>(
   data?: unknown,
 ): Promise<T> {
   const form = data instanceof FormData;
-  const response = await fetch(`/api/${path}`, {
-    method,
-    credentials: "same-origin",
-    headers: data && !form ? { "content-type": "application/json" } : undefined,
-    body: data ? (form ? data : JSON.stringify(data)) : undefined,
-    cache: "no-store",
-  });
-  const result = await response.json();
+  let response: Response;
+  try {
+    response = await fetch(`/api/${path}`, {
+      method,
+      credentials: "same-origin",
+      headers:
+        data && !form ? { "content-type": "application/json" } : undefined,
+      body: data ? (form ? data : JSON.stringify(data)) : undefined,
+      cache: "no-store",
+    });
+  } catch {
+    // no connection: say so in plain words, not "Load failed"
+    throw new ApiError(
+      "Wasl couldn't reach its server. Check your connection and try again.",
+      0,
+    );
+  }
+  let result: { error?: string };
+  try {
+    result = await response.json();
+  } catch {
+    throw new ApiError(
+      "Wasl is having trouble right now. Please try again in a moment.",
+      response.status,
+    );
+  }
   if (!response.ok)
     throw new ApiError(
       result.error || "Unable to complete this request.",

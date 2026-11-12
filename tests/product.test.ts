@@ -535,7 +535,7 @@ test("a new account can add sample people, find them by search, and remove them"
 
 test("AI search never shows less than keyword search, whatever the model answers", async () => {
   // a stand-in for the AI provider: it answers in the provider's shapes, the way this test tells it to
-  let answer: "nothing" | "paraphrase" | "down" = "nothing";
+  let answer: "nothing" | "paraphrase" | "down" | "slow" = "nothing";
   const provider = createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
@@ -560,6 +560,7 @@ test("AI search never shows less than keyword search, whatever the model answers
         }),
       );
     }
+    if (answer === "slow") await new Promise((ok) => setTimeout(ok, 900));
     if (answer === "down") {
       res.statusCode = 500;
       return res.end(JSON.stringify({ error: { message: "down" } }));
@@ -659,9 +660,32 @@ test("AI search never shows less than keyword search, whatever the model answers
       ["Sara Nasser"],
     );
     assert.match(result.warning, /unavailable/);
+    // the provider is slow: the answer doesn't wait for it
+    answer = "slow";
+    process.env.WASL_AI_SEARCH_MS = "300";
+    const started = Date.now();
+    result = await ask();
+    assert.ok(Date.now() - started < 800);
+    assert.deepEqual(
+      result.hits.map((h) => h.connection.profile.name),
+      ["Sara Nasser"],
+    );
+    assert.match(result.warning, /too long/);
+    await new Promise((ok) => setTimeout(ok, 1000));
+    // the day's AI searches are used up: search still answers, by keyword
+    answer = "nothing";
+    process.env.WASL_DAILY_AI_LIMIT = "4";
+    result = await ask();
+    assert.deepEqual(
+      result.hits.map((h) => h.connection.profile.name),
+      ["Sara Nasser"],
+    );
+    assert.match(result.warning, /used up/);
   } finally {
     delete process.env.OPENAI_API_KEY;
     delete process.env.OPENAI_BASE_URL;
+    delete process.env.WASL_AI_SEARCH_MS;
+    delete process.env.WASL_DAILY_AI_LIMIT;
     provider.close();
   }
 });
