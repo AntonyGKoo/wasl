@@ -412,7 +412,8 @@ export function ScanModal({
 }: {
   capabilities: Capabilities;
   onClose: () => void;
-  onDraft: (profile: Profile, byAi: boolean) => void;
+  // cardText: the words read off the card, when Wasl's rules (not AI) sorted them
+  onDraft: (profile: Profile, byAi: boolean, cardText?: string) => void;
   // scanning your own card to fill your profile
   own?: boolean;
 }) {
@@ -440,7 +441,7 @@ export function ScanModal({
         // fall back to the rules below
       }
     }
-    onDraft(parseCardText(cardText, lines), false);
+    onDraft(parseCardText(cardText, lines), false, cardText);
   }
   async function submit(e: FormEvent) {
     e.preventDefault();

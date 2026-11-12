@@ -3870,3 +3870,222 @@ label.button {
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+/* The welcome page (the same first page as the mockup): scan your card, LinkedIn, email, or sign in */
+.auth-features b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.welcome-choices {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+.welcome-choices .button {
+  min-height: 48px;
+  margin-top: 0;
+  font-size: 14px;
+}
+.button.linkedin {
+  background: #0a66c2;
+  color: white;
+}
+.button.linkedin:hover {
+  background: #08539f;
+}
+.welcome-choices .welcome-email {
+  justify-self: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.welcome-signin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--muted);
+}
+.welcome-signin .text-button {
+  min-height: 44px;
+  margin-left: 2px;
+  padding: 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--teal);
+}
+.auth-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: -10px 0 0 -2px;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.auth-back + h2 {
+  margin-top: 4px;
+}
+.linkedin-form {
+  margin-top: 24px;
+}
+.linkedin-why {
+  margin-top: 16px;
+}
+.found-details {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--teal-light);
+  color: var(--ink);
+}
+.found-details strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.found-details strong svg {
+  flex: none;
+  color: var(--teal);
+}
+.found-details ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.found-details li {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+.found-details li span {
+  flex: none;
+  color: var(--muted);
+}
+.found-details li b {
+  min-width: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.found-details p {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  /* on a phone the welcome page says what Wasl does, then offers the ways in */
+  .auth-page.at-welcome .auth-features {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .auth-page.at-welcome .auth-features > div {
+    font-size: 14px;
+  }
+  .auth-form-wrap.welcome h2 {
+    display: none;
+  }
+  .auth-form-wrap.welcome > .muted {
+    text-align: center;
+    font-size: 14px;
+  }
+  .welcome-choices {
+    margin-top: 12px;
+  }
+  .auth-page.at-welcome .auth-form-panel {
+    padding-top: 16px;
+  }
+}
+.auth-features svg {
+  flex: none;
+}
+@media (max-width: 760px) {
+  /* once a way in is chosen, the form comes straight after the logo */
+  .auth-page.at-form .auth-story-body,
+  .auth-page.at-linkedin .auth-story-body,
+  .auth-page.at-form .install-banner,
+  .auth-page.at-linkedin .install-banner {
+    display: none;
+  }
+  .auth-page.at-welcome .auth-features {
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .welcome-choices {
+    gap: 8px;
+  }
+  .welcome-signin {
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+  .auth-page.at-welcome .auth-form-panel {
+    padding-bottom: 28px;
+  }
+}
+/* a short phone screen: the ways in matter more than the list of what Wasl does */
+@media (max-width: 760px) and (max-height: 620px) {
+  .auth-page.at-welcome .auth-features {
+    display: none;
+  }
+}
+/* a narrow phone: the install bar keeps to one tidy line */
+@media (max-width: 370px) {
+  .install-banner-row > span > span {
+    display: none;
+  }
+  .install-banner-row strong {
+    white-space: normal;
+  }
+}
+/* after a profile is made from a card: what happened, and the next step (as in the mockup) */
+.next-step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--teal-light);
+  color: var(--ink);
+}
+.next-step > svg {
+  flex: none;
+  color: var(--teal);
+}
+.next-step > span {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+}
+.next-step strong {
+  font-size: 14px;
+}
+.next-step > span > span {
+  color: var(--muted);
+}
+.next-step .button {
+  flex: none;
+}
+@media (max-width: 760px) {
+  .next-step .button {
+    flex: 1 1 100%;
+    min-height: 44px;
+  }
+}

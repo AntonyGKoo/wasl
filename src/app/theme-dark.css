@@ -992,3 +992,48 @@
 :where(:root[data-theme="dark"]) .ai-reason strong {
   color: var(--ink);
 }
+:where(:root[data-theme="dark"]) .auth-features b {
+  color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .button.linkedin {
+  background: #0a66c2;
+  color: white;
+}
+:where(:root[data-theme="dark"]) .button.linkedin:hover {
+  background: #08539f;
+}
+:where(:root[data-theme="dark"]) .welcome-choices .welcome-email {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .welcome-signin {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .welcome-signin .text-button {
+  color: var(--teal);
+}
+:where(:root[data-theme="dark"]) .auth-back {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .found-details {
+  background: var(--teal-light);
+  color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .found-details strong svg {
+  color: var(--teal);
+}
+:where(:root[data-theme="dark"]) .found-details li span {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .next-step {
+  background: var(--teal-light);
+  color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .next-step > svg {
+  color: var(--teal);
+}
+:where(:root[data-theme="dark"]) .next-step > span > span {
+  color: var(--muted);
+}

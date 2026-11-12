@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import QRCode from "qrcode";
 import {
   ArrowLeftRight,
+  ArrowRight,
   ArrowUpRight,
   Camera,
   Check,
@@ -69,7 +70,7 @@ export function WalletView({
     <>
       <section className="page-intro">
         <div>
-          <h1>Cards</h1>
+          <h1>My cards</h1>
           <p>
             Each card shares only what you switch on. Your notes never leave
             your phone.
@@ -607,10 +608,15 @@ export function ProfileView({
   user,
   capabilities,
   onSaved,
+  startedFrom = null,
+  onSeeCard,
 }: {
   user: User;
   capabilities: Capabilities;
   onSaved: (user: User) => void;
+  onSeeCard?: () => void;
+  // this profile was just filled at sign-up, from the person's card or LinkedIn link
+  startedFrom?: "card" | "linkedin" | null;
 }) {
   const [profile, setProfile] = useState<Profile>(user.profile);
   const [busy, setBusy] = useState(false);
@@ -674,6 +680,23 @@ export function ProfileView({
           <ScanLine size={16} /> Fill from my business card
         </Button>
       </section>
+      {startedFrom && filledByAi === null && !message ? (
+        // the same next step as the mockup, after a profile is made from a card
+        <div className="next-step">
+          <Check size={18} />
+          <span>
+            <strong>Your profile is ready</strong>
+            <span>
+              {startedFrom === "card"
+                ? "Wasl filled it in from your card and made your first card from it. Check each detail below."
+                : "Your LinkedIn link is on it, and Wasl made your first card from it. Add your role and where you study or work below."}
+            </span>
+          </span>
+          <Button onClick={onSeeCard}>
+            See my card <ArrowRight size={16} />
+          </Button>
+        </div>
+      ) : null}
       <div className="profile-editor">
         <div className="profile-editor-heading">
           <Avatar

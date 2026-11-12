@@ -27,7 +27,7 @@ import type {
   Profile,
   User,
 } from "@/lib/types";
-import { AuthScreen } from "./auth-screen";
+import { AuthScreen, type StartedFrom } from "./auth-screen";
 import { InstallApp } from "./install-app";
 import { Avatar, Brand, Button, Notice } from "./ui";
 import {
@@ -80,6 +80,8 @@ export function WaslApp() {
   const [openId, setOpenId] = useState<string | null>(null);
   // the session ended while the app was open
   const [signedOut, setSignedOut] = useState(false);
+  // a new profile was just filled from the person's card or LinkedIn link: show it to them
+  const [startedFrom, setStartedFrom] = useState<StartedFrom | null>(null);
   async function loadSession() {
     setLoading(true);
     setError("");
@@ -121,6 +123,7 @@ export function WaslApp() {
     window.history.scrollRestoration = "manual";
     const back = () => {
       const shown = new URLSearchParams(window.location.search).get("view");
+      if (shown !== "profile") setStartedFrom(null);
       setView(
         navigation.some((n) => n.id === shown) || shown === "settings"
           ? (shown as View)
@@ -160,10 +163,16 @@ export function WaslApp() {
     // after signing in, start at the top of the app rather than where the sign-up form was
     window.scrollTo(0, 0);
     if (user) void refresh();
+    // a profile just filled from a card or LinkedIn link opens first, so the person can check it
+    if (user && startedFrom) {
+      setView("profile");
+      screenOpened("/?view=profile");
+    }
   }, [user?.id]);
   function navigate(next: View) {
     window.scrollTo(0, 0);
     if (next === view) return;
+    if (next !== "profile") setStartedFrom(null);
     setView(next);
     screenOpened(`/?view=${next}`);
   }
@@ -175,6 +184,7 @@ export function WaslApp() {
       setCards([]);
       // the next person to sign in starts at their network
       setView("network");
+      setStartedFrom(null);
       setDetail(null);
       window.history.replaceState({}, "", "/");
     } catch (e) {
@@ -199,10 +209,12 @@ export function WaslApp() {
   if (!user)
     return (
       <AuthScreen
-        onSignIn={() => {
+        onSignIn={(from) => {
           setSignedOut(false);
+          setStartedFrom(from || null);
           void loadSession();
         }}
+        capabilities={capabilities}
         returnTo={returnTo}
         presentation={capabilities.presentation}
         signedOut={signedOut}
@@ -342,6 +354,8 @@ export function WaslApp() {
               key={user.id}
               user={user}
               capabilities={capabilities}
+              startedFrom={startedFrom}
+              onSeeCard={() => navigate("wallet")}
               onSaved={(u) => {
                 setUser(u);
                 void refresh();

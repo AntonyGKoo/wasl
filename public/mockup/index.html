@@ -299,6 +299,8 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .btn.small { width: auto; padding: 10px 14px; font-size: 14px; border-radius: 12px; }
 .link { border: 0; background: transparent; color: var(--text-2); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; padding: 6px; }
 .hint { text-align: center; color: var(--muted); font-size: 14px; }
+.signin-line { margin: -6px 0 0; }
+.signin-line .link { color: var(--teal); font-weight: 700; min-height: 44px; padding: 6px 8px; }
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1053,6 +1055,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
           <button class="btn" data-act="scan-own">${ic("scan")}Scan my business card</button>
           <button class="btn blue" data-act="import-linkedin">${ic("linkedin")}Import from LinkedIn</button>
           <button class="link" data-act="email-signup">Sign up with email instead</button>
+          <p class="hint signin-line">Already have an account? <button class="link" data-act="signin">Sign in</button></p>
         </div>`;
     },
 
@@ -1571,6 +1574,15 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       <button class="btn" data-act="scan-own">${ic("scan")}Scan my card instead</button>
       <button class="link" data-act="close-sheet">Close</button>
     </div></div>`,
+    signin: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
+      <div class="grab"></div>
+      <h3>Welcome back</h3>
+      <p class="sub">Sign in to see your people.</p>
+      <div class="search" style="padding:6px 14px"><input value="${esc(ME.email)}" aria-label="Email address" readonly></div>
+      <div class="search" style="padding:6px 14px"><input type="password" value="wasl-mockup" aria-label="Password" readonly></div>
+      <button class="btn" data-act="signin-go">${ic("check")}Sign in</button>
+      <button class="link" data-act="close-sheet">Not now</button>
+    </div></div>`,
     addcard: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
       <div class="grab"></div>
       <h3>Add a card</h3>
@@ -1679,6 +1691,9 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     },
     "import-linkedin"() { S.joinPhase = "linkedin"; render(); later(1500, () => { if (S.joinPhase === "linkedin") { S.joinPhase = "found"; render(); } }); },
     "email-signup"() { S.sheet = "email"; render(); },
+    // someone who already has an account skips the set-up and lands on their people
+    "signin"() { S.sheet = "signin"; render(); },
+    "signin-go"() { S.profileFilled = true; S.joinPhase = "choose"; S.sheet = null; S.screen = "network"; render(); },
     "create-profile"() { S.profileFilled = true; S.flags.newProfile = true; S.screen = "profile"; S.joinPhase = "choose"; render(); confetti(); xpToast("Level 3 unlocked", 120); },
     "edit-detail"(el) {
       S.editField = el.dataset.f;

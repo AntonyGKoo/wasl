@@ -1031,3 +1031,83 @@ test("everyday edges: an email already in use, links typed naturally, a big phot
     delete process.env.WASL_DAILY_AI_LIMIT;
   }
 });
+
+test("a place lookup that is turned away is tried once more, and the same spot is not asked about twice", async () => {
+  process.env.WASL_DATA_DIR = await mkdtemp(path.join(tmpdir(), "wasl-place-"));
+  process.env.WASL_PLACE_RETRY_MS = "5";
+  const origin = "http://localhost:3000";
+  let cookie = "";
+  const call = async (route: string, method = "GET", body?: unknown) => {
+    const response = await handleApi(
+      new Request(`${origin}/api/${route}`, {
+        method,
+        headers: { origin, "content-type": "application/json", cookie },
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+    );
+    const set = response.headers.get("set-cookie");
+    if (set) cookie = set.split(";")[0];
+    return { status: response.status, data: await response.json() };
+  };
+  assert.equal(
+    (
+      await call("auth/register", "POST", {
+        name: "Place Tester",
+        email: "place@example.test",
+        password: "test-password-123",
+      })
+    ).status,
+    201,
+  );
+  // a stand-in for OpenStreetMap's lookup: it answers what the test tells it to
+  const real = globalThis.fetch;
+  const asked: string[] = [];
+  let answers: (number | "down")[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (!url.includes("nominatim.openstreetmap.org")) throw new Error(url);
+    asked.push(url);
+    const next = answers.shift() ?? 200;
+    if (next === "down") throw new Error("network");
+    return new Response(
+      JSON.stringify({
+        name: "Qatar National Convention Centre",
+        address: { city: "Doha" },
+      }),
+      { status: next, headers: { "content-type": "application/json" } },
+    );
+  }) as typeof fetch;
+  try {
+    // turned away once (the free service was busy), then answered
+    answers = [503, 200];
+    const first = await call("place?lat=25.3148&lon=51.4396");
+    assert.equal(first.status, 200);
+    assert.equal(first.data.place, "Qatar National Convention Centre, Doha");
+    assert.equal(asked.length, 2);
+    // only rounded coordinates leave Wasl
+    assert.match(asked[0], /lat=25\.3148&lon=51\.4396/);
+
+    // the next person saved at the same event: answered from memory, nothing is asked again
+    const again = await call("place?lat=25.31482&lon=51.43958");
+    assert.equal(again.status, 200);
+    assert.equal(again.data.place, "Qatar National Convention Centre, Doha");
+    assert.equal(asked.length, 2);
+
+    // somewhere else, with the service down both times: a plain message, and nothing is kept
+    answers = ["down", 500];
+    const down = await call("place?lat=25.2600&lon=51.5300");
+    assert.equal(down.status, 502);
+    assert.match(down.data.error, /Type it instead/);
+    assert.equal(asked.length, 4);
+    answers = [200];
+    assert.equal((await call("place?lat=25.2600&lon=51.5300")).status, 200);
+    assert.equal(asked.length, 5);
+
+    // coordinates that aren't on Earth are refused before anything is asked
+    assert.equal((await call("place?lat=125&lon=51")).status, 400);
+    assert.equal(asked.length, 5);
+  } finally {
+    globalThis.fetch = real;
+    delete process.env.WASL_PLACE_RETRY_MS;
+  }
+});

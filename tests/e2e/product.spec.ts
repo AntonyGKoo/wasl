@@ -3,6 +3,9 @@ import { randomUUID } from "node:crypto";
 async function signup(page: Page, name: string) {
   const email = `${randomUUID()}@example.test`;
   await page.goto("/");
+  await page
+    .getByRole("button", { name: "Sign up with email instead", exact: true })
+    .click();
   await page.getByLabel("Your name", { exact: true }).fill(name);
   await page.getByLabel("Email address", { exact: true }).fill(email);
   await page
@@ -279,7 +282,7 @@ test("Back closes the dialog on top, then returns to the screen before; a lost s
   await go("Search");
   await expect(heading("Search")).toBeVisible();
   await page.goBack();
-  await expect(heading("Cards")).toBeVisible();
+  await expect(heading("My cards")).toBeVisible();
   await page.goBack();
   await expect(heading("Network")).toBeVisible();
 
@@ -314,7 +317,7 @@ test("Back closes the dialog on top, then returns to the screen before; a lost s
   await go("Profile");
   await expect(heading("Profile")).toBeVisible();
   await page.goBack();
-  await expect(heading("Cards")).toBeVisible();
+  await expect(heading("My cards")).toBeVisible();
   await page.goBack();
   await expect(heading("Network")).toBeVisible();
 
@@ -371,4 +374,137 @@ test("Back closes the dialog on top, then returns to the screen before; a lost s
   await page.locator("form").getByRole("button", { name: "Sign in" }).click();
   // back where they left off
   await expect(heading("Profile")).toBeVisible();
+});
+
+test("the first page offers a card scan, LinkedIn, email and sign-in, and each one works", async ({
+  page,
+}) => {
+  const heading = (name: string) =>
+    page.getByRole("heading", { name, exact: true });
+  const choice = (name: string) =>
+    page.getByRole("button", { name, exact: true });
+  await page.goto("/");
+  // the same first page as the mockup
+  for (const name of [
+    "Scan my business card",
+    "Import from LinkedIn",
+    "Sign up with email instead",
+    "Sign in",
+  ])
+    await expect(choice(name)).toBeVisible();
+  await expect(page.getByLabel("Email address", { exact: true })).toHaveCount(
+    0,
+  );
+
+  // Sign in opens the sign-in form; Back (the link, then the browser's) returns to the first page
+  await choice("Sign in").click();
+  await expect(heading("Welcome back")).toBeVisible();
+  await expect(page.getByLabel("Your name", { exact: true })).toHaveCount(0);
+  await choice("Back").click();
+  await expect(choice("Scan my business card")).toBeVisible();
+  await choice("Sign up with email instead").click();
+  await expect(heading("Create your account")).toBeVisible();
+  await page.waitForTimeout(300);
+  await page.goBack();
+  await expect(choice("Scan my business card")).toBeVisible();
+
+  // LinkedIn: a link that isn't a profile is refused in plain words
+  await page.waitForTimeout(300);
+  await choice("Import from LinkedIn").click();
+  await page.getByLabel("Your LinkedIn link").fill("example.com/me");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(
+    page.getByText(/look like a LinkedIn profile link/),
+  ).toBeVisible();
+  await choice("Back").click();
+
+  // scanning my own card (its text, here) fills the sign-up form and then my profile
+  await page.waitForTimeout(300);
+  await choice("Scan my business card").click();
+  const scan = page.getByRole("dialog");
+  await scan.getByRole("button", { name: "Paste text" }).click();
+  await scan
+    .getByLabel("Text from a business card, badge or profile")
+    .fill(
+      "Layla Hassan\nProduct Designer\nPearl Labs\nlayla.hassan@example.test\n+974 5555 0142\nlinkedin.com/in/layla-hassan",
+    );
+  await scan.getByRole("button", { name: "Review my details" }).click();
+  await expect(heading("Create your account")).toBeVisible();
+  await expect(page.getByText(/Found \d+ details on your card/)).toBeVisible();
+  await expect(page.getByLabel("Your name", { exact: true })).toHaveValue(
+    "Layla Hassan",
+  );
+  // the card's email is only a suggestion: sign up with another one
+  const email = `${randomUUID()}@example.test`;
+  await page.getByLabel("Email address", { exact: true }).fill(email);
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("Local-Only-Test-Password!");
+  await choice("Create your Wasl account").click();
+  // the new profile opens first, already filled in
+  await expect(heading("Profile")).toBeVisible();
+  await expect(page.getByText("Your profile is ready")).toBeVisible();
+  await expect(
+    page.getByLabel("Full name", { exact: false }).first(),
+  ).toHaveValue("Layla Hassan");
+  await expect(page.getByLabel("Phone", { exact: true })).toHaveValue(
+    /5555 0142/,
+  );
+  // the next step is the same as in the mockup: see the card Wasl made
+  await choice("See my card").click();
+  await expect(heading("My cards")).toBeVisible();
+  await expect(
+    page.locator(".digital-card").filter({ hasText: "Layla Hassan" }).first(),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(heading("Profile")).toBeVisible();
+  // it was really saved, not only shown
+  await page.reload();
+  await expect(heading("Profile")).toBeVisible();
+  await expect(page.getByLabel("Phone", { exact: true })).toHaveValue(
+    /5555 0142/,
+  );
+  // the "profile is ready" notice was for the first visit only
+  await expect(page.getByText("Your profile is ready")).toHaveCount(0);
+  await page
+    .locator("nav button:visible, aside button:visible")
+    .filter({ hasText: "Network" })
+    .first()
+    .click();
+  await expect(heading("Network")).toBeVisible();
+});
+test("signing up from a LinkedIn link puts the link and a first name on the profile", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Import from LinkedIn", exact: true })
+    .click();
+  await page
+    .getByLabel("Your LinkedIn link")
+    .fill("linkedin.com/in/omar-haddad-1a2b3c");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText("Your LinkedIn link is ready")).toBeVisible();
+  await expect(page.getByLabel("Your name", { exact: true })).toHaveValue(
+    "Omar Haddad",
+  );
+  await page
+    .getByLabel("Email address", { exact: true })
+    .fill(`${randomUUID()}@example.test`);
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("Local-Only-Test-Password!");
+  await page
+    .getByRole("button", { name: "Create your Wasl account", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Profile", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Your LinkedIn link is on it", { exact: false }),
+  ).toBeVisible();
+  // the links are already open, because one of them is filled in
+  await expect(page.getByLabel("LinkedIn", { exact: true })).toHaveValue(
+    "https://linkedin.com/in/omar-haddad-1a2b3c",
+  );
 });
