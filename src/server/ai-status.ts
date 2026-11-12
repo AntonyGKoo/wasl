@@ -86,10 +86,15 @@ export async function noteAiFailure(
 
 // A real, tiny call to each of the two AI services Wasl uses, so Settings can say "Working" and
 // mean it, and when one is refused, say which one, which model, and what the provider answered.
-export async function checkAi(userId: string, db?: Database) {
+export async function checkAi(userId: string | null, db?: Database) {
   if (!process.env.OPENAI_API_KEY)
     return { state: "off" as const, reason: "", parts: [] };
-  if (!(await consumeLimit(`ai-check:${userId}`, 12, 3600, db)))
+  // signed in (Settings): 12 an hour each. Not signed in (the status address used to keep an
+  // eye on the live site): 6 an hour for everyone together, so it can't be used to run up a bill.
+  const allowed = userId
+    ? await consumeLimit(`ai-check:${userId}`, 12, 3600, db)
+    : await consumeLimit("ai-check:public", 6, 3600, db);
+  if (!allowed)
     return {
       state: "unknown" as const,
       reason: "Checked a lot just now. Try again in a little while.",

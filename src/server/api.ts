@@ -81,6 +81,13 @@ export async function handleApi(request: Request): Promise<Response> {
     }
     if (area === "version" && method === "GET")
       return json({ build: process.env.WASL_BUILD || "dev" });
+    // "Is the AI really working?" for whoever looks after the live site: two tiny real calls,
+    // at most 6 an hour in total. It says which AI service answered and what, never the key
+    // and never the address the AI is reached at.
+    if (area === "health" && id === "ai" && method === "GET") {
+      const { state, reason, parts } = await checkAi(null);
+      return json({ state, reason, parts });
+    }
     if (area === "health" && method === "GET") {
       // One tiny query: the daily uptime check also keeps a free hosted database from pausing.
       await (await database()).query("SELECT 1");

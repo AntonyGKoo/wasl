@@ -684,6 +684,13 @@ test("AI search never shows less than keyword search, whatever the model answers
       };
     // the model finds no one: the keyword match still shows
     let result = await ask();
+    // the search stored each saved person in the meaning index (five sample people)
+    const [stored] = await (
+      await database()
+    ).query<{ n: number }>(
+      "SELECT count(*)::int AS n FROM embeddings e JOIN users u ON u.id=e.owner_id WHERE u.email='noor@ai.test'",
+    );
+    assert.equal(stored.n, 5);
     assert.deepEqual(
       result.hits.map((h) => h.connection.profile.name),
       ["Sara Nasser"],
@@ -768,6 +775,22 @@ test("AI search never shows less than keyword search, whatever the model answers
       await counter("ai-fail:model:search-index:403:model_not_found:%"),
       1,
     );
+    // the status address for whoever looks after the live site needs no sign-in, says which AI
+    // service answered, and is limited for everyone together
+    const health = async () =>
+      (
+        await handleApi(new Request("http://localhost:3000/api/health/ai"))
+      ).json();
+    let seen = await health();
+    assert.equal(seen.state, "failing");
+    assert.match(seen.parts[0].detail, /403 model_not_found/);
+    assert.equal(seen.parts[1].ok, true);
+    assert.equal("address" in seen, false);
+    answer = "nothing";
+    seen = await health();
+    assert.equal(seen.state, "working");
+    for (let i = 0; i < 4; i++) await health();
+    assert.equal((await health()).state, "unknown");
     // the day's AI searches are used up: search still answers, by keyword
     answer = "nothing";
     process.env.WASL_DAILY_AI_LIMIT = "6";
