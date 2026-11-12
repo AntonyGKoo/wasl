@@ -801,9 +801,10 @@ test("AI search never shows less than keyword search, whatever the model answers
     assert.equal(result.mode, "ai");
     assert.equal(result.warning, "");
     assert.equal(result.hits[0].connection.profile.name, "Sara Nasser");
+    // AI counts as working (the language model does the real work); the missing index is a note
     check = (await call("ai-check")).data;
-    assert.equal(check.state, "failing");
-    assert.match(check.reason, /^Search by meaning isn't working: /);
+    assert.equal(check.state, "working");
+    assert.match(check.reason, /no model for search by meaning/);
     assert.deepEqual(
       check.parts.map((part: { ok: boolean }) => part.ok),
       [false, true],
@@ -819,6 +820,13 @@ test("AI search never shows less than keyword search, whatever the model answers
       await counter("ai-fail:model:search-index:403:model_not_found:%"),
       1,
     );
+    // the refusal is remembered: the next search doesn't ask for the index again
+    result = await ask();
+    assert.equal(result.mode, "ai");
+    assert.equal(
+      await counter("ai-fail:model:search-index:403:model_not_found:%"),
+      1,
+    );
     // the status address for whoever looks after the live site needs no sign-in, says which AI
     // service answered, and is limited for everyone together
     const health = async () =>
@@ -826,7 +834,8 @@ test("AI search never shows less than keyword search, whatever the model answers
         await handleApi(new Request("http://localhost:3000/api/health/ai"))
       ).json();
     let seen = await health();
-    assert.equal(seen.state, "failing");
+    assert.equal(seen.state, "working");
+    assert.equal(seen.parts[0].ok, false);
     assert.match(seen.parts[0].detail, /403 model_not_found/);
     assert.equal(seen.parts[1].ok, true);
     assert.equal("address" in seen, false);
@@ -860,7 +869,7 @@ test("AI search never shows less than keyword search, whatever the model answers
     );
     // the day's AI searches are used up: search still answers, by keyword
     answer = "nothing";
-    process.env.WASL_DAILY_AI_LIMIT = "7";
+    process.env.WASL_DAILY_AI_LIMIT = "8";
     result = await ask();
     assert.deepEqual(
       result.hits.map((h) => h.connection.profile.name),

@@ -4,7 +4,7 @@ import { consumeLimit } from "../lib/auth";
 import type { Connection, SearchHit } from "../lib/types";
 import { HttpError } from "./responses";
 import { noteAiFailure } from "./ai-status";
-import { askLanguageModel, embedText } from "./ai-models";
+import { askLanguageModel, embedText, IndexUnavailable } from "./ai-models";
 const stop = new Set(
   "who whom whose what which where when how was were is are am be been the a an person people someone somebody anyone anybody everyone i me my mine you your u r we us our he she his her him they them their met meet at in on of for to with and or but that this these those there here do does did know can could have has had help looking find show list all any some about from last works working work talked told remember please named called tagged tag one ones just also".split(
     " ",
@@ -283,7 +283,9 @@ export async function recall(
     } catch (error) {
       if (error instanceof HttpError) throw error;
       indexed = false;
-      await noteAiFailure(error, db, "search-index");
+      // counted the first time; after that the refusal is remembered and not asked again
+      if (!(error instanceof IndexUnavailable))
+        await noteAiFailure(error, db, "search-index");
     }
     const ids = new Set([
       ...local.map((h) => h.connection.id),
@@ -292,8 +294,13 @@ export async function recall(
         .filter((h, i) => h.score > 0.3 || i < 5)
         .map((h) => h.connection_id),
     ]);
-    if (!indexed && contacts.length <= 25)
-      contacts.forEach((c) => ids.add(c.id));
+    // Without the meaning index, the language model reads the people themselves: everyone in a
+    // small network, or the keyword matches plus the most recent people in a larger one.
+    if (!indexed)
+      for (const c of contacts) {
+        if (ids.size >= 25) break;
+        ids.add(c.id);
+      }
     const candidates = contacts.filter((c) => ids.has(c.id)).slice(0, 25);
     if (!candidates.length) return { hits: [], mode: "ai", warning: "" };
     // Step 2, the language model reads the shortlist and picks who really matches.

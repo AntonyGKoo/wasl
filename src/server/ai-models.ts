@@ -70,12 +70,26 @@ export async function embedText(
   client: OpenAI,
   input: string | string[],
   only?: string,
+  // the "is AI working?" check always really asks
+  fresh = false,
 ) {
   const run = (model: string) =>
     client.embeddings.create({ model, dimensions: 1536, input });
   if (only) return { model: only, result: await run(only), wanted: index() };
-  return firstAllowed("index", run);
+  if (!fresh && Date.now() < indexRefusedUntil) throw new IndexUnavailable();
+  try {
+    const answer = await firstAllowed("index", run);
+    indexRefusedUntil = 0;
+    return answer;
+  } catch (error) {
+    // every model of this kind was refused: don't ask again on each search for a while
+    if (modelRefused(error)) indexRefusedUntil = Date.now() + 30 * 60 * 1000;
+    throw error;
+  }
 }
+// The account has no model for search by meaning (asked recently, and it was refused).
+export class IndexUnavailable extends Error {}
+let indexRefusedUntil = 0;
 export const configuredModels = () => ({
   language: language(),
   index: index(),

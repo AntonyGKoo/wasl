@@ -606,14 +606,17 @@ function AiStatus({ connected }: { connected: boolean }) {
           {label}
         </span>
       </div>
-      {connected && state === "working" && parts.some((p) => p.detail) ? (
-        // working, but on a spare model because the account refused the usual one
+      {connected &&
+      state === "working" &&
+      (reason || parts.some((p) => p.ok && p.detail)) ? (
+        // working, with something worth knowing: a spare model in use, or no meaning index
         <div className="ai-reason" role="status">
           {parts
-            .filter((part) => part.detail)
+            .filter((part) => part.ok && part.detail)
             .map((part) => (
               <p key={part.name}>{part.detail}</p>
             ))}
+          {reason ? <p>{reason}</p> : null}
         </div>
       ) : null}
       {connected && (state === "failing" || state === "unknown") ? (

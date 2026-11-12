@@ -123,7 +123,9 @@ export async function checkAi(userId: string | null, db?: Database) {
       "Search by meaning",
       wanted.index,
       "check-index",
-      async () => ({ waslModel: (await embedText(client, "Wasl")).model }),
+      async () => ({
+        waslModel: (await embedText(client, "Wasl", undefined, true)).model,
+      }),
     ],
     [
       "Reading cards, summaries and picking matches",
@@ -219,14 +221,17 @@ export async function checkAi(userId: string | null, db?: Database) {
   } catch {
     address = "an address that isn't a valid link";
   }
-  const failed = parts.filter((part) => !part.ok);
+  // The language model does the real work (reading cards, summaries, picking search matches),
+  // so AI is "working" when it answers. Search by meaning's own model is a helper: without it
+  // AI search still works by reading the saved people directly.
+  const [meaning, languagePart] = parts;
   return {
-    state: failed.length ? ("failing" as const) : ("working" as const),
-    reason: failed.length
-      ? failed.length === parts.length
-        ? failed[0].detail
-        : `${failed[0].name} isn't working: ${failed[0].detail}`
-      : "",
+    state: languagePart.ok ? ("working" as const) : ("failing" as const),
+    reason: !languagePart.ok
+      ? languagePart.detail
+      : !meaning.ok
+        ? "This OpenAI account has no model for search by meaning, so AI search reads your saved people directly instead (everyone, up to 25 people; after that, keyword matches and your most recent people)."
+        : "",
     parts,
     address,
     listed,
