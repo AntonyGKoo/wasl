@@ -68,7 +68,7 @@ export async function readJson<T>(
   let body: unknown;
   try {
     body = JSON.parse(
-      new TextDecoder().decode(await limitedBody(request, 32000)),
+      new TextDecoder().decode(await limitedBody(request, 200000)),
     );
   } catch (e) {
     if (e instanceof HttpError) throw e;

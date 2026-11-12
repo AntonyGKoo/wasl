@@ -1,7 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { ArrowRight, Check, Layers, LockKeyhole, Sparkles } from "lucide-react";
-import { api } from "@/lib/client";
+import { api, ApiError } from "@/lib/client";
 import type { User } from "@/lib/types";
 import { Brand, Button, Notice } from "./ui";
 import { InstallApp } from "./install-app";
@@ -10,12 +10,20 @@ export function AuthScreen({
   onSignIn,
   returnTo,
   presentation = false,
+  signedOut = false,
 }: {
   onSignIn: (user: User) => void;
   returnTo?: string;
   presentation?: boolean;
+  // the session ended while the app was open
+  signedOut?: boolean;
 }) {
-  const [mode, setMode] = useState<"register" | "login">("register");
+  const [mode, setMode] = useState<"register" | "login">(
+    signedOut ? "login" : "register",
+  );
+  // signing up with an email that already has an account: offer to sign in instead
+  const [taken, setTaken] = useState(false);
+  const [forgot, setForgot] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +50,7 @@ export function AuthScreen({
     e.preventDefault();
     setBusy(true);
     setError("");
+    setTaken(false);
     try {
       const result = await api<{ user: User }>(`auth/${mode}`, "POST", {
         name,
@@ -52,22 +61,25 @@ export function AuthScreen({
       else onSignIn(result.user);
     } catch (e) {
       setError((e as Error).message);
+      setTaken(mode === "register" && (e as ApiError).status === 409);
     } finally {
       setBusy(false);
     }
   }
   return (
-    <div className="auth-page">
+    <div
+      className={`auth-page ${returnTo || signedOut ? "focused" : ""}`.trim()}
+    >
       <section className="auth-story">
-        <InstallApp banner />
+        {/* someone arriving to save a card signs up first; the install tip can wait */}
+        {returnTo || signedOut ? null : <InstallApp banner />}
         <Brand />
         <div className="auth-story-body">
           <span className="eyebrow">The memory for your network</span>
+          {/* the breaks are for laptops; on a phone the line wraps by itself */}
           <h1>
-            Every connection
-            <br />
-            has a story.
-            <br />
+            Every connection <br />
+            has a story. <br />
             <em>Keep yours.</em>
           </h1>
           <p>
@@ -98,11 +110,13 @@ export function AuthScreen({
             {mode === "register" ? "Create your account" : "Welcome back"}
           </h2>
           <p className="muted">
-            {returnTo
-              ? "Sign in or create an account to save this connection."
-              : mode === "register"
-                ? "Free, and it takes a minute."
-                : "Sign in to see your people."}
+            {signedOut
+              ? "You were signed out. Sign in to carry on where you left off."
+              : returnTo
+                ? "Create a free account (or sign in) to save this card."
+                : mode === "register"
+                  ? "Free, and it takes a minute."
+                  : "Sign in to see your people."}
           </p>
           <div className="auth-tabs">
             <button
@@ -178,11 +192,43 @@ export function AuthScreen({
               />
             </label>
             {error ? <Notice error>{error}</Notice> : null}
+            {taken ? (
+              <Button
+                variant="secondary"
+                className="full"
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+                  setTaken(false);
+                }}
+              >
+                Sign in with this email
+              </Button>
+            ) : null}
             <Button type="submit" busy={busy} className="full">
               {mode === "register" ? "Create your Wasl account" : "Sign in"}
               <ArrowRight size={18} />
             </Button>
           </form>
+          {mode === "login" ? (
+            <div className="forgot">
+              <button
+                type="button"
+                className="text-button"
+                aria-expanded={forgot}
+                onClick={() => setForgot(!forgot)}
+              >
+                Forgot your password?
+              </button>
+              {forgot ? (
+                <p className="muted small-copy">
+                  Wasl can&rsquo;t reset a password by email yet. If Wasl is
+                  still open on another phone or laptop, set a new password
+                  there: Settings, then Change password.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <p className="auth-note">
             <Check size={15} /> Your notes are private. You choose what you
             share.

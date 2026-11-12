@@ -178,6 +178,29 @@ export async function publicCard(
     token,
   };
 }
+// Has this person already saved the card behind this link? (So the page can say so.)
+export async function savedFromShare(
+  userId: string,
+  token: string,
+  providedDb?: Database,
+) {
+  const db = providedDb ?? (await database());
+  const [share] = await db.query<{ id: string }>(
+    "SELECT id FROM shares WHERE token=$1",
+    [token],
+  );
+  if (!share) return null;
+  const [saved] = await asUser(
+    userId,
+    (tx) =>
+      tx.query<{ id: string }>(
+        "SELECT id FROM connections WHERE owner_id=$1 AND source_share_id=$2",
+        [userId, share.id],
+      ),
+    db,
+  );
+  return saved?.id ?? null;
+}
 export async function listConnections(
   userId: string,
   db?: Database,

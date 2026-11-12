@@ -38,6 +38,10 @@ export async function api<T = Record<string, unknown>>(
       response.status,
     );
   }
+  // the session ended (30 days, or a password change on another device): the app goes back to
+  // the sign-in screen instead of failing on every tap
+  if (response.status === 401 && !path.startsWith("auth/"))
+    window.dispatchEvent(new Event("wasl-signed-out"));
   if (!response.ok)
     throw new ApiError(
       result.error || "Unable to complete this request.",

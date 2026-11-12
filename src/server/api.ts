@@ -12,7 +12,7 @@ import {
   json,
   readJson,
 } from "./responses";
-import { consumeLimit, sessionUser } from "../lib/auth";
+import { consumeLimit, renewSession, sessionUser } from "../lib/auth";
 import { blankProfile } from "../lib/types";
 import { database } from "../lib/db";
 import {
@@ -45,6 +45,7 @@ import {
   publicCard,
   refreshSharedContact,
   removeSamplePeople,
+  savedFromShare,
   revokeShare,
   saveCard,
   saveConnection,
@@ -70,7 +71,12 @@ export async function handleApi(request: Request): Promise<Response> {
     if (area === "share" && method === "GET") {
       const card = await publicCard(id);
       if (action === "vcard") return vcardResponse(card.profile);
-      return json({ card });
+      // someone signed in learns whether this card is already in their network
+      const viewer = await sessionUser(request);
+      return json({
+        card,
+        saved_id: viewer ? await savedFromShare(viewer.id, id) : null,
+      });
     }
     if (area === "version" && method === "GET")
       return json({ build: process.env.WASL_BUILD || "dev" });
@@ -80,21 +86,28 @@ export async function handleApi(request: Request): Promise<Response> {
       return json({ ok: true });
     }
     const user = await sessionUser(request);
-    if (area === "session" && method === "GET")
-      return json({
-        user: user
-          ? { ...user, profile: { ...blankProfile, ...user.profile } }
-          : null,
-        capabilities: {
-          presentation:
-            process.env.WASL_PRESENTATION_MODE === "true" &&
-            !process.env.DATABASE_URL &&
-            !process.env.VERCEL,
-          ai: !!process.env.OPENAI_API_KEY,
-          ocr: !!process.env.GOOGLE_CLOUD_VISION_API_KEY,
-          database: process.env.DATABASE_URL ? "postgres" : "local",
+    if (area === "session" && method === "GET") {
+      // opening the app keeps you signed in
+      const renewed = user ? await renewSession(request) : null;
+      return json(
+        {
+          user: user
+            ? { ...user, profile: { ...blankProfile, ...user.profile } }
+            : null,
+          capabilities: {
+            presentation:
+              process.env.WASL_PRESENTATION_MODE === "true" &&
+              !process.env.DATABASE_URL &&
+              !process.env.VERCEL,
+            ai: !!process.env.OPENAI_API_KEY,
+            ocr: !!process.env.GOOGLE_CLOUD_VISION_API_KEY,
+            database: process.env.DATABASE_URL ? "postgres" : "local",
+          },
         },
-      });
+        200,
+        renewed ? { "Set-Cookie": renewed } : {},
+      );
+    }
     if (!user) throw new HttpError(401, "Please sign in to continue.");
     if (method !== "GET" && !(await consumeLimit(`write:${user.id}`, 120, 60)))
       throw new HttpError(429, "Please slow down and try again in a minute.");

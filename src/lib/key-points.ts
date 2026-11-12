@@ -1,8 +1,10 @@
 // Picks the sentences of a conversation worth remembering (work, intros, hiring, follow-ups).
 // Used when no AI key is configured, or as the fallback if the AI call fails.
 export function splitSentences(text: string) {
+  // written without a "look-behind" pattern, which iPhones before iOS 16.4 can't read at all
   return text
-    .split(/(?<=[.!?])\s+|\n+/)
+    .replace(/([.!?])\s+/g, "$1\n")
+    .split(/\n+/)
     .map((s) => s.trim())
     .filter(Boolean);
 }

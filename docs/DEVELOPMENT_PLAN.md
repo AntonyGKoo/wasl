@@ -33,3 +33,19 @@ The clickable mockup shows the product we promise. This plan lists every feature
 3. App screens: swap on the shared-card page, QR scanner, profile fill and photo, card preview, where-you-met, tags, albums, Tonight's people, voice search, invite, settings.
 4. Tests: unit tests for the server, and a phone and laptop review that signs up two people on a local copy and swaps cards between them.
 5. Release: push to GitHub, Vercel deploys, check the live site.
+
+## Final check before hand-off (Nov 12)
+
+Every flow was walked through as a new person on a phone and a laptop, including things going wrong (no camera, microphone or location permission, a lost session, odd inputs), and the server code was read end to end. What that found and fixed:
+
+- **Search with nobody saved** looked broken. It now says there is no one to search yet, offers sample people, and builds its example questions from your own events, tags and companies.
+- **The phone's Back button** left Wasl. It now closes the dialog on top, then goes to the screen before.
+- **A session ending while the app was open** left every tap failing. The app now returns to sign-in with the reason, and back to the same screen after.
+- **Links typed the way people say them** ("linkedin.com/in/me", "@handle", "mysite.dev") were rejected. They are completed for you, in the forms and on the server.
+- **The QR code LinkedIn or Instagram shows for a profile** was refused as "not a contact". It now starts a new person with the link filled in and a first guess at the name.
+- **AI**: a card read by AI was thrown away whole if one link or email was badly formed; searches, card reading and summaries returned an error once the day's allowance was spent. Each now keeps what is valid and falls back to the built-in rules or keyword search with a line that says why.
+- **Accounts**: signing up with an email already in use gives a clear message and a way to sign in; the sign-in screen explains what to do about a forgotten password; sessions last 30 days from the last visit; the request size limit now fits a profile photo and Arabic text.
+- **Smaller things**: deleting a memory asks first; a new card never gets the same name as one you have; a card link you saved before says so; a regex form that stops the app loading on iPhones before iOS 16.4 is gone.
+- **Design**: the sign-in form is on the first screen of a phone; a person's name is no longer squeezed onto two lines; Today's people no longer shows text from the card behind; Arabic names line up with the rest of a list; the last all-capitals headings are plain sentence case.
+
+Known limits, stated plainly: password reset by email needs an email service; card photos are read in English only; AI features have not been observed running against the real provider on the live site (only against a stand-in), because that needs a signed-in person to try them there.

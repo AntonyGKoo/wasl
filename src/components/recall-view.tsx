@@ -246,7 +246,7 @@ export function RecallView({
               placeholder={
                 listening
                   ? "Listening… say who you're looking for"
-                  : "A role, a place, or something you talked about"
+                  : "Describe someone…"
               }
             />
             {canSpeak ? (
@@ -452,7 +452,7 @@ export function ScanModal({
   }
   return (
     <Modal
-      title={own ? "Fill your profile from your card" : "Capture a connection"}
+      title={own ? "Fill your profile from your card" : "Scan a card"}
       description={
         own
           ? "Take a photo of your business card. You check every detail before saving."

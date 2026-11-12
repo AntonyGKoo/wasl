@@ -14,12 +14,22 @@ export async function summarizeConversation(
   const rules = () => keyPoints(transcript, 4);
   if (!process.env.OPENAI_API_KEY)
     return { points: rules(), mode: "rules", warning: "" };
-  await aiAllowance(userId, "ai", db);
+  try {
+    await aiAllowance(userId, "ai", db);
+  } catch {
+    // today's AI use is spent: the key sentences are still picked out, by the built-in rules
+    return {
+      points: rules(),
+      mode: "rules",
+      warning:
+        "Today's AI summaries are used up, so Wasl picked the key sentences.",
+    };
+  }
   try {
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
-      timeout: 20000,
-      maxRetries: 1,
+      timeout: 12000,
+      maxRetries: 0,
     });
     const response = await client.responses.create({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",

@@ -129,7 +129,7 @@ export function InstallApp({
           <img src="/icon-192.png" alt="" width={34} height={34} />
           <span>
             <strong>Get the app</strong>
-            <span>Add it to your home screen</span>
+            <span>Add Wasl to your phone</span>
           </span>
           <Button
             className="install-banner-button"

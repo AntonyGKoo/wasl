@@ -34,15 +34,17 @@ export function PublicShare({ token }: { token: string }) {
   const [sendBack, setSendBack] = useState(true);
   const [backCard, setBackCard] = useState("");
   const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState<{ id: string; swapped: boolean } | null>(
-    null,
-  );
+  const [saved, setSaved] = useState<{
+    id: string;
+    swapped: boolean;
+    before?: boolean;
+  } | null>(null);
   useEffect(() => {
     let active = true;
     (async () => {
       try {
         const [a, b] = await Promise.all([
-          api<{ card: PublicCard }>(`share/${token}`),
+          api<{ card: PublicCard; saved_id: string | null }>(`share/${token}`),
           api<{ user: User | null }>("session"),
         ]);
         let cards: Card[] = [];
@@ -50,6 +52,9 @@ export function PublicShare({ token }: { token: string }) {
         if (!active) return;
         setCard(a.card);
         setUser(b.user);
+        // saved on an earlier visit: say so instead of offering to save it again
+        if (a.saved_id)
+          setSaved({ id: a.saved_id, swapped: false, before: true });
         setMyCards(cards);
         setBackCard(
           (cards.find((c) => c.kind === "professional") || cards[0])?.id || "",
@@ -107,6 +112,11 @@ export function PublicShare({ token }: { token: string }) {
       rememberMeeting(event, place);
       setSaved({ id: result.connection.id, swapped: result.swapped });
     } catch (e) {
+      // signed out in the meantime: sign in, then come straight back to this card
+      if ((e as { status?: number }).status === 401)
+        return window.location.assign(
+          `/?returnTo=${encodeURIComponent(`/c/${token}`)}`,
+        );
       setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -188,12 +198,16 @@ export function PublicShare({ token }: { token: string }) {
                 <h3>
                   {saved.swapped
                     ? `You swapped cards with ${first}`
-                    : `${first} is in your network`}
+                    : saved.before
+                      ? `${first} is already in your network`
+                      : `${first} is in your network`}
                 </h3>
                 <p>
                   {saved.swapped
                     ? `${first} now has your ${chosen?.label || ""} card, and ${first}'s card is in your network. Add what you talked about while you remember it.`
-                    : "Add what you talked about while you remember it. Only you can see it."}
+                    : saved.before
+                      ? "You saved this card before. Open it to see your notes or add a new one."
+                      : "Add what you talked about while you remember it. Only you can see it."}
                 </p>
                 <a href={`/?contact=${saved.id}`} className="button primary">
                   Open {first} <ArrowRight size={15} />
@@ -202,7 +216,7 @@ export function PublicShare({ token }: { token: string }) {
             ) : (
               <>
                 <div className="form-divider">
-                  {user ? "SAVE AND SWAP CARDS" : "KEEP THE CONNECTION IN WASL"}
+                  {user ? "Save and swap cards" : `Remember ${first} with Wasl`}
                 </div>
                 <form onSubmit={save}>
                   {user ? (
@@ -297,14 +311,15 @@ export function PublicShare({ token }: { token: string }) {
                     </>
                   ) : (
                     <p className="muted small-copy">
-                      Save {first} with where you met, and send your own card
-                      back. Sign in or create a free account to start.
+                      Save this card with where you met and what you talked
+                      about, and send your own card back. It&rsquo;s free and
+                      takes a minute.
                     </p>
                   )}
                   {error ? <Notice error>{error}</Notice> : null}
                   <Button className="full" type="submit" busy={busy}>
                     {!user
-                      ? "Sign in to save and swap cards"
+                      ? `Save ${first} in Wasl`
                       : sendBack && backCard
                         ? "Swap cards"
                         : "Save to my Wasl network"}

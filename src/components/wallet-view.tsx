@@ -135,6 +135,7 @@ export function WalletView({
         <CardForm
           card={editing || undefined}
           profile={user.profile}
+          taken={cards.filter((c) => c.id !== editing?.id).map((c) => c.label)}
           onClose={() => setEditing(undefined)}
           onSaved={() => {
             setEditing(undefined);
@@ -241,11 +242,14 @@ const kindFields: Record<Card["kind"], CardField[]> = {
 function CardForm({
   card,
   profile,
+  taken = [],
   onClose,
   onSaved,
 }: {
   card?: Card;
   profile: Profile;
+  // names of the other cards, so a new one isn't called the same
+  taken?: string[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -260,9 +264,14 @@ function CardForm({
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
+    // no name typed: the card type, numbered if you already have one ("Professional 2")
+    let name = label.trim() || kindLabels[kind];
+    if (!label.trim())
+      for (let n = 2; taken.includes(name); n++)
+        name = `${kindLabels[kind]} ${n}`;
     try {
       await api(`cards${card ? `/${card.id}` : ""}`, card ? "PUT" : "POST", {
-        label: label.trim() || kindLabels[kind],
+        label: name,
         kind,
         color,
         fields,

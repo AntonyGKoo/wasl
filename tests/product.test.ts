@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { handleApi } from "../src/server/api";
+import { database } from "../src/lib/db";
 import { parseContactText, readContactCode } from "../src/lib/contact-code";
 import { lexicalRecall } from "../src/server/recall";
 import { blankProfile, type Connection } from "../src/lib/types";
@@ -687,5 +688,152 @@ test("AI search never shows less than keyword search, whatever the model answers
     delete process.env.WASL_AI_SEARCH_MS;
     delete process.env.WASL_DAILY_AI_LIMIT;
     provider.close();
+  }
+});
+
+test("everyday edges: an email already in use, links typed naturally, a big photo, staying signed in, a card saved twice, AI used up", async () => {
+  process.env.WASL_DATA_DIR = await mkdtemp(path.join(tmpdir(), "wasl-edges-"));
+  const origin = "http://localhost:3000";
+  const session = () => {
+    let cookie = "";
+    return async (route: string, method = "GET", body?: unknown) => {
+      const response = await handleApi(
+        new Request(`${origin}/api/${route}`, {
+          method,
+          headers: { origin, "content-type": "application/json", cookie },
+          body: body ? JSON.stringify(body) : undefined,
+        }),
+      );
+      const set = response.headers.get("set-cookie");
+      if (set) cookie = set.split(";")[0];
+      return {
+        status: response.status,
+        setCookie: set,
+        data: await response.json(),
+      };
+    };
+  };
+  const alice = session();
+  const bob = session();
+  const password = "test-password-123";
+  assert.equal(
+    (
+      await alice("auth/register", "POST", {
+        name: "Alice",
+        email: "alice@edges.test",
+        password,
+      })
+    ).status,
+    201,
+  );
+  // the same email again: a clear message, not a generic one
+  const again = await bob("auth/register", "POST", {
+    name: "Someone",
+    email: "Alice@Edges.test",
+    password,
+  });
+  assert.equal(again.status, 409);
+  assert.match(again.data.error, /already exists\. Sign in instead/);
+  assert.equal(
+    (
+      await bob("auth/register", "POST", {
+        name: "Bob",
+        email: "bob@edges.test",
+        password,
+      })
+    ).status,
+    201,
+  );
+
+  // links typed the way people say them, and a photo near the size limit (about 45 KB)
+  const photo = `data:image/jpeg;base64,${"A".repeat(45000)}`;
+  const profile = await alice("profile", "PUT", {
+    ...blankProfile,
+    name: "Alice Haddad",
+    email: " Alice@Sidra.example ",
+    linkedin: "linkedin.com/in/alice",
+    instagram: "@alice.h",
+    website: "sidra.example",
+    photo,
+  });
+  assert.equal(profile.status, 200);
+  assert.equal(
+    profile.data.user.profile.linkedin,
+    "https://linkedin.com/in/alice",
+  );
+  assert.equal(
+    profile.data.user.profile.instagram,
+    "https://instagram.com/alice.h",
+  );
+  assert.equal(profile.data.user.profile.website, "https://sidra.example");
+  assert.equal(profile.data.user.profile.email, "alice@sidra.example");
+  assert.equal(profile.data.user.profile.photo.length, photo.length);
+  const nonsense = await alice("profile", "PUT", {
+    ...blankProfile,
+    name: "Alice Haddad",
+    website: "not a link at all",
+  });
+  assert.equal(nonsense.status, 400);
+  assert.match(nonsense.data.error, /link doesn't look right/);
+
+  // opening the app keeps you signed in: a session with two days left gets its 30 days back
+  assert.equal((await alice("session")).setCookie, null);
+  await (
+    await database()
+  ).query(
+    "UPDATE sessions SET expires_at=now()+interval '2 days' WHERE user_id=(SELECT id FROM users WHERE email='alice@edges.test')",
+  );
+  const renewed = await alice("session");
+  assert.match(renewed.setCookie || "", /Max-Age=2592000/);
+  const [left] = await (
+    await database()
+  ).query<{ days: number }>(
+    "SELECT extract(day FROM expires_at-now())::int AS days FROM sessions WHERE user_id=(SELECT id FROM users WHERE email='alice@edges.test')",
+  );
+  assert.ok(left.days >= 29);
+
+  // Bob saves Alice's card; opening the link again says it's already saved
+  const cards = (await alice("cards")).data.cards as { id: string }[];
+  const token = (await alice(`cards/${cards[0].id}/share`, "POST", {})).data
+    .token as string;
+  assert.equal((await bob(`share/${token}`)).data.saved_id, null);
+  const imported = await bob("connections/import", "POST", {
+    token,
+    event: "Career fair",
+    place: "",
+    met_on: "2026-11-12",
+  });
+  assert.equal(imported.status, 201);
+  assert.equal(
+    (await bob(`share/${token}`)).data.saved_id,
+    imported.data.connection.id,
+  );
+  // a visitor who isn't signed in sees the card, and nothing about anyone's network
+  const visitor = session();
+  assert.equal((await visitor(`share/${token}`)).data.saved_id, null);
+
+  // AI is switched on but today's allowance is spent: card reading and summaries still answer
+  process.env.OPENAI_API_KEY = "test-only";
+  process.env.OPENAI_BASE_URL = "http://127.0.0.1:9/v1";
+  process.env.WASL_DAILY_AI_LIMIT = "0";
+  try {
+    const read = await bob("scan-text", "POST", {
+      text: "Sara Smith\nProduct Designer\nsara@example.test\n+974 5555 1234",
+    });
+    assert.equal(read.status, 200);
+    assert.equal(read.data.mode, "rules");
+    assert.equal(read.data.profile.email, "sara@example.test");
+    const summary = await bob("summarize", "POST", {
+      transcript:
+        "She works on fraud detection at Falcon Analytics.\nShe said to send my CV before December.\nWe both like football.",
+    });
+    assert.equal(summary.status, 200);
+    assert.equal(summary.data.mode, "rules");
+    assert.ok(summary.data.points.length > 0);
+    assert.match(summary.data.warning, /used up/);
+  } finally {
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_BASE_URL;
+    delete process.env.WASL_DAILY_AI_LIMIT;
   }
 });

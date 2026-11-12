@@ -16,6 +16,8 @@
 
 Without an AI key, every step still works with built-in rules, and nothing pretends to be AI.
 
+**Built for a phone.** The Back button closes the dialog on top, then returns to the screen before. Links can be typed the way people say them ("linkedin.com/in/me", "@handle"). Scanning the QR code LinkedIn or Instagram shows for a profile starts a new person. You stay signed in for 30 days from your last visit.
+
 **Search only looks through people you've saved.** A new account has none, so Search says so and offers **Try it with sample people**: five made-up people with notes, marked as samples on Network and removed together with **Remove them**. Keyword search finds a word in any of its forms ("hire" finds "hiring") or by its beginning ("mar" finds "Mariam"), and AI search never shows less than keyword search would.
 
 **Light and dark:** Wasl opens in dark mode on phones and laptops. Pick Light, or let it match your phone, in Settings (or tap the moon/sun button at the top); the choice is remembered. The clickable mockup has both looks too: dark by default, light from its Settings.

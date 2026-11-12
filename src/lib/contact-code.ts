@@ -1,4 +1,5 @@
 import { blankProfile, type Profile } from "./types";
+import { nameFromLink } from "./links";
 
 // What a QR code can be when someone points Wasl at it.
 export type ContactCode =
@@ -35,6 +36,21 @@ function fromLinks(profile: Profile, link: string) {
   else profile.website ||= url;
 }
 
+// MECARD fields end with ";" unless it is escaped as "\;". Written as a loop because the
+// one-line pattern for this ("look-behind") stops the whole app loading on iPhones before iOS 16.4.
+function splitFields(text: string) {
+  const parts: string[] = [];
+  let current = "";
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "\\" && i + 1 < text.length) current += text[i] + text[++i];
+    else if (text[i] === ";") {
+      parts.push(current);
+      current = "";
+    } else current += text[i];
+  }
+  parts.push(current);
+  return parts;
+}
 // vCard (BEGIN:VCARD) and MECARD codes printed on many paper business cards
 export function parseContactText(text: string): Profile | null {
   const profile: Profile = { ...blankProfile };
@@ -67,7 +83,7 @@ export function parseContactText(text: string): Profile | null {
     }
     profile.name ||= [given, family].filter(Boolean).join(" ").trim();
   } else if (/^MECARD:/i.test(raw)) {
-    for (const part of raw.slice(7).split(/(?<!\\);/)) {
+    for (const part of splitFields(raw.slice(7))) {
       const at = part.indexOf(":");
       if (at < 0) continue;
       const key = part.slice(0, at).toUpperCase();
@@ -96,8 +112,34 @@ export function readContactCode(text: string, origin: string): ContactCode {
   if (profile) return { kind: "contact", profile };
   try {
     const url = new URL(text.trim());
-    if (url.protocol === "http:" || url.protocol === "https:")
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      // The QR code LinkedIn and Instagram show for a profile: start a new person with the
+      // link filled in and a first guess at the name, for the person to check.
+      const host = url.hostname.toLowerCase().replace(/^www\./, "");
+      const link = `https://${url.hostname}${url.pathname.replace(/\/$/, "")}`;
+      if (host === "linkedin.com" && /^\/in\/[^/]+/.test(url.pathname))
+        return {
+          kind: "contact",
+          profile: {
+            ...blankProfile,
+            linkedin: link,
+            name: nameFromLink(link),
+          },
+        };
+      if (
+        host === "instagram.com" &&
+        /^\/[A-Za-z0-9_.]+\/?$/.test(url.pathname)
+      )
+        return {
+          kind: "contact",
+          profile: {
+            ...blankProfile,
+            instagram: link,
+            name: nameFromLink(link),
+          },
+        };
       return { kind: "link", host: url.hostname };
+    }
   } catch {}
   return { kind: "other" };
 }

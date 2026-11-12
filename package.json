@@ -19,6 +19,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "test:e2e": "playwright test",
     "test:postgres": "tsx --test tests/postgres.integration.ts",
+    "test:api-postgres": "tsx --test --test-force-exit tests/product.test.ts",
     "format:check": "prettier --check src scripts tests '*.ts' '*.json'"
   },
   "dependencies": {

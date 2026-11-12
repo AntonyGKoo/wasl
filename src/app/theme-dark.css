@@ -960,3 +960,13 @@
 :where(:root[data-theme="dark"]) .sample-note strong {
   color: var(--ink);
 }
+:where(:root[data-theme="dark"]) .search-empty .text-button,
+:where(:root[data-theme="dark"]) .empty-state > .text-button {
+  color: var(--teal);
+}
+:where(:root[data-theme="dark"]) .text-button.danger {
+  color: #d29295;
+}
+:where(:root[data-theme="dark"]) .forgot .text-button {
+  color: var(--muted);
+}

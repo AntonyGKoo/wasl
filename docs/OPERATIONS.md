@@ -13,7 +13,7 @@ The development launcher enables file polling to work in shared workspaces with 
 Copy `.env.example` to `.env.local` and add credentials there. Never commit or paste keys into source code.
 
 - `OPENAI_API_KEY`: an OpenAI API project key with API billing or approved credits. A ChatGPT subscription does not provide API credits.
-- `OPENAI_MODEL`: an account-enabled model supporting Responses and Structured Outputs. The configurable default is `gpt-4o-mini`.
+- `OPENAI_MODEL`: an account-enabled model supporting Responses and Structured Outputs. The configurable default is `gpt-4o-mini`. **OpenAI retires `gpt-4o-mini` on January 14, 2027** (its deprecations page, read on November 12, 2026, names `gpt-6-luna` as the replacement). Before that date, set `OPENAI_MODEL` in Vercel to the replacement and try a card scan, a chat summary and an AI search. If the model is gone and nothing is changed, Wasl keeps working with its built-in rules and keyword search, and says so.
 - `OPENAI_EMBEDDING_MODEL`: defaults to `text-embedding-3-small`, requested at 1536 dimensions. Changing this setting causes saved contacts to be re-embedded as needed.
 - `GOOGLE_CLOUD_VISION_API_KEY`: a Google Cloud key restricted to the enabled Vision API.
 
@@ -28,6 +28,8 @@ Card photos are read on the phone with Tesseract.js (files served from `public/o
 QR codes are read on the phone with jsQR. A Wasl card link opens that card; a vCard or MECARD code from a paper card becomes a draft contact.
 
 "Use my location" sends coordinates rounded to about 10 m to the server, which looks up a place name from OpenStreetMap's public Nominatim service (identified by the app's URL, at most 30 lookups per person per hour). Nothing about the lookup is stored.
+
+Every AI feature has a way to carry on without AI. Search has 12 seconds for the AI part; card reading and chat summaries give the provider 12 seconds. If the provider is slow or down, or the day's allowance is spent, search shows keyword matches, card reading uses the built-in rules, and a summary picks the key sentences, each with a line that says why. An AI answer for a card is checked one detail at a time, so one badly formed link or email is left blank instead of discarding the rest.
 
 Per-user and project-wide call limits are stored in PostgreSQL and configured in `.env.example`. They limit request counts rather than an exact dollar amount. Configure provider billing alerts and limits separately. Automated tests do not make paid provider calls.
 
@@ -60,7 +62,7 @@ The pilot runs at https://wasl-sable.vercel.app (Vercel project `wasl`, region `
 
 Private notes never enter a public card. Public routes project only selected profile fields and use `no-store` caching. QR URLs use unguessable share tokens. An active link reflects current selected fields. A saved contact is a private snapshot: **Update shared details** refreshes the snapshot from a still-active link without touching private notes. Revocation prevents future link reads but cannot erase previously saved copies.
 
-Passwords use salted scrypt hashes. Session tokens are hashed in the database, expire after 14 days, and are revoked at logout. Mutations require the app origin, and body sizes and request frequency are bounded. Production uses secure HttpOnly cookies and requires HTTPS.
+Passwords use salted scrypt hashes. Session tokens are hashed in the database and revoked at logout. A session lasts 30 days from the last time the app was opened (opening it renews the session, at most once a day). If a session ends while the app is open, the next action returns to the sign-in screen with the reason, and signing in returns to the same screen. Mutations require the app origin, and body sizes and request frequency are bounded. Production uses secure HttpOnly cookies and requires HTTPS.
 
 Set `TRUST_PROXY=true` only if the hosting proxy overwrites `X-Forwarded-For`. Otherwise authentication rate limiting uses a conservative shared bucket rather than trusting a spoofable header. Sign-up and sign-in allow 150 attempts per network address per 15 minutes (a whole event can share one Wi-Fi), and 10 sign-in attempts per account per 15 minutes against password guessing. Avoid logging contact payloads, provider response bodies, or credentials.
 
@@ -80,7 +82,9 @@ TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/wasl_ci npm run 
 
 This test deliberately accepts only a local host and database name ending in `_ci`. It creates synthetic records and deletes only the fixture users. Never point it at a production database.
 
-The CI pipeline runs type checking, application/security tests, the PostgreSQL adapter test, a production build, and desktop/mobile browser scenarios. Browser traces are retained when a scenario fails. Live OpenAI/Google entitlement and live Supabase/Vercel deployment still require separate verification after credentials and projects are configured.
+The same pipeline then runs every API route again on that PostgreSQL through the hosted driver (`npm run test:api-postgres`, with `DATABASE_URL` set), which is how the live site runs; this includes AI search against a stand-in provider, so the pgvector queries are exercised too.
+
+The CI pipeline runs type checking, application/security tests, the PostgreSQL adapter test, the API tests on PostgreSQL, a production build, and desktop/mobile browser scenarios. Browser traces are retained when a scenario fails. Live OpenAI/Google entitlement and live Supabase/Vercel deployment still require separate verification after credentials and projects are configured.
 
 ## Scope
 

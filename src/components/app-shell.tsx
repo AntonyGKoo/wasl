@@ -41,6 +41,7 @@ import { RecallView, ScanModal } from "./recall-view";
 import { QrScanner } from "./qr-scanner";
 import { TonightsPeople, type Choice } from "./tonight";
 import { ThemeSetting, ThemeToggle } from "./theme";
+import { onBack, screenOpened } from "@/lib/history";
 import { presentationCardToken } from "@/lib/presentation";
 type View = "network" | "wallet" | "recall" | "profile" | "settings";
 const navigation = [
@@ -77,6 +78,8 @@ export function WaslApp() {
   const [backToDebrief, setBackToDebrief] = useState(false);
   // a person to open once the network has loaded (from a swap or a link)
   const [openId, setOpenId] = useState<string | null>(null);
+  // the session ended while the app was open
+  const [signedOut, setSignedOut] = useState(false);
   async function loadSession() {
     setLoading(true);
     setError("");
@@ -114,6 +117,34 @@ export function WaslApp() {
     const contact = params.get("contact");
     if (contact && /^[0-9a-f-]{36}$/i.test(contact)) setOpenId(contact);
     void loadSession();
+    // The phone's Back button moves between the screens you visited instead of leaving Wasl.
+    window.history.scrollRestoration = "manual";
+    const back = () => {
+      const shown = new URLSearchParams(window.location.search).get("view");
+      setView(
+        navigation.some((n) => n.id === shown) || shown === "settings"
+          ? (shown as View)
+          : "network",
+      );
+    };
+    // the session ended while the app was open: back to the sign-in screen, with a reason
+    const ended = () => {
+      setSignedOut(true);
+      setUser(null);
+      setContacts([]);
+      setCards([]);
+      setDetail(null);
+      setEditing(undefined);
+      setScanning(false);
+      setScanningCode(false);
+      setDebrief(false);
+    };
+    const offBack = onBack(back);
+    window.addEventListener("wasl-signed-out", ended);
+    return () => {
+      offBack();
+      window.removeEventListener("wasl-signed-out", ended);
+    };
   }, []);
   useEffect(() => {
     if (!openId || !contacts.length) return;
@@ -131,8 +162,10 @@ export function WaslApp() {
     if (user) void refresh();
   }, [user?.id]);
   function navigate(next: View) {
+    window.scrollTo(0, 0);
+    if (next === view) return;
     setView(next);
-    window.history.replaceState({}, "", `/?view=${next}`);
+    screenOpened(`/?view=${next}`);
   }
   async function logout() {
     try {
@@ -166,9 +199,13 @@ export function WaslApp() {
   if (!user)
     return (
       <AuthScreen
-        onSignIn={() => void loadSession()}
+        onSignIn={() => {
+          setSignedOut(false);
+          void loadSession();
+        }}
         returnTo={returnTo}
         presentation={capabilities.presentation}
+        signedOut={signedOut}
       />
     );
   return (

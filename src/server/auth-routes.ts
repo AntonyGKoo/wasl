@@ -44,7 +44,19 @@ export async function authRoute(request: Request, action: string) {
     );
   let id: string;
   if (action === "register") {
-    id = await registerAccount(await readJson(request, registrationSchema), db);
+    try {
+      id = await registerAccount(
+        await readJson(request, registrationSchema),
+        db,
+      );
+    } catch (error) {
+      if ((error as { code?: string })?.code === "23505")
+        throw new HttpError(
+          409,
+          "An account with this email already exists. Sign in instead.",
+        );
+      throw error;
+    }
     // like the mockup: a new account starts with one card, ready to share
     await db.query(
       "INSERT INTO cards(id,owner_id,label,kind,color,fields) VALUES($1,$2,'Professional','professional','ocean',$3)",

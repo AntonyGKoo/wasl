@@ -1,25 +1,47 @@
 import { z } from "zod";
 import { cardFields, cardKinds } from "./types";
+import { tidyLink, type LinkField } from "./links";
 const text = (max = 200) => z.string().trim().max(max);
+const validLink = (v: string) => {
+  try {
+    const parsed = new URL(v);
+    return (
+      ["http:", "https:"].includes(parsed.protocol) &&
+      parsed.hostname.includes(".") &&
+      !/\s/.test(v)
+    );
+  } catch {
+    return false;
+  }
+};
 const url = z.union([
   z.literal(""),
   z
-    .url()
-    .refine(
-      (v) => ["http:", "https:"].includes(new URL(v).protocol),
-      "Use an https:// or http:// link",
-    ),
+    .string()
+    .max(300)
+    .refine(validLink, "That link doesn't look right. Check it and try again."),
 ]);
+// "linkedin.com/in/me", "@handle" and "mysite.dev" become full links before they are checked
+const link = (field: LinkField) =>
+  z.preprocess((v) => (typeof v === "string" ? tidyLink(field, v) : v), url);
 export const profileSchema = z.object({
   name: text(100),
   title: text(),
   company: text(),
   university: text(),
-  email: z.union([z.literal(""), z.email().max(254)]),
+  email: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() : v),
+    z.union([
+      z.literal(""),
+      z
+        .email("That email doesn't look right. Check it and try again.")
+        .max(254),
+    ]),
+  ),
   phone: text(50),
-  linkedin: url,
-  instagram: url,
-  website: url,
+  linkedin: link("linkedin"),
+  instagram: link("instagram"),
+  website: link("website"),
   bio: text(1500),
   // resized on the phone to a small JPEG before upload
   photo: z

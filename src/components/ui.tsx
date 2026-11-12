@@ -1,4 +1,6 @@
 "use client";
+import { linkFields, tidyLink, type LinkField } from "@/lib/links";
+import { dialogOpened } from "@/lib/history";
 import {
   useEffect,
   useRef,
@@ -104,11 +106,15 @@ export function Modal({
     const previous = document.activeElement as HTMLElement | null;
     const before = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // On a laptop the first field is ready to type in. On a phone that would throw the keyboard
+    // over half the dialog before the person has read it, so the dialog itself takes the focus.
+    const touch = window.matchMedia?.("(pointer: coarse)").matches;
     const focus = () =>
-      (
-        ref.current?.querySelector<HTMLElement>(
-          "input:not(:disabled),select,textarea",
-        ) || ref.current?.querySelector<HTMLElement>("button")
+      (touch
+        ? ref.current
+        : ref.current?.querySelector<HTMLElement>(
+            "input:not(:disabled),select,textarea",
+          ) || ref.current?.querySelector<HTMLElement>("button")
       )?.focus();
     focus();
     function key(e: KeyboardEvent) {
@@ -130,8 +136,11 @@ export function Modal({
       }
     }
     document.addEventListener("keydown", key);
+    // the phone's Back button (or a back swipe) closes the dialog instead of leaving Wasl
+    const closed = dialogOpened(() => closeRef.current());
     return () => {
       document.removeEventListener("keydown", key);
+      closed();
       document.body.style.overflow = before;
       previous?.focus();
     };
@@ -148,6 +157,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
         ref={ref}
       >
         <header className="modal-heading">
@@ -168,6 +178,8 @@ export function Modal({
     </div>
   );
 }
+const isLink = (field: string): field is LinkField =>
+  (linkFields as string[]).includes(field);
 export function ProfileFields({
   value,
   onChange,
@@ -204,18 +216,30 @@ export function ProfileFields({
               value={value[field]}
               required={field === "name"}
               type={
-                field === "email"
-                  ? "email"
-                  : ["website", "linkedin", "instagram"].includes(field)
-                    ? "url"
-                    : field === "phone"
-                      ? "tel"
-                      : "text"
+                field === "email" ? "email" : field === "phone" ? "tel" : "text"
               }
+              // links are typed the way people say them; leaving the box completes them
+              inputMode={isLink(field) ? "url" : undefined}
+              autoCapitalize={isLink(field) ? "none" : undefined}
+              autoCorrect={isLink(field) ? "off" : undefined}
+              spellCheck={isLink(field) ? false : undefined}
               placeholder={
-                ["website", "linkedin", "instagram"].includes(field)
-                  ? "https://"
-                  : ""
+                field === "linkedin"
+                  ? "linkedin.com/in/your-name"
+                  : field === "instagram"
+                    ? "@yourname"
+                    : field === "website"
+                      ? "yoursite.com"
+                      : ""
+              }
+              onBlur={
+                isLink(field)
+                  ? (e) =>
+                      onChange({
+                        ...value,
+                        [field]: tidyLink(field, e.target.value),
+                      })
+                  : undefined
               }
               maxLength={
                 field === "name"

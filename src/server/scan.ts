@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { aiAllowance } from "./recall";
 import { HttpError, limitedBody } from "./responses";
-import { blankProfile } from "../lib/types";
+import { blankProfile, profileFields, type Profile } from "../lib/types";
 import { profileSchema } from "../lib/validation";
 import { parseCardText } from "../lib/card-text";
 export { parseCardText } from "../lib/card-text";
@@ -11,7 +11,7 @@ async function aiCardFields(text: string) {
   if (!process.env.OPENAI_API_KEY) return null;
   const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
-    timeout: 20000,
+    timeout: 12000,
     maxRetries: 0,
   });
   try {
@@ -38,17 +38,35 @@ async function aiCardFields(text: string) {
         },
       },
     });
-    return profileSchema.parse(JSON.parse(response.output_text));
+    return keepValidFields(JSON.parse(response.output_text));
   } catch {
     return null;
   }
+}
+// The AI's answer is checked one detail at a time: a link or email it got slightly wrong is left
+// blank for the person to fill in, instead of throwing away everything else it read.
+export function keepValidFields(answer: unknown): Profile | null {
+  if (!answer || typeof answer !== "object") return null;
+  const profile: Profile = { ...blankProfile };
+  for (const key of profileFields) {
+    const value = (answer as Record<string, unknown>)[key];
+    if (typeof value !== "string") continue;
+    const checked = profileSchema.shape[key].safeParse(value);
+    if (checked.success) profile[key] = checked.data as string;
+  }
+  return profile.name || profile.email || profile.phone ? profile : null;
 }
 // Card text read on the phone (or pasted): AI fills the fields when connected, rules otherwise.
 // Details the rules found for certain (email, phone, links) fill any gap the AI left.
 export async function readCardText(userId: string, text: string) {
   const rules = parseCardText(text);
   if (!process.env.OPENAI_API_KEY) return { profile: rules, mode: "rules" };
-  await aiAllowance(userId, "ai");
+  try {
+    await aiAllowance(userId, "ai");
+  } catch {
+    // today's AI use is spent: the card is still read, by the built-in rules
+    return { profile: rules, mode: "rules" };
+  }
   const ai = await aiCardFields(text);
   if (!ai) return { profile: rules, mode: "rules" };
   for (const key of ["email", "phone", "linkedin", "website"] as const)

@@ -190,7 +190,7 @@ export function NetworkView({
           <h1>Network</h1>
           <p>
             {contacts.length
-              ? `${contacts.length} ${contacts.length === 1 ? "person" : "people"} · ${memories} ${memories === 1 ? "memory" : "memories"}`
+              ? `${contacts.length} ${contacts.length === 1 ? "person" : "people"} · ${memories} ${memories === 1 ? "note" : "notes"}`
               : "Everyone you meet, and what you talked about."}
           </p>
         </div>
@@ -774,7 +774,7 @@ export function ConnectionForm({
           </p>
         ) : null}
         <ProfileFields value={profile} onChange={setProfile} />
-        <div className="form-divider">WHERE YOU MET</div>
+        <div className="form-divider">Where you met</div>
         <div className="form-grid">
           <label>
             <span>Event or occasion</span>
@@ -839,7 +839,7 @@ export function ConnectionForm({
             <MapPin size={13} /> Same place as the last person you saved today.
           </p>
         ) : null}
-        <div className="form-divider">ADD A TAG · ONE TAP</div>
+        <div className="form-divider">Tags</div>
         <div className="tag-picker" role="group" aria-label="Tags">
           {tagChoices.map((t) => {
             const on = tags.includes(t);
@@ -962,6 +962,8 @@ export function ConnectionDetail({
     await load();
     onChanged();
   }
+  // a memory can't be brought back, so deleting one takes a second tap
+  const [doomed, setDoomed] = useState("");
   async function removeNote(id: string) {
     setBusy(true);
     try {
@@ -1135,7 +1137,7 @@ export function ConnectionDetail({
       {error ? <Notice error>{error}</Notice> : null}
       <div className="timeline">
         {!loaded ? (
-          <p className="muted">Loading memories…</p>
+          <p className="muted">Loading notes…</p>
         ) : !contact.notes?.length ? (
           <p className="muted">Your story with this person starts here.</p>
         ) : (
@@ -1146,14 +1148,32 @@ export function ConnectionDetail({
                 <time>{shortDate(note.happened_on)}</time>
                 <p>{note.body}</p>
               </div>
-              <button
-                className="icon-button"
-                aria-label="Delete note"
-                onClick={() => void removeNote(note.id)}
-                disabled={busy}
-              >
-                <X size={15} />
-              </button>
+              {doomed === note.id ? (
+                <span className="note-confirm">
+                  <button
+                    className="text-button danger"
+                    onClick={() => {
+                      setDoomed("");
+                      void removeNote(note.id);
+                    }}
+                    disabled={busy}
+                  >
+                    Delete
+                  </button>
+                  <button className="text-button" onClick={() => setDoomed("")}>
+                    Keep
+                  </button>
+                </span>
+              ) : (
+                <button
+                  className="icon-button"
+                  aria-label="Delete note"
+                  onClick={() => setDoomed(note.id)}
+                  disabled={busy}
+                >
+                  <X size={15} />
+                </button>
+              )}
             </article>
           ))
         )}

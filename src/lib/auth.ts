@@ -10,7 +10,8 @@ import { database, type Database } from "./db";
 import type { User } from "./types";
 const scrypt = promisify(scryptCallback);
 export const SESSION_COOKIE = "wasl_session";
-const TTL = 60 * 60 * 24 * 14;
+// Signed in for 30 days, counted from the last time the app was opened.
+const TTL = 60 * 60 * 24 * 30;
 export const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 export async function hashPassword(password: string) {
@@ -52,6 +53,30 @@ export async function sessionUser(
     [hashToken(token)],
   );
   return user || null;
+}
+const cookieToken = (request: Request) => {
+  const token = (request.headers.get("cookie") || "")
+    .split(";")
+    .map((x) => x.trim())
+    .find((x) => x.startsWith(`${SESSION_COOKIE}=`))
+    ?.slice(SESSION_COOKIE.length + 1);
+  return token && /^[A-Za-z0-9_-]{43}$/.test(token) ? token : null;
+};
+// Opening the app keeps you signed in: the session's 30 days start again (at most once a day,
+// so this costs one small write). Returns the cookie to send back, or null.
+export async function renewSession(request: Request, providedDb?: Database) {
+  const token = cookieToken(request);
+  if (!token) return null;
+  const db = providedDb ?? (await database());
+  const renewed = await db.query(
+    "UPDATE sessions SET expires_at=$2 WHERE token_hash=$1 AND expires_at>now() AND expires_at<$3 RETURNING token_hash",
+    [
+      hashToken(token),
+      new Date(Date.now() + TTL * 1000),
+      new Date(Date.now() + (TTL - 86400) * 1000),
+    ],
+  );
+  return renewed.length ? sessionCookie(token) : null;
 }
 export function sessionCookie(token: string, clear = false) {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";

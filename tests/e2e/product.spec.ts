@@ -116,6 +116,9 @@ test("two people share selected details, retain private memory, recall and revok
     expect((await recipient.request.get(`/api/share/${token}`)).status()).toBe(
       404,
     );
+    // closing the confirmation takes its step out of the browser history a moment later;
+    // a person can't reload faster than that, so the test doesn't either
+    await page.waitForTimeout(300);
     await page.reload();
     await page
       .getByRole("button", {
@@ -243,4 +246,116 @@ test("search says when there is no one to search; sample people make it work and
       name: "Start with one meaningful connection.",
     }),
   ).toBeVisible();
+});
+test("Back closes the dialog on top, then returns to the screen before; a lost session returns to sign-in", async ({
+  page,
+  context,
+}) => {
+  const email = await signup(page, "Back QA");
+  const heading = (name: string) =>
+    page
+      .getByRole("main")
+      .getByRole("heading", { name, exact: true, level: 1 });
+  const go = (name: string) =>
+    page
+      .locator("nav button:visible, aside button:visible")
+      .filter({ hasText: name })
+      .first()
+      .click();
+  await go("Cards");
+  await go("Search");
+  await expect(heading("Search")).toBeVisible();
+  await page.goBack();
+  await expect(heading("Cards")).toBeVisible();
+  await page.goBack();
+  await expect(heading("Network")).toBeVisible();
+
+  // a dialog: Back closes it and stays on the same screen
+  await page
+    .getByRole("button", { name: "Just looking? Try it with sample people" })
+    .click();
+  await page.locator(".contact-card").first().click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(heading("Network")).toBeVisible();
+
+  // one dialog closing as another opens (saving a new person opens their page), then moving on
+  // straight away: Back still goes where it should
+  await page
+    .getByRole("button", { name: "Add a connection", exact: true })
+    .first()
+    .click();
+  await page.getByLabel("Full name *", { exact: true }).fill("Quick Close");
+  await page
+    .getByRole("button", { name: "Save connection", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Quick Close", exact: true }).last(),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Close dialog", exact: true })
+    .last()
+    .click();
+  await go("Cards");
+  await go("Profile");
+  await expect(heading("Profile")).toBeVisible();
+  await page.goBack();
+  await expect(heading("Cards")).toBeVisible();
+  await page.goBack();
+  await expect(heading("Network")).toBeVisible();
+
+  // links typed the way people say them
+  await go("Profile");
+  await page.getByText("More details").click();
+  await page
+    .getByLabel("LinkedIn", { exact: true })
+    .fill("linkedin.com/in/back-qa");
+  await page.getByLabel("Instagram", { exact: true }).fill("@back.qa");
+  await page.getByRole("button", { name: "Save profile" }).click();
+  await expect(
+    page.getByText("Your profile and active card links are updated."),
+  ).toBeVisible();
+  await expect(page.getByLabel("LinkedIn", { exact: true })).toHaveValue(
+    "https://linkedin.com/in/back-qa",
+  );
+  await expect(page.getByLabel("Instagram", { exact: true })).toHaveValue(
+    "https://instagram.com/back.qa",
+  );
+
+  // the session ends while the app is open: the next save lands on sign-in, with the reason
+  await context.clearCookies();
+  await page.getByRole("button", { name: "Save profile" }).click();
+  await expect(
+    page.getByText(
+      "You were signed out. Sign in to carry on where you left off.",
+    ),
+  ).toBeVisible();
+  // the sign-in form is ready, with help for a forgotten password
+  await page.getByRole("button", { name: "Forgot your password?" }).click();
+  await expect(
+    page.getByText(/can.t reset a password by email yet/),
+  ).toBeVisible();
+
+  // signing up with an email that already has an account offers to sign in instead
+  await page
+    .getByRole("button", { name: "Create account", exact: true })
+    .click();
+  await page.getByLabel("Your name", { exact: true }).fill("Back QA");
+  await page.getByLabel("Email address", { exact: true }).fill(email);
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("Local-Only-Test-Password!");
+  await page
+    .getByRole("button", { name: "Create your Wasl account", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "An account with this email already exists. Sign in instead.",
+    ),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Sign in with this email" }).click();
+  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
+  // back where they left off
+  await expect(heading("Profile")).toBeVisible();
 });
