@@ -85,8 +85,8 @@ export async function handleApi(request: Request): Promise<Response> {
     // at most 6 an hour in total. It says which AI service answered and what, never the key
     // and never the address the AI is reached at.
     if (area === "health" && id === "ai" && method === "GET") {
-      const { state, reason, parts } = await checkAi(null);
-      return json({ state, reason, parts });
+      const { state, reason, parts, listed } = await checkAi(null);
+      return json({ state, reason, parts, listed });
     }
     if (area === "health" && method === "GET") {
       // One tiny query: the daily uptime check also keeps a free hosted database from pausing.

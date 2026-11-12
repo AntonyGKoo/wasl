@@ -32,6 +32,12 @@ const reasons: Record<AiProblem, string> = {
   other: "The AI service returned an error.",
 };
 
+// the model answered, but what came back couldn't be read as the fixed form Wasl asked for
+class UnreadableAnswer extends Error {
+  constructor(public model: string) {
+    super("unreadable");
+  }
+}
 export function aiProblem(error: unknown): AiProblem {
   if (
     error instanceof OpenAI.APIConnectionTimeoutError ||
@@ -123,12 +129,36 @@ export async function checkAi(userId: string | null, db?: Database) {
       "Reading cards, summaries and picking matches",
       wanted.language,
       "check-model",
-      () =>
-        askLanguageModel(client, {
+      // the same kind of request Wasl really makes: an answer in a fixed form, which is then read
+      async () => {
+        const response = await askLanguageModel(client, {
           store: false,
-          max_output_tokens: 16,
-          input: "Reply with the word OK.",
-        }),
+          max_output_tokens: 200,
+          instructions: "Answer with ok set to true.",
+          input: "Is this working?",
+          text: {
+            format: {
+              type: "json_schema",
+              name: "check",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: { ok: { type: "boolean" } },
+                required: ["ok"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        let ok = false;
+        try {
+          ok = JSON.parse(response.output_text).ok === true;
+        } catch {
+          ok = false;
+        }
+        if (!ok) throw new UnreadableAnswer(response.waslModel);
+        return response;
+      },
     ],
   ];
   const parts: { name: string; model: string; ok: boolean; detail: string }[] =
@@ -147,6 +177,16 @@ export async function checkAi(userId: string | null, db?: Database) {
             : `This account can't use ${asked}, so Wasl uses ${waslModel} instead.`,
       });
     } catch (error) {
+      if (error instanceof UnreadableAnswer) {
+        await noteAiFailure(error, db, `${step}-unreadable`);
+        parts.push({
+          name,
+          model: error.model,
+          ok: false,
+          detail: `${error.model} answered, but not in the form Wasl needs.`,
+        });
+        continue;
+      }
       const problem = await noteAiFailure(error, db, step);
       const { status, code } = said(error);
       parts.push({
@@ -155,6 +195,20 @@ export async function checkAi(userId: string | null, db?: Database) {
         ok: false,
         detail: `${reasons[problem]}${status || code ? ` (OpenAI answered: ${[status || "", code].filter(Boolean).join(" ")})` : ""}`,
       });
+    }
+  }
+  // Search by meaning refused: which models of that kind does OpenAI list for this account?
+  // (Names only. Listing is free. One of them can be set as OPENAI_EMBEDDING_MODEL.)
+  let listed: string[] = [];
+  if (!parts[0].ok) {
+    try {
+      for await (const model of client.models.list()) {
+        if (/embed/i.test(model.id)) listed.push(model.id);
+        if (listed.length >= 12) break;
+      }
+      listed = listed.sort();
+    } catch {
+      listed = [];
     }
   }
   // set only when the AI address was changed from OpenAI's own; the host name is not a secret
@@ -175,5 +229,6 @@ export async function checkAi(userId: string | null, db?: Database) {
       : "",
     parts,
     address,
+    listed,
   };
 }

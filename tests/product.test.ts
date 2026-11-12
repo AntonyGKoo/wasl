@@ -550,6 +550,23 @@ test("AI search never shows less than keyword search, whatever the model answers
     for await (const chunk of req) body += chunk;
     const data = JSON.parse(body || "{}");
     res.setHeader("content-type", "application/json");
+    // the list of models the account can see (asked for when search by meaning is refused)
+    if (req.method === "GET" && req.url?.endsWith("/models"))
+      return res.end(
+        JSON.stringify({
+          object: "list",
+          data: [
+            "gpt-6-luna",
+            "text-embedding-4",
+            "text-embedding-3-small",
+          ].map((id) => ({
+            id,
+            object: "model",
+            created: 0,
+            owned_by: "openai",
+          })),
+        }),
+      );
     // the two ways a real AI account most often refuses: a bad key, or no credit
     if (answer === "nokey" || answer === "nocredit") {
       res.statusCode = answer === "nokey" ? 401 : 429;
@@ -652,7 +669,12 @@ test("AI search never shows less than keyword search, whatever the model answers
             content: [
               {
                 type: "output_text",
-                text: JSON.stringify({ matches }),
+                // the "is AI working?" check asks for a different fixed form
+                text: JSON.stringify(
+                  data.text?.format?.name === "check"
+                    ? { ok: true }
+                    : { matches },
+                ),
                 annotations: [],
               },
             ],
@@ -788,6 +810,11 @@ test("AI search never shows less than keyword search, whatever the model answers
     );
     assert.equal(check.parts[0].model, "text-embedding-3-small");
     assert.match(check.parts[0].detail, /403 model_not_found/);
+    // and lists the models of that kind the account can see, to choose one from
+    assert.deepEqual(check.listed, [
+      "text-embedding-3-small",
+      "text-embedding-4",
+    ]);
     assert.equal(
       await counter("ai-fail:model:search-index:403:model_not_found:%"),
       1,
