@@ -36,6 +36,7 @@ import {
   saveAlbum,
   setFavorite,
   swapBack,
+  unseenPeople,
   deleteNote,
   addSamplePeople,
   getConnection,
@@ -169,6 +170,8 @@ export async function handleApi(request: Request): Promise<Response> {
         }
         return json({ connection, swapped }, 201);
       }
+      if (id === "new" && method === "GET")
+        return json({ people: await unseenPeople(user.id) });
       uuidSchema.parse(id);
       if (!action && method === "GET") {
         await markSeen(user.id, id);

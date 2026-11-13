@@ -689,6 +689,10 @@
 :where(:root[data-theme="dark"]) .swap-hint svg {
   color: var(--teal);
 }
+:where(:root[data-theme="dark"]) .swap-hint.plain {
+  background: transparent;
+  border: 1px solid var(--line);
+}
 :where(:root[data-theme="dark"]) .strength {
   border: 1px solid var(--line);
   background: #242f35;

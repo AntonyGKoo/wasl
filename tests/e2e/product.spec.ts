@@ -110,6 +110,16 @@ test("two people share selected details, retain private memory, recall and revok
         .getByRole("heading", { name: "Alice QA", exact: true }),
     ).toBeVisible();
     await expect(bob.getByText("Yousef Omar", { exact: true })).toHaveCount(0);
+    // Alice's phone, still showing her code, says by itself that Bob's card came back
+    await expect(
+      page.getByRole("heading", {
+        name: "You swapped cards with Bob",
+        exact: true,
+      }),
+    ).toBeVisible({ timeout: 15000 });
+    await page
+      .getByRole("button", { name: "Show my code again", exact: true })
+      .click();
     await page
       .getByRole("button", { name: "Revoke this sharing link", exact: true })
       .click();
@@ -138,6 +148,69 @@ test("two people share selected details, retain private memory, recall and revok
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Bob QA", exact: true }),
+    ).toBeVisible();
+  } finally {
+    await recipient.close();
+  }
+});
+test("a card that comes back while your code is showing can be opened from there", async ({
+  page,
+  browser,
+}) => {
+  await signup(page, "Alice QA");
+  await page.getByRole("button", { name: "Cards", exact: true }).click();
+  await page.getByRole("button", { name: "Share card", exact: true }).click();
+  // someone without Wasl: their paper card can be scanned from here too
+  await expect(
+    page.getByRole("button", { name: "Scan their card", exact: true }),
+  ).toBeVisible();
+  const linkField = page.getByLabel("Share link", { exact: true });
+  await expect(linkField).toHaveValue(/\/c\/[A-Za-z0-9_-]{43}$/);
+  const link = await linkField.inputValue();
+  const recipient = await browser.newContext({
+    baseURL: "http://127.0.0.1:3100",
+  });
+  try {
+    const bob = await recipient.newPage();
+    await signup(bob, "Bob QA");
+    await bob.goto(link);
+    await bob.getByRole("button", { name: "Swap cards", exact: true }).click();
+    await expect(
+      bob.getByRole("heading", {
+        name: "You swapped cards with Alice",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "You swapped cards with Bob",
+        exact: true,
+      }),
+    ).toBeVisible({ timeout: 15000 });
+    await page.getByRole("button", { name: "Open Bob", exact: true }).click();
+    // Bob opens on the Network screen, and is no longer marked New
+    await expect(
+      page
+        .getByRole("dialog", { name: "Connection details" })
+        .getByRole("heading", { name: "Bob QA", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Close dialog", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Network", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Bob QA", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Bob QA swapped cards with you", { exact: true }),
+    ).toHaveCount(0);
+    // the phone's Back button returns to the cards, where the code was
+    await page.waitForTimeout(300);
+    await page.goBack();
+    await expect(
+      page.getByRole("heading", { name: "My cards", exact: true }),
     ).toBeVisible();
   } finally {
     await recipient.close();

@@ -2613,11 +2613,42 @@ input[type="date"]::-webkit-date-and-time-value {
   margin-top: 2px;
   color: var(--teal);
 }
+.swap-hint.plain {
+  margin-top: -4px;
+  background: transparent;
+  border: 1px solid var(--line);
+}
 .share-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
   margin-bottom: 14px;
+}
+/* a card came back while your code was on screen */
+.swap-arrived {
+  padding: 18px 0 4px;
+}
+.swap-arrived h3 {
+  font-size: 16px;
+}
+.swap-arrived p {
+  font-size: 13px;
+  max-width: 34ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+.swap-arrived-actions {
+  display: grid;
+  gap: 8px;
+}
+@media (max-width: 760px) {
+  /* two side by side; a third one takes the full row instead of half of it */
+  .share-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+  .share-actions > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
 }
 .profile-heading-text {
   min-width: 0;

@@ -59,3 +59,11 @@ A teammate pointed out that the mockup opens on a welcome page (scan your card, 
 - The Cards page is titled **My cards** in both.
 - **After signing up from a card**, the profile says "Your profile is ready" with **See my card**, the same next step as the mockup.
 - **Place from your location**: OpenStreetMap's free lookup sometimes turns a call away when it is busy, which left the place empty with "type it instead". Wasl now tries once more, and keeps each spot's answer for half an hour, so saving several people at one event asks only once.
+
+## One more pass (Nov 14)
+
+Everything was walked through again on a phone and a laptop, in both looks, and the code was read once more. What changed:
+
+- **A swap shows on both phones.** The person showing their code used to see nothing until they reloaded. Their phone now asks every few seconds while the code is on screen, says "You swapped cards with …" as it happens, and opens the new person in one tap. Wasl also looks for new people whenever you come back to it or open Network, and the screen stays awake while your code is showing.
+- **No Wasl on the other side.** The Share dialog now offers **Scan their card**, the mockup's "No Wasl" path, next to **Scan their code**.
+- **Wording.** The Cards page said notes "never leave your phone". They are kept in your account so they follow you to a laptop, so it now says notes are never on a card. The Search tab uses a magnifier, like the mockup. The line under AI search says in plain words what is sent to OpenAI.

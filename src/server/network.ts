@@ -390,6 +390,21 @@ export async function setFavorite(
     db,
   );
 }
+// People whose card came back in a swap and hasn't been opened yet. A small answer (no
+// details, no photos), asked for every few seconds while your code is on screen, so a swap
+// shows up on your phone as it happens.
+export async function unseenPeople(userId: string, db?: Database) {
+  return asUser(
+    userId,
+    (tx) =>
+      tx.query<{ id: string; name: string; at: string }>(
+        `SELECT id,coalesce(profile->>'name','') AS name,updated_at AS at
+         FROM connections WHERE owner_id=$1 AND unseen ORDER BY updated_at DESC LIMIT 20`,
+        [userId],
+      ),
+    db,
+  );
+}
 export async function markSeen(userId: string, id: string, db?: Database) {
   await asUser(
     userId,

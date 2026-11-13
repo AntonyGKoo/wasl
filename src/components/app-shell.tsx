@@ -2,7 +2,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowDownToLine,
-  Check,
   UserPlus,
   KeyRound,
   LocateFixed,
@@ -15,8 +14,7 @@ import {
   LoaderCircle,
   LogOut,
   Settings,
-  ShieldCheck,
-  Sparkles,
+  Search,
   UserRound,
 } from "lucide-react";
 import { api, autoLocation, locatePlace } from "@/lib/client";
@@ -47,7 +45,7 @@ type View = "network" | "wallet" | "recall" | "profile" | "settings";
 const navigation = [
   { id: "network" as View, label: "Network", icon: LayoutGrid },
   { id: "wallet" as View, label: "Cards", icon: CreditCard },
-  { id: "recall" as View, label: "Search", icon: Sparkles },
+  { id: "recall" as View, label: "Search", icon: Search },
   { id: "profile" as View, label: "Profile", icon: UserRound },
 ];
 export function WaslApp() {
@@ -97,7 +95,8 @@ export function WaslApp() {
       setLoading(false);
     }
   }
-  async function refresh() {
+  // quiet: a refresh nobody asked for (coming back to the app) says nothing if it fails
+  async function refresh(quiet = false) {
     try {
       const [a, b] = await Promise.all([
         api<{ connections: Connection[] }>("connections"),
@@ -105,6 +104,19 @@ export function WaslApp() {
       ]);
       setContacts(a.connections);
       setCards(b.cards);
+    } catch (e) {
+      if (!quiet) setError((e as Error).message);
+    }
+  }
+  // someone whose card just arrived: fetch them, since the list on screen may not have them yet
+  async function openPerson(id: string) {
+    try {
+      const { connection } = await api<{ connection: Connection }>(
+        `connections/${id}`,
+      );
+      // going to Network also reloads the list, so the new person is in it behind the dialog
+      navigate("network");
+      setDetail(connection);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -169,8 +181,24 @@ export function WaslApp() {
       screenOpened("/?view=profile");
     }
   }, [user?.id]);
+  // Coming back to Wasl (from the camera, another app or a locked phone) shows what changed
+  // meanwhile, such as a card someone sent back. At most once every ten seconds.
+  useEffect(() => {
+    if (!user) return;
+    let last = Date.now();
+    const back = () => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - last < 10000) return;
+      last = Date.now();
+      void refresh(true);
+    };
+    document.addEventListener("visibilitychange", back);
+    return () => document.removeEventListener("visibilitychange", back);
+  }, [user?.id]);
   function navigate(next: View) {
     window.scrollTo(0, 0);
+    // opening Network (or tapping it again) looks for new people
+    if (next === "network") void refresh(true);
     if (next === view) return;
     if (next !== "profile") setStartedFrom(null);
     setView(next);
@@ -348,6 +376,8 @@ export function WaslApp() {
               onChanged={refresh}
               onProfile={() => navigate("profile")}
               onScanCode={() => setScanningCode(true)}
+              onScanCard={() => setScanning(true)}
+              onOpenPerson={(id) => void openPerson(id)}
             />
           ) : view === "profile" ? (
             <ProfileView

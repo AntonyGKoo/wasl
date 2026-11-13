@@ -140,6 +140,23 @@ test("people swap cards both ways, with albums, favorites, password change and a
   assert.equal(bobForAlice.origin, "swap");
   assert.equal(bobForAlice.unseen, true);
   assert.equal(bobForAlice.event, "Web Summit Qatar");
+  // Alice's phone, still showing her code, learns that a card came back: a small answer
+  // with no details beyond the name, and only her own
+  const arrived = await call("connections/new", "GET", undefined, alice);
+  assert.equal(arrived.status, 200);
+  assert.equal(arrived.data.people.length, 1);
+  assert.deepEqual(Object.keys(arrived.data.people[0]).sort(), [
+    "at",
+    "id",
+    "name",
+  ]);
+  assert.equal(arrived.data.people[0].id, bobForAlice.id);
+  assert.equal(arrived.data.people[0].name, "Bob Karim");
+  assert.deepEqual(
+    (await call("connections/new", "GET", undefined, bob)).data.people,
+    [],
+  );
+  assert.equal((await call("connections/new")).status, 401);
   // swapping again doesn't add Bob twice
   await call(
     "connections/import",
@@ -154,6 +171,10 @@ test("people swap cards both ways, with albums, favorites, password change and a
   );
   // opening Bob clears New
   await call(`connections/${bobForAlice.id}`, "GET", undefined, alice);
+  assert.deepEqual(
+    (await call("connections/new", "GET", undefined, alice)).data.people,
+    [],
+  );
   aliceNetwork = (await call("connections", "GET", undefined, alice)).data
     .connections;
   assert.equal(aliceNetwork[0].unseen, false);

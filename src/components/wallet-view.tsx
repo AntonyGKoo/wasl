@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import QRCode from "qrcode";
 import {
   ArrowLeftRight,
@@ -41,12 +41,18 @@ export function WalletView({
   onChanged,
   onProfile,
   onScanCode,
+  onScanCard,
+  onOpenPerson,
 }: {
   cards: Card[];
   user: User;
   onChanged: () => void;
   onProfile: () => void;
   onScanCode: () => void;
+  // the other person has no Wasl: read their paper card instead
+  onScanCard: () => void;
+  // open someone whose card just came back in a swap
+  onOpenPerson: (id: string) => void;
 }) {
   const [editing, setEditing] = useState<Card | null | undefined>();
   const [sharing, setSharing] = useState<Card | null>(null);
@@ -72,8 +78,8 @@ export function WalletView({
         <div>
           <h1>My cards</h1>
           <p>
-            Each card shares only what you switch on. Your notes never leave
-            your phone.
+            Each card shares only what you switch on. Your notes are never on a
+            card.
           </p>
         </div>
         <Button onClick={() => setEditing(null)}>
@@ -152,6 +158,14 @@ export function WalletView({
           onScanCode={() => {
             setSharing(null);
             onScanCode();
+          }}
+          onScanCard={() => {
+            setSharing(null);
+            onScanCard();
+          }}
+          onOpenPerson={(id) => {
+            setSharing(null);
+            onOpenPerson(id);
           }}
         />
       ) : null}
@@ -413,11 +427,15 @@ function ShareModal({
   onClose,
   onChanged,
   onScanCode,
+  onScanCard,
+  onOpenPerson,
 }: {
   card: Card;
   onClose: () => void;
   onChanged: () => void;
   onScanCode: () => void;
+  onScanCard: () => void;
+  onOpenPerson: (id: string) => void;
 }) {
   const canShare = typeof navigator !== "undefined" && !!navigator.share;
   const [url, setUrl] = useState("");
@@ -426,6 +444,72 @@ function ShareModal({
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [busy, setBusy] = useState(false);
+  // someone scanned this code and sent their own card back while it was on screen
+  const [arrived, setArrived] = useState<{ id: string; name: string } | null>(
+    null,
+  );
+  const changed = useRef(onChanged);
+  changed.current = onChanged;
+  useEffect(() => {
+    // Keep the screen on while the code is showing, so it doesn't dim or lock just before the
+    // other person scans it. Phones that can't do this simply behave as before.
+    let active = true;
+    let lock: WakeLockSentinel | null = null;
+    async function hold() {
+      if (document.hidden || (lock && !lock.released)) return;
+      try {
+        const got = await navigator.wakeLock?.request("screen");
+        if (!got) return;
+        if (active) lock = got;
+        else void got.release().catch(() => {});
+      } catch {
+        // not allowed right now (low battery, for example)
+      }
+    }
+    void hold();
+    // the phone lets go of it whenever Wasl is left; take it again on return
+    document.addEventListener("visibilitychange", hold);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", hold);
+      void lock?.release().catch(() => {});
+    };
+  }, []);
+  useEffect(() => {
+    // While the code is showing, ask every few seconds whether a card came back, so the swap
+    // appears on this phone too. Stops after ten minutes, or when the phone is put away.
+    let active = true;
+    let known: Map<string, string> | null = null;
+    const started = Date.now();
+    async function look() {
+      if (!active || document.hidden) return;
+      try {
+        const { people } = await api<{
+          people: { id: string; name: string; at: string }[];
+        }>("connections/new");
+        if (!active) return;
+        const fresh = known
+          ? people.find((p) => known!.get(p.id) !== String(p.at))
+          : undefined;
+        known = new Map(people.map((p) => [p.id, String(p.at)]));
+        if (fresh) {
+          setArrived({ id: fresh.id, name: fresh.name });
+          changed.current();
+        }
+      } catch {
+        // no connection for a moment: the next look tries again
+      }
+    }
+    void look();
+    const timer = window.setInterval(() => {
+      if (Date.now() - started > 10 * 60 * 1000) window.clearInterval(timer);
+      else void look();
+    }, 4000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
   useEffect(() => {
     let active = true;
     (async () => {
@@ -473,6 +557,35 @@ function ShareModal({
       setBusy(false);
     }
   }
+  const first = arrived?.name.split(" ")[0] || "them";
+  if (arrived)
+    return (
+      <Modal title={`Share ${card.label}`} onClose={onClose}>
+        <div className="saved-connection swap-arrived" role="status">
+          <span>
+            <ArrowLeftRight size={24} />
+          </span>
+          <h3>
+            {arrived.name
+              ? `You swapped cards with ${first}`
+              : "You swapped cards"}
+          </h3>
+          <p>
+            {arrived.name ? first : "Someone"} saved your card and sent theirs
+            back. It&rsquo;s in your network now. Add what you talked about
+            while you remember it.
+          </p>
+          <div className="swap-arrived-actions">
+            <Button onClick={() => onOpenPerson(arrived.id)}>
+              Open {first} <ArrowRight size={15} />
+            </Button>
+            <Button variant="secondary" onClick={() => setArrived(null)}>
+              <QrCode size={16} /> Show my code again
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
   return (
     <Modal
       title={`Share ${card.label}`}
@@ -504,12 +617,23 @@ function ShareModal({
         <ArrowLeftRight size={15} />
         <span>
           <strong>They have Wasl?</strong> When they save your card, they can
-          send theirs back in the same tap. Or scan their code.
+          send theirs back in the same tap, and it shows up here. Or scan their
+          code.
+        </span>
+      </p>
+      <p className="swap-hint plain">
+        <ScanLine size={15} />
+        <span>
+          <strong>No Wasl?</strong> The code still opens your card on their
+          phone. Scan their paper card to keep theirs.
         </span>
       </p>
       <div className="share-actions">
         <Button variant="secondary" onClick={onScanCode}>
-          <ScanLine size={16} /> Scan their code
+          <QrCode size={16} /> Scan their code
+        </Button>
+        <Button variant="secondary" onClick={onScanCard}>
+          <ScanLine size={16} /> Scan their card
         </Button>
         {canShare ? (
           <Button

@@ -293,9 +293,9 @@ export function RecallView({
           ) : null}
           <p className="search-privacy">
             {ai
-              ? "Your query and matching saved details are sent to OpenAI to find supported matches."
+              ? "Your question and the saved details that might match are sent to OpenAI, which picks the people who fit."
               : capabilities.ai
-                ? "Keyword mode searches your saved details without sending them to an AI provider."
+                ? "With AI off, Wasl searches your saved details by keyword and sends nothing to an AI provider."
                 : "Searches the details, notes and places you saved. Nothing leaves your account."}
           </p>
         </form>
