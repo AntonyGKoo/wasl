@@ -206,6 +206,47 @@ test("people swap cards both ways, with albums, favorites, password change and a
     alice,
   );
   assert.equal(fav.data.connection.favorite, true);
+  // one-tap tags on a person's page: exactly these tags, nothing else about the person changes,
+  // and only on your own people
+  const tagged = await call(
+    `connections/${bobForAlice.id}/tags`,
+    "POST",
+    { tags: ["Hiring", "Hiring", "Intro offered"] },
+    alice,
+  );
+  assert.equal(tagged.status, 200);
+  assert.deepEqual(tagged.data.connection.tags, ["Hiring", "Intro offered"]);
+  assert.equal(tagged.data.connection.profile.name, "Bob Karim");
+  assert.equal(tagged.data.connection.favorite, true);
+  assert.equal(
+    (
+      await call(
+        `connections/${bobForAlice.id}/tags`,
+        "POST",
+        { tags: ["x".repeat(41)] },
+        alice,
+      )
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call(
+        `connections/${bobForAlice.id}/tags`,
+        "POST",
+        { tags: ["Mine now"] },
+        bob,
+      )
+    ).status,
+    404,
+  );
+  const untagged = await call(
+    `connections/${bobForAlice.id}/tags`,
+    "POST",
+    { tags: [] },
+    alice,
+  );
+  assert.deepEqual(untagged.data.connection.tags, []);
   await call(
     "albums",
     "PUT",

@@ -324,75 +324,82 @@ export function NetworkView({
         </section>
       ) : null}
       <section className="network-section">
-        <div className="section-heading">
-          <h2>
-            {album ? album.name : "People"}{" "}
-            <span>{album ? album.people.length : contacts.length}</span>
-          </h2>
-          <div className="search-box">
-            <Search size={16} />
-            <input
-              aria-label="Filter connections"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, role, company…"
-            />
-            {query ? (
-              <button
-                className="icon-button"
-                aria-label="Clear filter"
-                onClick={() => setQuery("")}
-              >
-                <X size={15} />
-              </button>
+        {/* nobody saved yet: no heading, search box or filters over an empty list */}
+        {contacts.length ? (
+          <>
+            <div className="section-heading">
+              <h2>
+                {album ? album.name : "People"}{" "}
+                <span>{album ? album.people.length : contacts.length}</span>
+              </h2>
+              <div className="search-box">
+                <Search size={16} />
+                <input
+                  aria-label="Filter connections"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search name, role, company…"
+                />
+                {query ? (
+                  <button
+                    className="icon-button"
+                    aria-label="Clear filter"
+                    onClick={() => setQuery("")}
+                  >
+                    <X size={15} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            {album ? (
+              <div className="album-bar">
+                <span>
+                  {albumLabel[album.kind]} album
+                  {album.kind === "mine"
+                    ? ""
+                    : " · built from your connections"}
+                </span>
+                {album.kind === "mine" ? (
+                  <button
+                    className="text-button"
+                    onClick={() => setEditingAlbum(album)}
+                  >
+                    <Pencil size={13} /> Edit album
+                  </button>
+                ) : null}
+                <button className="text-button" onClick={() => setAlbumKey("")}>
+                  <X size={13} /> Show everyone
+                </button>
+              </div>
             ) : null}
-          </div>
-        </div>
-        {album ? (
-          <div className="album-bar">
-            <span>
-              {albumLabel[album.kind]} album
-              {album.kind === "mine" ? "" : " · built from your connections"}
-            </span>
-            {album.kind === "mine" ? (
+            <div className="filter-row" role="group" aria-label="Group by">
+              {(
+                [
+                  ["recent", "Recent"],
+                  ["event", "Event"],
+                  ["company", "Company"],
+                  ["tag", "Tag"],
+                ] as const
+              ).map(([g, label]) => (
+                <button
+                  key={g}
+                  className={`filter-chip ${group === g ? "active" : ""}`}
+                  aria-pressed={group === g}
+                  onClick={() => setGroup(g)}
+                >
+                  {label}
+                </button>
+              ))}
               <button
-                className="text-button"
-                onClick={() => setEditingAlbum(album)}
+                className={`filter-chip ${onlyFavorites ? "active" : ""}`}
+                aria-pressed={onlyFavorites}
+                onClick={() => setOnlyFavorites(!onlyFavorites)}
               >
-                <Pencil size={13} /> Edit album
+                <Star size={12} /> Favorites
               </button>
-            ) : null}
-            <button className="text-button" onClick={() => setAlbumKey("")}>
-              <X size={13} /> Show everyone
-            </button>
-          </div>
+            </div>
+          </>
         ) : null}
-        <div className="filter-row" role="group" aria-label="Group by">
-          {(
-            [
-              ["recent", "Recent"],
-              ["event", "Event"],
-              ["company", "Company"],
-              ["tag", "Tag"],
-            ] as const
-          ).map(([g, label]) => (
-            <button
-              key={g}
-              className={`filter-chip ${group === g ? "active" : ""}`}
-              aria-pressed={group === g}
-              onClick={() => setGroup(g)}
-            >
-              {label}
-            </button>
-          ))}
-          <button
-            className={`filter-chip ${onlyFavorites ? "active" : ""}`}
-            aria-pressed={onlyFavorites}
-            onClick={() => setOnlyFavorites(!onlyFavorites)}
-          >
-            <Star size={12} /> Favorites
-          </button>
-        </div>
         {!contacts.length ? (
           <div className="empty-state">
             <span className="empty-icon">
@@ -424,9 +431,9 @@ export function NetworkView({
         ) : !filtered.length ? (
           <div className="empty-state small">
             <Search size={27} />
-            <h3>No connections match this filter.</h3>
+            <h3>No one here matches that.</h3>
             <p>
-              Try another name or category, or use Search to look through your
+              Try another name or group, or use Search to look through your
               notes.
             </p>
           </div>
@@ -904,11 +911,14 @@ export function ConnectionForm({
 }
 export function ConnectionDetail({
   initial,
+  knownTags = [],
   onClose,
   onEdit,
   onChanged,
 }: {
   initial: Connection;
+  // tags already used on other people, offered as one-tap choices
+  knownTags?: string[];
   onClose: () => void;
   onEdit: (c: Connection) => void;
   onChanged: () => void;
@@ -1037,18 +1047,15 @@ export function ConnectionDetail({
               .filter(Boolean)
               .join(" · ")}
           </p>
-          <div className="contact-tags">
-            {contact.tags.map((t) => (
-              <span key={t} className="pill">
-                {t}
-              </span>
-            ))}
-            {(contact.albums || []).map((a) => (
-              <span key={`album-${a}`} className="pill album-pill">
-                {a}
-              </span>
-            ))}
-          </div>
+          {contact.albums?.length ? (
+            <div className="contact-tags">
+              {contact.albums.map((a) => (
+                <span key={`album-${a}`} className="pill album-pill">
+                  {a}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {originText[contact.origin] ? (
             <p className="origin-line">{originText[contact.origin]}</p>
           ) : null}
@@ -1073,6 +1080,15 @@ export function ConnectionDetail({
           </button>
         </div>
       </div>
+      <QuickTags
+        contact={contact}
+        known={knownTags}
+        onSaved={(tags) => {
+          setContact((c) => ({ ...c, tags }));
+          onChanged();
+        }}
+        onError={setError}
+      />
       {contact.profile.bio ? (
         <p className="bio">{contact.profile.bio}</p>
       ) : null}
@@ -1080,29 +1096,25 @@ export function ConnectionDetail({
       <div className="meeting-context">
         <CalendarDays size={18} />
         <div>
-          <strong>{contact.event || "Your first connection"}</strong>
-          <p>
-            {[contact.place, shortDate(contact.met_on)]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          <span className="muted">Saved {shortDate(contact.created_at)}</span>
+          {/* the event when there is one; otherwise the place, or just the day */}
+          <strong>
+            {contact.event ||
+              contact.place ||
+              `Met ${shortDate(contact.met_on)}`}
+          </strong>
+          {contact.event || contact.place ? (
+            <p>
+              {[contact.event ? contact.place : "", shortDate(contact.met_on)]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          ) : null}
+          {/* only worth saying when the person was added on another day than the meeting */}
+          {shortDate(contact.created_at) !== shortDate(contact.met_on) ? (
+            <span className="muted">Saved {shortDate(contact.created_at)}</span>
+          ) : null}
         </div>
       </div>
-      <div className="detail-actions">
-        <a
-          className="button secondary"
-          href={`/api/connections/${contact.id}/vcard`}
-        >
-          <Download size={15} /> Save to phone
-        </a>
-        {contact.source_share_id ? (
-          <Button variant="secondary" busy={busy} onClick={refresh}>
-            <RefreshCw size={15} /> Update shared details
-          </Button>
-        ) : null}
-      </div>
-      {!contact.source_share_id ? <Invite contact={contact} /> : null}
       <div className="form-divider">
         <MessageSquare size={15} /> Your private memory
       </div>
@@ -1112,7 +1124,7 @@ export function ConnectionDetail({
       <VoiceMemory name={contact.profile.name || ""} onSave={saveVoiceNote} />
       <form onSubmit={addNote}>
         <label>
-          <span>Add an interaction or something to remember</span>
+          <span>Add a note</span>
           <textarea
             placeholder="What did you talk about? What would you like to follow up on?"
             value={body}
@@ -1124,13 +1136,13 @@ export function ConnectionDetail({
         <div className="note-actions">
           <input
             type="date"
-            aria-label="Interaction date"
+            aria-label="Note date"
             value={noteDate}
             required
             onChange={(e) => setNoteDate(e.target.value)}
           />
           <Button type="submit" busy={busy}>
-            Save memory
+            Save note
           </Button>
         </div>
       </form>
@@ -1178,11 +1190,25 @@ export function ConnectionDetail({
           ))
         )}
       </div>
+      <div className="detail-actions">
+        <a
+          className="button secondary"
+          href={`/api/connections/${contact.id}/vcard`}
+        >
+          <Download size={15} /> Save to phone
+        </a>
+        {contact.source_share_id ? (
+          <Button variant="secondary" busy={busy} onClick={refresh}>
+            <RefreshCw size={15} /> Update shared details
+          </Button>
+        ) : null}
+      </div>
+      {!contact.source_share_id ? <Invite contact={contact} /> : null}
       <div className="danger-zone">
         {confirmDelete ? (
           <>
             <p>
-              Delete this connection and all its private memories? This cannot
+              Delete this connection and all your notes about them? This cannot
               be undone.
             </p>
             <div className="row">
@@ -1204,6 +1230,114 @@ export function ConnectionDetail({
         )}
       </div>
     </Modal>
+  );
+}
+
+// Tags on a person's own page: one tap adds or removes one, saved right away. Someone who
+// arrived by a swap or a scanned code never passed through the form, so this is where they get
+// their "why": Hiring, Intro offered, Follow up…
+function QuickTags({
+  contact,
+  known,
+  onSaved,
+  onError,
+}: {
+  contact: Connection;
+  known: string[];
+  onSaved: (tags: string[]) => void;
+  onError: (message: string) => void;
+}) {
+  // nobody tagged yet: the choices are already open
+  const [open, setOpen] = useState(contact.tags.length === 0);
+  const [own, setOwn] = useState("");
+  const [busy, setBusy] = useState(false);
+  const choices = [...new Set([...suggestedTags, ...known])]
+    .filter((t) => !contact.tags.includes(t))
+    .slice(0, 9);
+  async function save(tags: string[]) {
+    setBusy(true);
+    onError("");
+    try {
+      const result = await api<{ connection: Connection }>(
+        `connections/${contact.id}/tags`,
+        "POST",
+        { tags },
+      );
+      onSaved(result.connection.tags);
+    } catch (e) {
+      onError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  function addOwn() {
+    const t = own.trim().slice(0, 40);
+    setOwn("");
+    if (t && !contact.tags.includes(t)) void save([...contact.tags, t]);
+  }
+  return (
+    <div className="tag-picker quick-tags" role="group" aria-label="Tags">
+      {contact.tags.map((t) => (
+        <button
+          type="button"
+          key={t}
+          className="filter-chip active"
+          aria-pressed="true"
+          disabled={busy}
+          onClick={() => void save(contact.tags.filter((x) => x !== t))}
+        >
+          <Check size={12} /> {t}
+        </button>
+      ))}
+      {open ? (
+        <>
+          {choices.map((t) => (
+            <button
+              type="button"
+              key={t}
+              className="filter-chip"
+              aria-pressed="false"
+              disabled={busy}
+              onClick={() => void save([...contact.tags, t])}
+            >
+              <Tag size={12} /> {t}
+            </button>
+          ))}
+          <span className="tag-add">
+            <input
+              value={own}
+              maxLength={40}
+              placeholder="Your own tag"
+              aria-label="Your own tag"
+              onChange={(e) => setOwn(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addOwn();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Add tag"
+              disabled={busy}
+              onClick={addOwn}
+            >
+              <Plus size={15} />
+            </button>
+          </span>
+        </>
+      ) : (
+        <button
+          type="button"
+          className="filter-chip add-tag"
+          onClick={() => setOpen(true)}
+        >
+          <Plus size={12} /> Add a tag
+        </button>
+      )}
+    </div>
   );
 }
 

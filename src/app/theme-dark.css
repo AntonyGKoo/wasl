@@ -693,6 +693,12 @@
   background: transparent;
   border: 1px solid var(--line);
 }
+@media (max-width: 760px) {
+  :where(:root[data-theme="dark"]) .swap-bar {
+    background: #1b2027f2;
+    border-top: 1px solid var(--line);
+  }
+}
 :where(:root[data-theme="dark"]) .strength {
   border: 1px solid var(--line);
   background: #242f35;
@@ -787,6 +793,15 @@
 :where(:root[data-theme="dark"]) .pill.album-pill {
   background: #2b233d;
   color: #a89ccf;
+}
+:where(:root[data-theme="dark"]) .timeline + .detail-actions {
+  border-top: 1px solid var(--line);
+}
+:where(:root[data-theme="dark"])
+  .modal
+  > form:last-child
+  > .form-actions:last-child {
+  background: #1b2027;
 }
 :where(:root[data-theme="dark"]) .origin-line {
   color: var(--teal);
@@ -995,6 +1010,9 @@
 }
 :where(:root[data-theme="dark"]) .ai-reason strong {
   color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .ai-reason summary {
+  color: var(--teal);
 }
 :where(:root[data-theme="dark"]) .auth-features b {
   color: var(--ink);

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowLeftRight,
   ArrowRight,
@@ -39,6 +39,20 @@ export function PublicShare({ token }: { token: string }) {
     swapped: boolean;
     before?: boolean;
   } | null>(null);
+  // after a save or swap, the confirmation is brought into view (on a phone the button that
+  // was tapped sits at the bottom of the screen, and the confirmation appears above it)
+  const savedRef = useRef<HTMLDivElement>(null);
+  const [justSaved, setJustSaved] = useState(0);
+  useEffect(() => {
+    if (!justSaved) return;
+    const calm = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    savedRef.current?.scrollIntoView({
+      behavior: calm ? "auto" : "smooth",
+      block: "center",
+    });
+  }, [justSaved]);
   useEffect(() => {
     let active = true;
     (async () => {
@@ -90,6 +104,14 @@ export function PublicShare({ token }: { token: string }) {
   const own = myCards.some((c) => c.token === token);
   const first = card?.profile.name?.split(" ")[0] || "them";
   const chosen = myCards.find((c) => c.id === backCard);
+  const action = !user
+    ? `Save ${first} in Wasl`
+    : sendBack && backCard
+      ? "Swap cards"
+      : "Save to my Wasl network";
+  // someone signed in, looking at a card they can still save: on a phone the button to do it
+  // stays at the bottom of the screen (one scan, one tap; where you met can wait)
+  const bar = !!(card && user && !saved && !own);
   async function save(e: FormEvent) {
     e.preventDefault();
     if (!user) {
@@ -111,6 +133,7 @@ export function PublicShare({ token }: { token: string }) {
       });
       rememberMeeting(event, place);
       setSaved({ id: result.connection.id, swapped: result.swapped });
+      setJustSaved((n) => n + 1);
     } catch (e) {
       // signed out in the meantime: sign in, then come straight back to this card
       if ((e as { status?: number }).status === 401)
@@ -123,7 +146,7 @@ export function PublicShare({ token }: { token: string }) {
     }
   }
   return (
-    <div className="public-page">
+    <div className={`public-page ${bar ? "with-bar" : ""}`.trim()}>
       <a className="public-brand" href="/">
         <Brand />
       </a>
@@ -187,7 +210,7 @@ export function PublicShare({ token }: { token: string }) {
                 </a>
               </div>
             ) : saved ? (
-              <div className="saved-connection">
+              <div className="saved-connection" ref={savedRef}>
                 <span>
                   {saved.swapped ? (
                     <ArrowLeftRight size={24} />
@@ -218,7 +241,7 @@ export function PublicShare({ token }: { token: string }) {
                 <div className="form-divider">
                   {user ? "Save and swap cards" : `Remember ${first} with Wasl`}
                 </div>
-                <form onSubmit={save}>
+                <form id="swap-form" onSubmit={save}>
                   {user ? (
                     <>
                       <label>
@@ -316,15 +339,15 @@ export function PublicShare({ token }: { token: string }) {
                       takes a minute.
                     </p>
                   )}
-                  {error ? <Notice error>{error}</Notice> : null}
-                  <Button className="full" type="submit" busy={busy}>
-                    {!user
-                      ? `Save ${first} in Wasl`
-                      : sendBack && backCard
-                        ? "Swap cards"
-                        : "Save to my Wasl network"}
-                    <ArrowRight size={16} />
-                  </Button>
+                  {/* On a phone, someone signed in gets this button in a bar at the bottom of
+                      the screen instead (below), so it is in reach without scrolling. */}
+                  <div className={user ? "swap-inline" : ""}>
+                    {error ? <Notice error>{error}</Notice> : null}
+                    <Button className="full" type="submit" busy={busy}>
+                      {action}
+                      <ArrowRight size={16} />
+                    </Button>
+                  </div>
                 </form>
               </>
             )}
@@ -338,6 +361,16 @@ export function PublicShare({ token }: { token: string }) {
       <footer className="public-footer">
         Never forget who you met, or why it mattered.
       </footer>
+      {bar ? (
+        // outside the card, so nothing clips it; it still submits the form above
+        <div className="swap-bar">
+          {error ? <Notice error>{error}</Notice> : null}
+          <Button className="full" type="submit" form="swap-form" busy={busy}>
+            {action}
+            <ArrowRight size={16} />
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

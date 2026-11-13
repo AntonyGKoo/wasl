@@ -104,6 +104,7 @@ export const importSchema = z.object({
   share_back_card_id: z.uuid().optional(),
 });
 export const favoriteSchema = z.object({ favorite: z.boolean() });
+export const tagsSchema = z.object({ tags: connectionSchema.shape.tags });
 const albumName = text(60).min(1, "Give the album a name.");
 export const albumSchema = z.object({
   name: albumName,

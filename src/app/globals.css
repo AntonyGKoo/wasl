@@ -551,13 +551,16 @@ form > label:last-of-type {
   backdrop-filter: blur(3px);
 }
 .modal {
+  --modal-pad: 28px;
   background: white;
   border-radius: 20px;
-  padding: 28px;
+  padding: var(--modal-pad);
   width: 100%;
   max-width: 550px;
   max-height: 90dvh;
   overflow: auto;
+  /* a field that takes the focus stops above the buttons that stay at the bottom */
+  scroll-padding-bottom: 96px;
   box-shadow: 0 20px 100px #102b3322;
 }
 .modal.wide {
@@ -654,7 +657,7 @@ form > label:last-of-type {
     padding: 12px;
   }
   .modal {
-    padding: 22px;
+    --modal-pad: 22px;
     max-height: 94dvh;
   }
   .form-grid {
@@ -1248,6 +1251,7 @@ form > label:last-of-type {
   margin-top: 3px;
 }
 .meeting-context .muted {
+  display: block;
   font-size: 11px;
 }
 .detail-actions {
@@ -1721,6 +1725,19 @@ form > label:last-of-type {
   height: 100%;
   min-height: 0;
   opacity: 0;
+  cursor: pointer;
+}
+.file-drop.busy {
+  opacity: 0.75;
+  cursor: progress;
+}
+/* under the camera box: pick a photo that was taken earlier */
+.file-alt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 2px 0 0;
   cursor: pointer;
 }
 .settings-sections {
@@ -2387,7 +2404,7 @@ input[type="date"]::-webkit-date-and-time-value {
     padding: 9px 12px;
   }
   .modal {
-    padding: 18px;
+    --modal-pad: 18px;
   }
   .modal-heading {
     margin-bottom: 16px;
@@ -2624,6 +2641,10 @@ input[type="date"]::-webkit-date-and-time-value {
   gap: 8px;
   margin-bottom: 14px;
 }
+/* the phone's bar for Swap cards on a shared card (shown only on phones, see below) */
+.swap-bar {
+  display: none;
+}
 /* a card came back while your code was on screen */
 .swap-arrived {
   padding: 18px 0 4px;
@@ -2642,6 +2663,45 @@ input[type="date"]::-webkit-date-and-time-value {
   gap: 8px;
 }
 @media (max-width: 760px) {
+  /* My cards: the title and "Create a card" share a row, so "Share card" is on the first screen */
+  .page-intro.cards-intro {
+    position: relative;
+    gap: 0;
+    margin-bottom: 14px;
+  }
+  .page-intro.cards-intro h1 {
+    margin: 6px 0 12px;
+    min-height: 44px;
+    line-height: 44px;
+  }
+  .page-intro.cards-intro > .button {
+    position: absolute;
+    top: 6px;
+    right: 0;
+    padding: 9px 12px;
+  }
+  /* someone signed in opened a shared card: the Swap button is always in reach */
+  .swap-bar {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: #fffffff2;
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+  }
+  .swap-bar .notice {
+    margin: 0 0 10px;
+  }
+  .swap-inline {
+    display: none;
+  }
+  .public-page.with-bar {
+    padding-bottom: 110px;
+  }
   /* two side by side; a third one takes the full row instead of half of it */
   .share-actions {
     grid-template-columns: 1fr 1fr;
@@ -2974,6 +3034,32 @@ label.button {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+/* tags on a person's own page: one tap adds or removes one */
+.quick-tags {
+  margin: 14px 0 0;
+}
+.filter-chip.add-tag {
+  border-style: dashed;
+}
+.filter-chip:disabled {
+  opacity: 0.6;
+}
+/* after the notes: saving to the phone, updating, inviting */
+.timeline + .detail-actions {
+  margin: 4px 0 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+/* Long forms in a pop-up: Cancel and Save stay in view while the form scrolls */
+.modal > form:last-child > .form-actions:last-child {
+  position: sticky;
+  bottom: calc(-1 * var(--modal-pad));
+  z-index: 3;
+  margin-inline: calc(-1 * var(--modal-pad));
+  margin-bottom: calc(-1 * var(--modal-pad));
+  padding: 14px var(--modal-pad) var(--modal-pad);
+  background: white;
 }
 .tag-add input {
   width: 150px;
@@ -3900,6 +3986,19 @@ label.button {
   color: var(--ink);
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+/* the technical side of the AI status is one tap away, for whoever runs Wasl */
+.ai-reason summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  cursor: pointer;
+  color: var(--teal);
+  text-decoration: underline;
+}
+.ai-reason details[open] > summary,
+details.ai-reason[open] > summary {
+  margin-bottom: 4px;
 }
 /* The welcome page (the same first page as the mockup): scan your card, LinkedIn, email, or sign in */
 .auth-features b {

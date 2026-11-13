@@ -436,6 +436,7 @@ export function WaslApp() {
         <ConnectionDetail
           key={detail.id}
           initial={detail}
+          knownTags={[...new Set(contacts.flatMap((c) => c.tags))]}
           onClose={() => {
             setDetail(null);
             if (backToDebrief) {
@@ -653,47 +654,56 @@ function AiStatus({ connected }: { connected: boolean }) {
       {connected &&
       state === "working" &&
       (reason || parts.some((p) => p.ok && p.detail)) ? (
-        // working, with something worth knowing: a spare model in use, or no meaning index
-        <div className="ai-reason" role="status">
+        // Working, with something worth knowing for whoever runs Wasl (a spare model in use,
+        // no meaning index). People using the app just see "Working"; the rest is one tap away.
+        <details className="ai-reason">
+          <summary>How it is set up</summary>
           {parts
             .filter((part) => part.ok && part.detail)
             .map((part) => (
               <p key={part.name}>{part.detail}</p>
             ))}
           {reason ? <p>{reason}</p> : null}
-        </div>
+        </details>
       ) : null}
       {connected && (state === "failing" || state === "unknown") ? (
         <div className="ai-reason" role="status">
-          {state === "failing" && parts.length ? (
-            // which of the two AI services was refused, with the model it asked for
-            <ul>
-              {parts.map((part) => (
-                <li key={part.name}>
-                  <strong>
-                    {part.name} ({part.model})
-                  </strong>
-                  : {part.ok ? "working." : part.detail}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>{reason}</p>
-          )}
-          {address ? (
-            <p>
-              Wasl is set to reach the AI at <strong>{address}</strong>, not at
-              OpenAI itself (OPENAI_BASE_URL).
-            </p>
-          ) : null}
+          {/* first what it means for the person using Wasl, in plain words */}
           <p>
             {state === "failing"
-              ? "Until this is fixed, Wasl searches by keyword and reads cards with its built-in rules. "
-              : ""}
+              ? "Wasl’s AI isn’t answering right now. Until it does, Wasl searches by keyword and reads cards with its built-in rules. "
+              : `${reason} `}
             <button className="text-button" onClick={() => void check()}>
               Check again
             </button>
           </p>
+          {state === "failing" ? (
+            // then, one tap away, what whoever runs Wasl needs: which AI service was refused,
+            // the model it asked for, and what the provider answered
+            <details>
+              <summary>What went wrong</summary>
+              {parts.length ? (
+                <ul>
+                  {parts.map((part) => (
+                    <li key={part.name}>
+                      <strong>
+                        {part.name} ({part.model})
+                      </strong>
+                      : {part.ok ? "working." : part.detail}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>{reason}</p>
+              )}
+              {address ? (
+                <p>
+                  Wasl is set to reach the AI at <strong>{address}</strong>, not
+                  at OpenAI itself (OPENAI_BASE_URL).
+                </p>
+              ) : null}
+            </details>
+          ) : null}
         </div>
       ) : null}
     </>

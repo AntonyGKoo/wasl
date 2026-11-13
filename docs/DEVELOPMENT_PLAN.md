@@ -67,3 +67,16 @@ Everything was walked through again on a phone and a laptop, in both looks, and 
 - **A swap shows on both phones.** The person showing their code used to see nothing until they reloaded. Their phone now asks every few seconds while the code is on screen, says "You swapped cards with …" as it happens, and opens the new person in one tap. Wasl also looks for new people whenever you come back to it or open Network, and the screen stays awake while your code is showing.
 - **No Wasl on the other side.** The Share dialog now offers **Scan their card**, the mockup's "No Wasl" path, next to **Scan their code**.
 - **Wording.** The Cards page said notes "never leave your phone". They are kept in your account so they follow you to a laptop, so it now says notes are never on a card. The Search tab uses a magnifier, like the mockup. The line under AI search says in plain words what is sent to OpenAI.
+
+## Through a user's eyes (Nov 14)
+
+Every screen was photographed in full on a phone and on a laptop (49 screens each) and read the way a first-time user would see it. What got in the way, and what changed:
+
+- **Swapping after a scan took a scroll.** Someone who scans your code saw your details first, with **Swap cards** two screens further down. On a phone the button now stays at the bottom of the screen, and after the swap the confirmation is brought into view.
+- **Share card sat just under the first screen** on the Cards page. On phones the title row is shorter and **Create a card** is a quieter button, so **Share card** is the one filled button and shows without scrolling.
+- **No quick way to say why someone matters after a swap.** People who arrive by a swap or a scanned code never pass through the form with its tags. A person's page now has **one-tap tags** (Hiring, Intro offered, Follow up and the rest, plus your own), saved as you tap.
+- **Your notes were a long way down a person's page.** The order is now: who they are, tags, how to reach them, where you met, your notes. Saving to the phone's contacts and inviting them come after.
+- **Long forms hid their buttons.** In the new-person, edit and card forms, **Cancel** and **Save** stay at the bottom while the form scrolls.
+- **A card photo needed an extra tap.** Wasl starts reading as soon as the photo is taken. A separate link opens the photo library (on a phone the big button opens the camera).
+- **Every new card was the same colour.** A new card starts in the colour of its type (Professional teal, Event violet, Social coral, Team midnight) until you pick one.
+- **Smaller things.** A person saved without an event no longer says "Your first connection" (it shows the place or the day). The empty Network page has no search box or filters over nothing. "Note" is the one word for a note (it used to alternate with "memory" and "interaction"). Settings shows "Working" for the AI, with the technical details one tap away.

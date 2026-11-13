@@ -1,5 +1,15 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+// Is this control fully on the first screen: inside the window, and not under the phone's
+// tab bar at the bottom?
+async function onFirstScreen(page: Page, control: Locator) {
+  const box = await control.boundingBox();
+  if (!box) return false;
+  const bar = page.locator(".mobile-nav");
+  const barBox = (await bar.isVisible()) ? await bar.boundingBox() : null;
+  const floor = barBox ? barBox.y : page.viewportSize()!.height;
+  return box.y >= 0 && box.y + box.height <= floor;
+}
 async function signup(page: Page, name: string) {
   const email = `${randomUUID()}@example.test`;
   await page.goto("/");
@@ -38,9 +48,9 @@ test("two people share selected details, retain private memory, recall and revok
     .getByRole("button", { name: "Save connection", exact: true })
     .click();
   await page
-    .getByLabel("Add an interaction or something to remember", { exact: true })
+    .getByLabel("Add a note", { exact: true })
     .fill("Offered to introduce me to his CTO");
-  await page.getByRole("button", { name: "Save memory", exact: true }).click();
+  await page.getByRole("button", { name: "Save note", exact: true }).click();
   await expect(
     page.getByText("Offered to introduce me to his CTO", { exact: true }),
   ).toBeVisible();
@@ -159,6 +169,16 @@ test("a card that comes back while your code is showing can be opened from there
 }) => {
   await signup(page, "Alice QA");
   await page.getByRole("button", { name: "Cards", exact: true }).click();
+  // sharing is what this page is for: the button is on the first screen, phone included
+  await expect(
+    page.getByRole("button", { name: "Share card", exact: true }),
+  ).toBeVisible();
+  expect(
+    await onFirstScreen(
+      page,
+      page.getByRole("button", { name: "Share card", exact: true }),
+    ),
+  ).toBe(true);
   await page.getByRole("button", { name: "Share card", exact: true }).click();
   // someone without Wasl: their paper card can be scanned from here too
   await expect(
@@ -174,13 +194,18 @@ test("a card that comes back while your code is showing can be opened from there
     const bob = await recipient.newPage();
     await signup(bob, "Bob QA");
     await bob.goto(link);
-    await bob.getByRole("button", { name: "Swap cards", exact: true }).click();
-    await expect(
-      bob.getByRole("heading", {
-        name: "You swapped cards with Alice",
-        exact: true,
-      }),
-    ).toBeVisible();
+    // one scan, one tap: Swap is within reach without scrolling, and the confirmation is
+    // brought into view after it
+    const swap = bob.getByRole("button", { name: "Swap cards", exact: true });
+    await expect(swap).toBeVisible();
+    expect(await onFirstScreen(bob, swap)).toBe(true);
+    await swap.click();
+    const done = bob.getByRole("heading", {
+      name: "You swapped cards with Alice",
+      exact: true,
+    });
+    await expect(done).toBeVisible();
+    await expect(done).toBeInViewport();
     await expect(
       page.getByRole("heading", {
         name: "You swapped cards with Bob",
@@ -188,6 +213,14 @@ test("a card that comes back while your code is showing can be opened from there
       }),
     ).toBeVisible({ timeout: 15000 });
     await page.getByRole("button", { name: "Open Bob", exact: true }).click();
+    // someone who arrived by a swap never passed through the form: a tag is one tap here
+    const tags = page
+      .getByRole("dialog", { name: "Connection details" })
+      .getByRole("group", { name: "Tags" });
+    await tags.getByRole("button", { name: "Hiring", exact: true }).click();
+    await expect(
+      tags.getByRole("button", { name: "Hiring", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
     // Bob opens on the Network screen, and is no longer marked New
     await expect(
       page
@@ -206,6 +239,12 @@ test("a card that comes back while your code is showing can be opened from there
     await expect(
       page.getByText("Bob QA swapped cards with you", { exact: true }),
     ).toHaveCount(0);
+    // the tag chosen on Bob's page is saved: grouping by tag puts him under it
+    await page
+      .getByRole("group", { name: "Group by" })
+      .getByRole("button", { name: "Tag", exact: true })
+      .click();
+    await expect(page.getByRole("heading", { name: /^Hiring/ })).toBeVisible();
     // the phone's Back button returns to the cards, where the code was
     await page.waitForTimeout(300);
     await page.goBack();

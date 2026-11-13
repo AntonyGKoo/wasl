@@ -74,7 +74,9 @@ export function WalletView({
   }
   return (
     <>
-      <section className="page-intro">
+      {/* Sharing is what this page is for, so "Share card" is the one filled button and, on a
+          phone, the title row is kept short so it shows on the first screen. */}
+      <section className="page-intro cards-intro">
         <div>
           <h1>My cards</h1>
           <p>
@@ -82,7 +84,7 @@ export function WalletView({
             card.
           </p>
         </div>
-        <Button onClick={() => setEditing(null)}>
+        <Button variant="secondary" onClick={() => setEditing(null)}>
           <Plus size={17} /> Create a card
         </Button>
       </section>
@@ -240,6 +242,13 @@ const kindHints: Record<Card["kind"], string> = {
   social: "For friends: Instagram instead of your work email.",
   team: "For your team or club: what your teammates need.",
 };
+// each type has its own colour to start with (like the mockup), so cards can be told apart
+const kindColors: Record<Card["kind"], Card["color"]> = {
+  professional: "ocean",
+  event: "violet",
+  social: "coral",
+  team: "ink",
+};
 const kindFields: Record<Card["kind"], CardField[]> = {
   professional: [
     "name",
@@ -271,6 +280,8 @@ function CardForm({
   const [label, setLabel] = useState(card?.label || "");
   const [kind, setKind] = useState<Card["kind"]>(card?.kind || "professional");
   const [color, setColor] = useState<Card["color"]>(card?.color || "ocean");
+  // once a colour is picked by hand, changing the type leaves it alone
+  const [colorPicked, setColorPicked] = useState(false);
   const [fields, setFields] = useState<CardField[]>(
     card?.fields || kindFields.professional,
   );
@@ -325,8 +336,9 @@ function CardForm({
                   onChange={(e) => {
                     const next = e.target.value as Card["kind"];
                     setKind(next);
-                    // a new card starts with the details that suit its crowd
+                    // a new card starts with the details that suit its crowd, in its colour
                     if (!card) setFields(kindFields[next]);
+                    if (!card && !colorPicked) setColor(kindColors[next]);
                   }}
                 >
                   {cardKinds.map((k) => (
@@ -366,7 +378,10 @@ function CardForm({
                   aria-checked={color === c}
                   aria-label={name}
                   className={`swatch ${c}`}
-                  onClick={() => setColor(c)}
+                  onClick={() => {
+                    setColor(c);
+                    setColorPicked(true);
+                  }}
                 />
               ))}
             </div>

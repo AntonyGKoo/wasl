@@ -20,6 +20,7 @@ import {
   cardSchema,
   connectionSchema,
   favoriteSchema,
+  tagsSchema,
   placeSchema,
   importSchema,
   noteSchema,
@@ -35,6 +36,7 @@ import {
   markSeen,
   saveAlbum,
   setFavorite,
+  setTags,
   swapBack,
   unseenPeople,
   deleteNote,
@@ -183,6 +185,14 @@ export async function handleApi(request: Request): Promise<Response> {
             user.id,
             id,
             (await readJson(request, favoriteSchema)).favorite,
+          ),
+        });
+      if (action === "tags" && method === "POST")
+        return json({
+          connection: await setTags(
+            user.id,
+            id,
+            (await readJson(request, tagsSchema)).tags,
           ),
         });
       if (!action && method === "PUT")

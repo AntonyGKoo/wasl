@@ -9,7 +9,7 @@ export type Choice = "fav" | "keep";
 
 // Right after an event: go through the people you met, one card at a time.
 // Swipe right (or tap the star) to favorite, left (or tap ✕) to keep as a contact,
-// the mic opens the person to record or type what you talked about.
+// the mic opens the person to record or type a note about what you talked about.
 export function TonightsPeople({
   people,
   today,
@@ -146,8 +146,8 @@ export function TonightsPeople({
                     ) : null}
                     <span className="deck-memory">
                       {p.note_count
-                        ? `${p.note_count} ${p.note_count === 1 ? "memory" : "memories"} saved`
-                        : "No memory yet"}
+                        ? `${p.note_count} ${p.note_count === 1 ? "note" : "notes"} saved`
+                        : "No notes yet"}
                     </span>
                   </div>
                 );
@@ -163,7 +163,7 @@ export function TonightsPeople({
             </button>
             <button
               className="deck-button memory"
-              aria-label="Add a memory"
+              aria-label="Add a note"
               onClick={() => onOpen(current)}
             >
               <Mic size={22} />
@@ -177,7 +177,7 @@ export function TonightsPeople({
             </button>
           </div>
           <p className="muted small-copy center">
-            Swipe right to favorite · left to keep · mic to add a memory
+            Swipe right to favorite · left to keep · mic to add a note
           </p>
         </>
       ) : (

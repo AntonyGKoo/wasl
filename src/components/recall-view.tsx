@@ -443,24 +443,45 @@ export function ScanModal({
     }
     onDraft(parseCardText(cardText, lines), false, cardText);
   }
-  async function submit(e: FormEvent) {
-    e.preventDefault();
+  // Read a card photo on this phone, then sort its words into fields.
+  async function readPhoto(photo: File) {
     setBusy(true);
     setError("");
     try {
-      if (tab === "photo" && !capabilities.ocr) {
-        // no cloud OCR configured: read the card on this phone instead
-        if (!file) throw new Error("Take or choose a photo of the card first.");
-        const { readCardPhoto } = await import("@/lib/ocr");
-        const read = await readCardPhoto(file, (status, share) =>
-          setProgress(`${status} ${Math.round(share * 100)}%`),
+      const { readCardPhoto } = await import("@/lib/ocr");
+      const read = await readCardPhoto(photo, (status, share) =>
+        setProgress(`${status} ${Math.round(share * 100)}%`),
+      );
+      if (read.text.replace(/[^A-Za-z0-9]/g, "").length < 4)
+        throw new Error(
+          "Couldn't read the card. Try again in good light with the card filling the photo, or paste its text.",
         );
-        if (read.text.replace(/[^A-Za-z0-9]/g, "").length < 4)
-          throw new Error(
-            "Couldn't read the card. Try again in good light with the card filling the photo, or paste its text.",
-          );
-        await draftFrom(read.text, read.lines);
-      } else if (tab === "photo") {
+      await draftFrom(read.text, read.lines);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+      setProgress("");
+    }
+  }
+  // A photo was taken or chosen: Wasl starts reading it right away, without another tap.
+  function pick(chosen: File | null) {
+    if (!chosen || busy) return;
+    setFile(chosen);
+    void readPhoto(chosen);
+  }
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (tab === "photo" && !capabilities.ocr) {
+      // no cloud OCR configured: the card is read on this phone (again, if the first try failed)
+      if (file) void readPhoto(file);
+      else setError("Take or choose a photo of the card first.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      if (tab === "photo") {
         if (!file) throw new Error("Choose a card image first.");
         const form = new FormData();
         form.set("image", file);
@@ -544,18 +565,45 @@ export function ScanModal({
               </>
             ) : (
               <>
-                <label className="file-drop">
+                {/* The big box opens the camera on a phone; the link under it opens the
+                    photo library. Either way Wasl starts reading as soon as there is a photo. */}
+                <label className={`file-drop ${busy ? "busy" : ""}`}>
                   <Upload size={25} />
                   <strong>
-                    {file ? file.name : "Take a photo of the card"}
+                    {busy
+                      ? "Reading the card…"
+                      : file
+                        ? "Take the photo again"
+                        : "Take a photo of the card"}
                   </strong>
-                  <span>Or choose one from your photos</span>
+                  <span>
+                    {busy
+                      ? "This takes a few seconds"
+                      : "Wasl reads it as soon as you take it"}
+                  </span>
                   <input
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    required
+                    aria-label="Take a photo of the card"
+                    disabled={busy}
+                    onChange={(e) => {
+                      pick(e.target.files?.[0] || null);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <label className={`text-button file-alt ${busy ? "busy" : ""}`}>
+                  Or choose one from your photos
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    disabled={busy}
+                    onChange={(e) => {
+                      pick(e.target.files?.[0] || null);
+                      e.target.value = "";
+                    }}
                   />
                 </label>
                 <p className="muted small-copy">
@@ -594,10 +642,19 @@ export function ScanModal({
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" busy={busy}>
-            {own ? "Review my details" : "Review contact details"}{" "}
-            <ArrowRight size={15} />
-          </Button>
+          {tab === "photo" && !capabilities.ocr ? (
+            // a photo is read as soon as it is taken; this button is only for a second try
+            file ? (
+              <Button type="submit" busy={busy}>
+                Read it again
+              </Button>
+            ) : null
+          ) : (
+            <Button type="submit" busy={busy}>
+              {own ? "Review my details" : "Review contact details"}{" "}
+              <ArrowRight size={15} />
+            </Button>
+          )}
         </div>
       </form>
     </Modal>

@@ -390,6 +390,26 @@ export async function setFavorite(
     db,
   );
 }
+// One-tap tags on a person's page: sets exactly these tags, nothing else about the person.
+export async function setTags(
+  userId: string,
+  id: string,
+  tags: string[],
+  db?: Database,
+) {
+  return asUser(
+    userId,
+    async (tx) => {
+      const rows = await tx.query<Connection>(
+        "UPDATE connections SET tags=$1,version=version+1,updated_at=now() WHERE id=$2 AND owner_id=$3 RETURNING *",
+        [tags, id, userId],
+      );
+      if (!rows.length) throw new HttpError(404, "Contact not found.");
+      return rows[0];
+    },
+    db,
+  );
+}
 // People whose card came back in a swap and hasn't been opened yet. A small answer (no
 // details, no photos), asked for every few seconds while your code is on screen, so a swap
 // shows up on your phone as it happens.
