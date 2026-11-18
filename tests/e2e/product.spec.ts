@@ -741,7 +741,7 @@ test("recording needs a yes on the other person's own phone; someone without Was
     await expect(detail.getByText(/Listening/)).toBeVisible();
     // while it's going, Bob's phone says so and has a Stop button
     await expect(
-      bob.getByText("Alice is taking notes of your chat"),
+      bob.getByText("Alice can take notes of your chat"),
     ).toBeVisible({ timeout: 15000 });
     await expect(detail.getByText(/introduce me to her CTO/)).toBeVisible();
     await detail
@@ -766,7 +766,7 @@ test("recording needs a yes on the other person's own phone; someone without Was
     await expect(detail.getByRole("button", { name: "Saved" })).toBeDisabled();
     // Alice stopped, so Bob's phone stops saying a recording is going
     await expect(
-      bob.getByText("Alice is taking notes of your chat"),
+      bob.getByText("Alice can take notes of your chat"),
     ).toHaveCount(0, { timeout: 15000 });
 
     // Bob can stop a recording from his phone: nothing of it is kept
@@ -781,7 +781,7 @@ test("recording needs a yes on the other person's own phone; someone without Was
       .click({ timeout: 10000 });
     await bob
       .getByRole("status")
-      .filter({ hasText: "Alice is taking notes of your chat" })
+      .filter({ hasText: "Alice can take notes of your chat" })
       .getByRole("button", { name: "Stop", exact: true })
       .click({ timeout: 15000 });
     await expect(

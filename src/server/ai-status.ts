@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import { consumeLimit } from "../lib/auth";
 import type { Database } from "../lib/db";
 import { askLanguageModel, configuredModels, embedText } from "./ai-models";
+import { groundedMatches, lexicalRecall, matchRequest } from "./recall";
+import { blankProfile, type Connection } from "../lib/types";
 
 // When a call to the AI provider fails, Wasl carries on without AI (keyword search, built-in
 // rules). This file works out WHY it failed, in words the person running Wasl can act on, and
@@ -38,6 +40,68 @@ class UnreadableAnswer extends Error {
     super("unreadable");
   }
 }
+// the model answered a test search, but didn't pick the person it should have
+class WrongPerson extends Error {
+  constructor(public model: string) {
+    super("wrong person");
+  }
+}
+
+// A real AI search, run the way Wasl runs one, on three made-up people. The question can only
+// be answered by meaning: Sara's note says "CV", the question says "resume", and keyword search
+// finds no one. Nobody's saved data is used.
+const madeUp = (
+  id: string,
+  profile: { name: string; title: string; company: string },
+  note: string,
+): Connection => ({
+  id,
+  owner_id: "",
+  profile: { ...blankProfile, ...profile },
+  tags: [],
+  event: "Campus career fair",
+  place: "Education City",
+  met_on: "2026-11-02",
+  favorite: false,
+  albums: [],
+  origin: "sample",
+  unseen: false,
+  source_share_id: null,
+  created_at: "",
+  updated_at: "",
+  version: 1,
+  notes: [
+    {
+      id: `${id}-note`,
+      connection_id: id,
+      body: note,
+      happened_on: "2026-11-02",
+      created_at: "",
+    },
+  ],
+});
+const testPeople = [
+  madeUp(
+    "00000000-0000-4000-8000-00000000a001",
+    {
+      name: "Sara Nasser",
+      title: "Security analyst",
+      company: "Corniche Bank",
+    },
+    "Offered to review my CV and do a mock interview.",
+  ),
+  madeUp(
+    "00000000-0000-4000-8000-00000000a002",
+    { name: "Omar Haddad", title: "Product designer", company: "Sidra Studio" },
+    "Showed me his portfolio app and the sign-up screens he is building.",
+  ),
+  madeUp(
+    "00000000-0000-4000-8000-00000000a003",
+    { name: "Yousef Al-Kuwari", title: "Founder", company: "Najm Robotics" },
+    "Building delivery robots and hiring a first engineer.",
+  ),
+];
+const testQuestion = "who could look over my resume";
 export function aiProblem(error: unknown): AiProblem {
   if (
     error instanceof OpenAI.APIConnectionTimeoutError ||
@@ -163,42 +227,84 @@ export async function checkAi(userId: string | null, db?: Database) {
       },
     ],
   ];
-  const parts: { name: string; model: string; ok: boolean; detail: string }[] =
-    [];
-  for (const [name, asked, step, run] of tries) {
-    try {
-      const { waslModel } = await run();
-      parts.push({
-        name,
-        model: waslModel,
-        ok: true,
-        // the account refused the usual model and a spare one answered
-        detail:
+  // a real AI search on made-up people, with the same time limit a real search has
+  let searchSeconds = 0;
+  tries.push([
+    "AI search, tested on three made-up people",
+    wanted.language,
+    "check-search",
+    async () => {
+      const started = Date.now();
+      const searchClient = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+        timeout: 10000,
+        maxRetries: 0,
+      });
+      const response = await askLanguageModel(
+        searchClient,
+        matchRequest(testQuestion, testPeople),
+      );
+      searchSeconds = (Date.now() - started) / 1000;
+      let found: ReturnType<typeof groundedMatches> = [];
+      try {
+        found = groundedMatches(JSON.parse(response.output_text), testPeople);
+      } catch {
+        throw new UnreadableAnswer(response.waslModel);
+      }
+      if (!found.some((h) => h.connection.id === testPeople[0].id))
+        throw new WrongPerson(response.waslModel);
+      return response;
+    },
+  ]);
+  // keyword search alone can't answer the test question, so a right answer is the AI's
+  const keywordFinds = lexicalRecall(testQuestion, testPeople).length > 0;
+  // the checks run side by side, so the whole check takes as long as the slowest one
+  const parts = await Promise.all(
+    tries.map(async ([name, asked, step, run]) => {
+      try {
+        const { waslModel } = await run();
+        const spare =
           waslModel === asked
             ? ""
-            : `This account can't use ${asked}, so Wasl uses ${waslModel} instead.`,
-      });
-    } catch (error) {
-      if (error instanceof UnreadableAnswer) {
-        await noteAiFailure(error, db, `${step}-unreadable`);
-        parts.push({
+            : `This account can't use ${asked}, so Wasl uses ${waslModel} instead.`;
+        return {
           name,
-          model: error.model,
+          model: waslModel,
+          ok: true,
+          // the account refused the usual model and a spare one answered
+          detail:
+            step === "check-search"
+              ? `Asked "${testQuestion}", it found Sara, whose note says "CV", in ${searchSeconds.toFixed(1)} s${keywordFinds ? "" : " (keyword search finds no one for this)"}.`
+              : spare,
+        };
+      } catch (error) {
+        if (error instanceof UnreadableAnswer || error instanceof WrongPerson) {
+          await noteAiFailure(
+            error,
+            db,
+            `${step}-${error instanceof WrongPerson ? "wrong" : "unreadable"}`,
+          );
+          return {
+            name,
+            model: error.model,
+            ok: false,
+            detail:
+              error instanceof WrongPerson
+                ? `${error.model} answered a test search, but didn't find the right person.`
+                : `${error.model} answered, but not in the form Wasl needs.`,
+          };
+        }
+        const problem = await noteAiFailure(error, db, step);
+        const { status, code } = said(error);
+        return {
+          name,
+          model: asked,
           ok: false,
-          detail: `${error.model} answered, but not in the form Wasl needs.`,
-        });
-        continue;
+          detail: `${reasons[problem]}${status || code ? ` (OpenAI answered: ${[status || "", code].filter(Boolean).join(" ")})` : ""}`,
+        };
       }
-      const problem = await noteAiFailure(error, db, step);
-      const { status, code } = said(error);
-      parts.push({
-        name,
-        model: asked,
-        ok: false,
-        detail: `${reasons[problem]}${status || code ? ` (OpenAI answered: ${[status || "", code].filter(Boolean).join(" ")})` : ""}`,
-      });
-    }
-  }
+    }),
+  );
   // Search by meaning refused: which models of that kind does OpenAI list for this account?
   // (Names only. Listing is free. One of them can be set as OPENAI_EMBEDDING_MODEL.)
   let listed: string[] = [];
@@ -224,14 +330,19 @@ export async function checkAi(userId: string | null, db?: Database) {
   // The language model does the real work (reading cards, summaries, picking search matches),
   // so AI is "working" when it answers. Search by meaning's own model is a helper: without it
   // AI search still works by reading the saved people directly.
-  const [meaning, languagePart] = parts;
+  const [meaning, languagePart, searchPart] = parts;
   return {
-    state: languagePart.ok ? ("working" as const) : ("failing" as const),
+    state:
+      languagePart.ok && searchPart.ok
+        ? ("working" as const)
+        : ("failing" as const),
     reason: !languagePart.ok
       ? languagePart.detail
-      : !meaning.ok
-        ? "This OpenAI account has no model for search by meaning, so AI search reads your saved people directly instead (everyone, up to 25 people; after that, keyword matches and your most recent people)."
-        : "",
+      : !searchPart.ok
+        ? searchPart.detail
+        : !meaning.ok
+          ? "This OpenAI account has no model for search by meaning, so AI search reads your saved people directly instead (everyone, up to 25 people; after that, keyword matches and your most recent people)."
+          : "",
     parts,
     address,
     listed,

@@ -57,7 +57,36 @@ export function ConsentRequests() {
   const live = requests.find((r) => r.state === "allowed");
   // a question takes the focus, so it can be answered from the keyboard or a screen reader
   useEffect(() => {
-    if (asked) panel.current?.focus();
+    if (!asked) return;
+    panel.current?.focus();
+    // While the question shows, it has the keyboard: Escape doesn't close a page open behind
+    // it (only Allow or Don't allow answers), and Tab moves between its two buttons.
+    const keys = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = Array.from(
+        panel.current?.querySelectorAll<HTMLElement>("button:not(:disabled)") ||
+          [],
+      );
+      if (!items.length) return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      const at = items.indexOf(document.activeElement as HTMLElement);
+      const next = e.shiftKey
+        ? at <= 0
+          ? items.length - 1
+          : at - 1
+        : at === -1 || at === items.length - 1
+          ? 0
+          : at + 1;
+      items[next].focus();
+    };
+    window.addEventListener("keydown", keys, true);
+    return () => window.removeEventListener("keydown", keys, true);
   }, [asked?.id]);
   async function answer(id: string, reply: "allow" | "decline" | "end") {
     setBusy(id + reply);
@@ -132,7 +161,7 @@ export function ConsentRequests() {
       {live && !asked ? (
         <div className="consent-live" role="status">
           <span className="rec-dot" aria-hidden="true" />
-          <span>{first(live)} is taking notes of your chat</span>
+          <span>{first(live)} can take notes of your chat</span>
           <Button
             variant="secondary"
             busy={busy === live.id + "end"}

@@ -214,7 +214,7 @@ export function RecallView({
           </p>
           <div className="row center">
             <Button variant="secondary" onClick={onScan}>
-              <ScanLine size={16} /> Scan a card
+              <ScanLine size={16} /> Scan a paper card
             </Button>
             <Button onClick={onAdd}>
               <Plus size={16} /> Add someone

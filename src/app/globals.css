@@ -2495,6 +2495,7 @@ input[type="date"]::-webkit-date-and-time-value {
 .rec-live {
   max-height: 160px;
   overflow-y: auto;
+  white-space: pre-line;
   padding: 10px 12px;
   border-radius: 10px;
   background: white;
@@ -4502,6 +4503,10 @@ details.ai-reason[open] > summary {
 @media (max-width: 760px) {
   .consent-live {
     bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+  /* the shared-card page has no tab bar: the bar sits at the bottom, unless Swap is there */
+  .public-page:not(.with-bar) .consent-live {
+    bottom: calc(16px + env(safe-area-inset-bottom));
   }
 }
 

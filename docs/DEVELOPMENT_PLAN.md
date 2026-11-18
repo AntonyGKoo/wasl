@@ -91,3 +91,8 @@ From the team chat on Nov 16 and 17. Each change was user-tested with two phones
 - **One Save on a person's page.** After recording it wasn't clear whether the key points were saved, and the note's own Save looked like the one to tap. Now one **Save** sits at the bottom of the page, always in view. It says what isn't saved yet, saves the key points and a typed note together, then says "Saved to your private notes" and shows the new note. Closing the page saves anything left unsaved.
 - **Next.js 16.4.6.** A patch release that fixes two cache advisories (in features Wasl doesn't use).
 
+## One more check before telling the team (Nov 18)
+
+- **AI search is tested for real on the live site.** The live AI check (`/api/health/ai`, and Settings → AI and scanning) now runs one real AI search on three made-up people, the same request a search sends. It asks "who could look over my resume" and must find the person whose note says "CV", which keyword search can't. This shows AI search works with the live OpenAI account without signing in to anyone's account.
+- **Small fixes found in the last user test.** While the question "Can … record your chat?" shows, Escape no longer closes the page behind it and Tab stays on its two buttons. The other person's bar says "… can take notes of your chat" (true before and during the recording). The words heard while recording show one phrase per line. On the shared-card page the bar sits at the bottom of the screen. The empty Search page says **Scan a paper card**, like Network.
+

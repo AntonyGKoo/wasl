@@ -239,7 +239,8 @@ export function VoiceMemory({
             if (text) heard.current.push(text);
           } else interim += " " + text;
         }
-        setLive((heard.current.join(" ") + interim).trim());
+        // one phrase per line, so the words read as sentences while they come in
+        setLive([...heard.current, interim.trim()].filter(Boolean).join("\n"));
       };
       rec.onerror = (e) => {
         const problem = micProblem(e.error);

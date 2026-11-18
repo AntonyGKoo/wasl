@@ -606,7 +606,8 @@ test("AI search never shows less than keyword search, whatever the model answers
     | "nokey"
     | "nocredit"
     | "noindex"
-    | "oldmodels" = "nothing";
+    | "oldmodels"
+    | "wrongpick" = "nothing";
   const provider = createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) body += chunk;
@@ -703,14 +704,20 @@ test("AI search never shows less than keyword search, whatever the model answers
       return res.end(JSON.stringify({ error: { message: "down" } }));
     }
     // only a search sends saved people; the "is AI working?" check sends a plain sentence
-    const { contacts } = (
+    const { contacts, query } = (
       data.text?.format?.name === "contact_matches"
         ? JSON.parse(data.input)
-        : { contacts: [] }
-    ) as { contacts: { id: string; context: string }[] };
+        : { contacts: [], query: "" }
+    ) as { contacts: { id: string; context: string }[]; query: string };
     const sara = contacts.find((c) => c.context.includes("Sara Nasser"));
-    const matches =
-      answer === "paraphrase" && sara
+    // the AI check's own test search, on its three made-up people: a working model finds Sara
+    // by meaning ("resume" for "CV"); "wrongpick" picks someone else
+    const testSearch = query === "who could look over my resume";
+    const matches = testSearch
+      ? answer === "wrongpick"
+        ? [{ id: contacts[2].id, evidence: "Building delivery robots" }]
+        : [{ id: sara!.id, evidence: "Offered to review my CV" }]
+      : answer === "paraphrase" && sara
         ? [{ id: sara.id, evidence: "she offered to review the CV" }]
         : (answer === "noindex" || answer === "oldmodels") && sara
           ? [{ id: sara.id, evidence: "Offered to review my CV" }]
@@ -869,8 +876,11 @@ test("AI search never shows less than keyword search, whatever the model answers
     assert.match(check.reason, /no model for search by meaning/);
     assert.deepEqual(
       check.parts.map((part: { ok: boolean }) => part.ok),
-      [false, true],
+      [false, true, true],
     );
+    // the third part is a real AI search on made-up people, which only meaning can answer
+    assert.match(check.parts[2].detail, /found Sara, whose note says "CV"/);
+    assert.match(check.parts[2].detail, /keyword search finds no one/);
     assert.equal(check.parts[0].model, "text-embedding-3-small");
     assert.match(check.parts[0].detail, /403 model_not_found/);
     // and lists the models of that kind the account can see, to choose one from
@@ -900,6 +910,7 @@ test("AI search never shows less than keyword search, whatever the model answers
     assert.equal(seen.parts[0].ok, false);
     assert.match(seen.parts[0].detail, /403 model_not_found/);
     assert.equal(seen.parts[1].ok, true);
+    assert.equal(seen.parts[2].ok, true);
     assert.equal("address" in seen, false);
     answer = "nothing";
     seen = await health();
@@ -923,12 +934,18 @@ test("AI search never shows less than keyword search, whatever the model answers
     assert.equal(check.state, "working");
     assert.deepEqual(
       check.parts.map((part: { model: string }) => part.model),
-      ["text-embedding-3-large", "gpt-6-luna"],
+      ["text-embedding-3-large", "gpt-6-luna", "gpt-6-luna"],
     );
     assert.match(
       check.parts[1].detail,
       /can't use gpt-4o-mini, so Wasl uses gpt-6-luna/,
     );
+    // a model that answers but picks the wrong person in the test search: AI is not working
+    answer = "wrongpick";
+    check = (await call("ai-check")).data;
+    assert.equal(check.state, "failing");
+    assert.match(check.reason, /didn't find the right person/);
+    assert.equal(await counter("ai-fail:%:check-search-wrong:%"), 1);
     // the day's AI searches are used up: search still answers, by keyword
     answer = "nothing";
     process.env.WASL_DAILY_AI_LIMIT = "8";
