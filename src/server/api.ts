@@ -21,6 +21,7 @@ import {
   connectionSchema,
   favoriteSchema,
   tagsSchema,
+  consentAnswerSchema,
   placeSchema,
   importSchema,
   noteSchema,
@@ -59,6 +60,12 @@ import { recall, searchableContacts } from "./recall";
 import { readCardText, scanCard } from "./scan";
 import { summarizeConversation } from "./summary";
 import { checkAi } from "./ai-status";
+import {
+  answerConsent,
+  askConsent,
+  consentState,
+  incomingConsents,
+} from "./consent";
 import { makeVcard } from "../lib/vcard";
 export async function handleApi(request: Request): Promise<Response> {
   try {
@@ -220,8 +227,27 @@ export async function handleApi(request: Request): Promise<Response> {
         );
       if (action === "refresh" && method === "POST")
         return json({ connection: await refreshSharedContact(user.id, id) });
+      // "Can I record our chat?" goes to the other person's phone
+      if (action === "consent" && method === "POST")
+        return json({ consent: await askConsent(user, id) }, 201);
       if (action === "vcard" && method === "GET")
         return vcardResponse((await getConnection(user.id, id)).profile);
+    }
+    if (area === "consents") {
+      // requests to record that are waiting for you, asked every few seconds while Wasl is open
+      if (!id && method === "GET")
+        return json({ requests: await incomingConsents(user.id) });
+      uuidSchema.parse(id);
+      if (!action && method === "GET")
+        return json({ consent: await consentState(user.id, id) });
+      if (!action && method === "POST")
+        return json({
+          consent: await answerConsent(
+            user.id,
+            id,
+            (await readJson(request, consentAnswerSchema)).answer,
+          ),
+        });
     }
     if (area === "notes" && method === "DELETE") {
       uuidSchema.parse(id);

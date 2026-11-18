@@ -34,9 +34,10 @@ test("two people share selected details, retain private memory, recall and revok
   browser,
 }, info) => {
   const email = await signup(page, "Alice QA");
-  await page
-    .getByRole("button", { name: "Add a connection", exact: true })
-    .click();
+  // the three ways to add someone sit under one heading
+  const add = page.getByRole("region", { name: "Add a connection" });
+  await expect(add.getByRole("button")).toHaveCount(3);
+  await add.getByRole("button", { name: /^Type it in/ }).click();
   await page.getByLabel("Full name *", { exact: true }).fill("Yousef Omar");
   await page
     .getByLabel("Role / job title", { exact: true })
@@ -50,7 +51,10 @@ test("two people share selected details, retain private memory, recall and revok
   await page
     .getByLabel("Add a note", { exact: true })
     .fill("Offered to introduce me to his CTO");
-  await page.getByRole("button", { name: "Save note", exact: true }).click();
+  // one Save for the page, at the bottom, which says what isn't saved yet and then that it is
+  await expect(page.getByText("Your note isn't saved yet")).toBeVisible();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText("Saved to your private notes")).toBeVisible();
   await expect(
     page.getByText("Offered to introduce me to his CTO", { exact: true }),
   ).toBeVisible();
@@ -79,14 +83,18 @@ test("two people share selected details, retain private memory, recall and revok
     .getByRole("checkbox", { name: `Email ${email}`, exact: true })
     .uncheck();
   await page.getByRole("button", { name: "Add card", exact: true }).click();
-  // every account starts with a Professional card; share the new one
+  // every account starts with a Professional card; the new one comes to the front of the
+  // stack, the first one shows as a strip behind it, and Share shares the one in front
+  await expect(
+    page.getByRole("button", {
+      name: "Show your Professional card",
+      exact: true,
+    }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Share card", exact: true }),
-  ).toHaveCount(2);
-  await page
-    .getByRole("button", { name: "Share card", exact: true })
-    .last()
-    .click();
+  ).toHaveCount(1);
+  await page.getByRole("button", { name: "Share card", exact: true }).click();
   const linkField = page.getByLabel("Share link", { exact: true });
   await expect(linkField).toHaveValue(/\/c\/[A-Za-z0-9_-]{43}$/);
   const link = await linkField.inputValue();
@@ -257,7 +265,7 @@ test("a card that comes back while your code is showing can be opened from there
 });
 test("text capture always requires review before saving", async ({ page }) => {
   await signup(page, "Scan QA");
-  await page.getByRole("button", { name: "Scan a card", exact: true }).click();
+  await page.getByRole("button", { name: /^Scan a paper card/ }).click();
   await page.getByRole("button", { name: "Paste text", exact: true }).click();
   await page
     .getByLabel("Text from a business card, badge or profile", { exact: true })
@@ -410,10 +418,7 @@ test("Back closes the dialog on top, then returns to the screen before; a lost s
 
   // one dialog closing as another opens (saving a new person opens their page), then moving on
   // straight away: Back still goes where it should
-  await page
-    .getByRole("button", { name: "Add a connection", exact: true })
-    .first()
-    .click();
+  await page.getByRole("button", { name: /^Type it in/ }).click();
   await page.getByLabel("Full name *", { exact: true }).fill("Quick Close");
   await page
     .getByRole("button", { name: "Save connection", exact: true })
@@ -619,4 +624,253 @@ test("signing up from a LinkedIn link puts the link and a first name on the prof
   await expect(page.getByLabel("LinkedIn", { exact: true })).toHaveValue(
     "https://linkedin.com/in/omar-haddad-1a2b3c",
   );
+});
+// The phone's speech-to-text, standing in for a real microphone: it hears three sentences.
+function fakeSpeech() {
+  class Heard {
+    lang = "en-US";
+    continuous = true;
+    interimResults = true;
+    onresult: ((e: unknown) => void) | null = null;
+    onerror: ((e: unknown) => void) | null = null;
+    onend: (() => void) | null = null;
+    timers: ReturnType<typeof setTimeout>[] = [];
+    start() {
+      [
+        "Mariam leads the data team at Pearl Labs",
+        "She offered to introduce me to her CTO",
+        "Pearl Labs is hiring summer interns",
+      ].forEach((transcript, i) =>
+        this.timers.push(
+          setTimeout(
+            () => {
+              const result = Object.assign([{ transcript }], { isFinal: true });
+              this.onresult?.({ resultIndex: 0, results: [result] });
+            },
+            250 * (i + 1),
+          ),
+        ),
+      );
+    }
+    stop() {
+      this.timers.forEach(clearTimeout);
+      setTimeout(() => this.onend?.(), 10);
+    }
+  }
+  Object.assign(window, {
+    SpeechRecognition: Heard,
+    webkitSpeechRecognition: Heard,
+  });
+}
+test("recording needs a yes on the other person's own phone; someone without Wasl can't be recorded", async ({
+  page,
+  browser,
+}) => {
+  await page.addInitScript(fakeSpeech);
+  await signup(page, "Alice QA");
+  const detail = page.getByRole("dialog", { name: "Connection details" });
+
+  // someone typed in by hand isn't on Wasl: Wasl says why it won't record, and offers a note
+  await page.getByRole("button", { name: /^Type it in/ }).click();
+  await page.getByLabel("Full name *", { exact: true }).fill("Paper Person");
+  await page
+    .getByRole("button", { name: "Save connection", exact: true })
+    .click();
+  await expect(
+    detail.getByText(
+      "Recording works only when Paper has Wasl and says yes on their own phone.",
+    ),
+  ).toBeVisible();
+  await detail
+    .getByRole("button", { name: "Record the chat", exact: true })
+    .click();
+  await expect(detail.getByText("Paper needs Wasl for this")).toBeVisible();
+  await expect(
+    detail.getByText(/isn’t on Wasl, so nothing will be recorded/),
+  ).toBeVisible();
+  await detail
+    .getByRole("button", { name: "Type a note", exact: true })
+    .click();
+  await expect(detail.getByLabel("Add a note", { exact: true })).toBeFocused();
+  await expect(detail.getByText("Listening")).toHaveCount(0);
+  await page.getByRole("button", { name: "Close dialog", exact: true }).click();
+
+  // Alice shows her code and Bob swaps cards with her: both are on Wasl
+  await page.getByRole("button", { name: "Cards", exact: true }).click();
+  await page.getByRole("button", { name: "Share card", exact: true }).click();
+  const linkField = page.getByLabel("Share link", { exact: true });
+  await expect(linkField).toHaveValue(/\/c\/[A-Za-z0-9_-]{43}$/);
+  const link = await linkField.inputValue();
+  const other = await browser.newContext({ baseURL: "http://127.0.0.1:3100" });
+  try {
+    const bob = await other.newPage();
+    await signup(bob, "Bob QA");
+    await bob.goto(link);
+    await bob.getByRole("button", { name: "Swap cards", exact: true }).click();
+    await expect(
+      bob.getByRole("heading", { name: "You swapped cards with Alice" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "You swapped cards with Bob" }),
+    ).toBeVisible({ timeout: 15000 });
+    await page.getByRole("button", { name: "Open Bob", exact: true }).click();
+    await expect(
+      detail.getByText("Wasl asks Bob on their phone first."),
+    ).toBeVisible();
+
+    // Alice asks; Bob's phone, still on the card he just swapped, asks him
+    await detail
+      .getByRole("button", { name: "Record the chat", exact: true })
+      .click();
+    await expect(detail.getByText("Asking Bob on their phone…")).toBeVisible();
+    const question = bob.getByRole("alertdialog", {
+      name: "Can Alice record your chat?",
+    });
+    await expect(question).toBeVisible({ timeout: 15000 });
+    await expect(question.getByText("No audio is kept.")).toBeVisible();
+    await question.getByRole("button", { name: "Allow", exact: true }).click();
+    await expect(question).toHaveCount(0);
+
+    // his yes reaches Alice; only then can she start
+    await expect(detail.getByText("Bob said yes")).toBeVisible({
+      timeout: 10000,
+    });
+    await detail
+      .getByRole("button", { name: "Start recording", exact: true })
+      .click();
+    await expect(detail.getByText(/Listening/)).toBeVisible();
+    // while it's going, Bob's phone says so and has a Stop button
+    await expect(
+      bob.getByText("Alice is taking notes of your chat"),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(detail.getByText(/introduce me to her CTO/)).toBeVisible();
+    await detail
+      .getByRole("button", { name: "Stop and make key points", exact: true })
+      .click();
+    // the key points wait for the page's Save, which says they aren't saved yet
+    const points = detail.getByRole("textbox", { name: /Key points/ });
+    await expect(points).toHaveValue(/introduce me to her CTO/);
+    await expect(
+      detail.getByText("Your key points aren't saved yet"),
+    ).toBeVisible();
+    await expect(
+      detail.getByText("Check them, then tap Save at the bottom."),
+    ).toBeVisible();
+    const save = detail.getByRole("button", { name: "Save", exact: true });
+    await expect(save).toBeInViewport();
+    await save.click();
+    await expect(detail.getByText("Saved to your private notes")).toBeVisible();
+    await expect(
+      detail.locator(".timeline article.fresh").getByText(/her CTO/),
+    ).toBeVisible();
+    await expect(detail.getByRole("button", { name: "Saved" })).toBeDisabled();
+    // Alice stopped, so Bob's phone stops saying a recording is going
+    await expect(
+      bob.getByText("Alice is taking notes of your chat"),
+    ).toHaveCount(0, { timeout: 15000 });
+
+    // Bob can stop a recording from his phone: nothing of it is kept
+    await detail
+      .getByRole("button", { name: "Record the chat", exact: true })
+      .click();
+    await question
+      .getByRole("button", { name: "Allow", exact: true })
+      .click({ timeout: 15000 });
+    await detail
+      .getByRole("button", { name: "Start recording", exact: true })
+      .click({ timeout: 10000 });
+    await bob
+      .getByRole("status")
+      .filter({ hasText: "Alice is taking notes of your chat" })
+      .getByRole("button", { name: "Stop", exact: true })
+      .click({ timeout: 15000 });
+    await expect(
+      detail.getByText(
+        "Bob stopped the recording on their phone, so nothing was kept.",
+      ),
+    ).toBeVisible({ timeout: 10000 });
+    await expect(detail.getByText("Everything here is saved")).toBeVisible();
+
+    // and a no is a no
+    await detail
+      .getByRole("button", { name: "Record the chat", exact: true })
+      .click();
+    await question
+      .getByRole("button", { name: "Don’t allow", exact: true })
+      .click({ timeout: 15000 });
+    await expect(
+      detail.getByText("Bob said no, so nothing was recorded."),
+    ).toBeVisible({ timeout: 10000 });
+    await expect(detail.getByText(/her CTO/)).toHaveCount(1);
+  } finally {
+    await other.close();
+  }
+});
+test("a typed note is saved by the one Save at the bottom, or when the page is closed", async ({
+  page,
+}) => {
+  await signup(page, "Save QA");
+  await page.getByRole("button", { name: /^Type it in/ }).click();
+  await page.getByLabel("Full name *", { exact: true }).fill("Noor Saleh");
+  await page
+    .getByRole("button", { name: "Save connection", exact: true })
+    .click();
+  const detail = page.getByRole("dialog", { name: "Connection details" });
+  // nothing to save yet: the button says so instead of doing nothing
+  await expect(detail.getByText("Everything here is saved")).toBeVisible();
+  await expect(detail.getByRole("button", { name: "Saved" })).toBeDisabled();
+  await expect(detail.getByRole("button", { name: "Saved" })).toBeInViewport();
+  // a note written and then the page closed is kept, not lost
+  await detail
+    .getByLabel("Add a note", { exact: true })
+    .fill("Wants feedback on her research plan");
+  await expect(detail.getByText("Your note isn't saved yet")).toBeVisible();
+  await page.getByRole("button", { name: "Close dialog", exact: true }).click();
+  await expect(detail).toHaveCount(0);
+  await page.getByRole("heading", { name: "Noor Saleh", exact: true }).click();
+  await expect(
+    detail.getByText("Wants feedback on her research plan", { exact: true }),
+  ).toBeVisible();
+});
+test("My cards is a stack: tap a card behind to bring it to the front, and it stays there", async ({
+  page,
+}) => {
+  await signup(page, "Stack QA");
+  // Network: the three ways to add someone are under one heading, on the first screen
+  const add = page.getByRole("region", { name: "Add a connection" });
+  await expect(
+    add.getByRole("heading", { name: "Add a connection" }),
+  ).toBeVisible();
+  for (const name of [/^Scan their code/, /^Scan a paper card/, /^Type it in/])
+    expect(await onFirstScreen(page, add.getByRole("button", { name }))).toBe(
+      true,
+    );
+  await page.getByRole("button", { name: "Cards", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Create a card", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: /^Card type/ })
+    .selectOption("event");
+  await page.getByRole("button", { name: "Add card", exact: true }).click();
+  // the new card is in front, the first one is a strip behind it
+  const front = page.locator(".stack-details h3");
+  await expect(front).toHaveText("Event");
+  const behind = page.getByRole("button", {
+    name: "Show your Professional card",
+    exact: true,
+  });
+  await expect(behind).toBeVisible();
+  await expect(behind).toContainText("Name");
+  await behind.click();
+  await expect(front).toHaveText("Professional");
+  await expect(
+    page.getByRole("button", { name: "Show your Event card", exact: true }),
+  ).toBeVisible();
+  // Share is for the card in front, and stays on the first screen
+  const share = page.getByRole("button", { name: "Share card", exact: true });
+  expect(await onFirstScreen(page, share)).toBe(true);
+  // the choice is remembered on this phone
+  await page.reload();
+  await expect(front).toHaveText("Professional");
 });

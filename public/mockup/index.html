@@ -400,6 +400,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
 .next-step > span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .next-step > span span { color: var(--text-2); font-size: 13.5px; }
 .next-step .btn { width: auto; flex: none; }
+.btn:disabled { opacity: 0.55; cursor: default; }
 .card-about { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
 .card-about b { font-size: 14px; }
 .card-about span { color: var(--text-2); font-size: 14px; }
@@ -924,6 +925,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     noteDraft: null, // the saved memory's text while it's being edited
     personId: null,
     consent: false,
+    asking: false, // Mariam's phone hasn't answered yet
     rec: "idle", // idle | recording | summarizing
     summary: false,
     debriefIdx: 0,
@@ -1305,7 +1307,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
                      ? `<div class="wave">${Array.from({ length: 14 }, (_, i) => `<i style="animation-delay:${(i * 73) % 500}ms"></i>`).join("")}</div><b id="recTime">0:00</b>
                         <p class="live" id="liveText">${S.liveText ? esc(S.liveText) : S.voiceNote ? esc(S.voiceNote) : "Listening… start talking."}</p>
                         <span class="hint">Tap the mic to stop</span>`
-                     : `<b>Tap to record the chat</b><span class="hint">${S.voiceNote ? esc(S.voiceNote) : "Both people agree first. Wasl writes down what's said; no audio is kept."}</span>`}`}
+                     : `<b>Tap to record the chat</b><span class="hint">${S.voiceNote ? esc(S.voiceNote) : "Wasl asks Mariam on her phone first. No audio is kept, only the key points."}</span>`}`}
             </div>
           </div>
           ${!recording && !summarizing ? '<button class="link" style="display:block;margin:10px auto 0" data-act="type-note">Type a note instead</button>' : ""}`}`;
@@ -1555,11 +1557,13 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     consent: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
       <div class="grab"></div>
       <h3>Record this chat?</h3>
-      <p class="sub">Wasl asks Mariam on her phone too. Recording starts only when you both agree. The audio is deleted right after the summary.</p>
-      <div class="panel row" style="gap:12px"><span class="ic" style="color:var(--teal)">${ic("shield", 'style="width:22px;height:22px"')}</span><span class="sub" style="font-size:13px">Mariam agreed on her phone at 7:46 PM</span></div>
-      <p class="hint" style="margin:0;text-align:left">No Wasl on their phone? Ask them out loud first, and only record if they say yes.</p>
-      <button class="btn" data-act="agree">${ic("check")}We both agree</button>
-      <button class="link" data-act="close-sheet">Not now</button>
+      <p class="sub">Wasl asks Mariam on her own phone. Recording starts only after she taps Allow, and she can stop it any time. No audio is kept, only the key points.</p>
+      <div class="panel row" style="gap:12px" aria-live="polite">${S.asking
+        ? `<span class="ic" style="color:var(--muted)">${ic("clock", 'style="width:22px;height:22px"')}</span><span class="sub" style="font-size:13px">Asking Mariam on her phone…</span>`
+        : `<span class="ic" style="color:var(--teal)">${ic("shield", 'style="width:22px;height:22px"')}</span><span class="sub" style="font-size:13px">Mariam allowed it on her phone at 7:46 PM</span>`}</div>
+      <p class="hint" style="margin:0;text-align:left">No Wasl on their phone? Then Wasl won't record. To use this, the other person needs the Wasl app and has to say yes on it. You can type a note instead.</p>
+      <button class="btn" data-act="agree" ${S.asking ? "disabled" : ""}>${ic("mic")}Start recording</button>
+      <div class="row" style="justify-content:center;gap:18px"><button class="link" data-act="type-note">Type a note instead</button><button class="link" data-act="close-sheet">Not now</button></div>
     </div></div>`,
     note: () => `<div class="scrim" data-act="close-sheet"><div class="sheet" data-stop>
       <div class="grab"></div>
@@ -1789,7 +1793,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       render();
       if (!on) xpToast(`Tagged ${t}`, 5);
     },
-    agree() { S.consent = true; S.sheet = null; render(); toast("Tap the mic to start recording"); },
+    agree() { if (S.asking) return; S.consent = true; S.sheet = null; startRec(); toast("Recording. Tap the mic to stop"); },
     "close-sheet"() { S.sheet = null; S.noteDraft = null; render(); },
     "type-note"() { S.noteDraft = null; S.sheet = "note"; render(); },
     "edit-memory"() { S.noteDraft = S.memory.points.join(" "); S.sheet = "note"; render(); },
@@ -2240,6 +2244,15 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
       });
   }
 
+  // Recording needs a yes from the other person on their own phone: Wasl asks Mariam, and her
+  // answer arrives a moment later. Someone without Wasl can't be asked, so can't be recorded.
+  function askMariam() {
+    S.sheet = "consent";
+    S.asking = true;
+    render();
+    later(1600, () => { S.asking = false; if (S.sheet === "consent") render(); });
+  }
+
   let holdTimer = null;
   // The mic reacts on touch-down, so the click that the same press fires afterwards is ignored.
   // Without this, on phones that click lands on the sheet that just opened and closes it again.
@@ -2250,7 +2263,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
     if (!mic) return;
     e.preventDefault();
     ignoreNextClick = true;
-    if (!S.consent) { S.sheet = "consent"; render(); return; }
+    if (!S.consent) { askMariam(); return; }
     if (S.rec === "recording") { stopRec(); return; } // second tap stops
     if (S.rec !== "idle") return;
     startRec();
@@ -2266,7 +2279,7 @@ h1, h2, h3 { font-family: var(--display); text-wrap: balance; }
   screenEl.addEventListener("keydown", (e) => {
     if (e.target.id === "mic" && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
-      if (!S.consent) { S.sheet = "consent"; render(); return; }
+      if (!S.consent) { askMariam(); return; }
       if (S.rec === "idle") startRec();
       else if (S.rec === "recording") stopRec();
     }

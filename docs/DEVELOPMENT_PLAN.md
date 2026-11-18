@@ -80,3 +80,14 @@ Every screen was photographed in full on a phone and on a laptop (49 screens eac
 - **A card photo needed an extra tap.** Wasl starts reading as soon as the photo is taken. A separate link opens the photo library (on a phone the big button opens the camera).
 - **Every new card was the same colour.** A new card starts in the colour of its type (Professional teal, Event violet, Social coral, Team midnight) until you pick one.
 - **Smaller things.** A person saved without an event no longer says "Your first connection" (it shows the place or the day). The empty Network page has no search box or filters over nothing. "Note" is the one word for a note (it used to alternate with "memory" and "interaction"). Settings shows "Working" for the AI, with the technical details one tap away.
+
+## What Raghd asked for (Nov 18)
+
+From the team chat on Nov 16 and 17. Each change was user-tested with two phones side by side (two accounts), on a phone and on a laptop, and is covered by the automatic tests.
+
+- **No recording without the other person's yes, on their own phone.** Before, someone without Wasl could be recorded after being asked out loud. Now **Record the chat** sends the question to the other person's Wasl ("Can Alice record your chat?", with **Allow** and **Don't allow**). Recording starts only after they allow it, they see a bar while it runs and can **Stop** it from their phone (nothing is kept then), and a no or no answer within three minutes records nothing. For someone not on Wasl, or a sample person, Wasl says why it won't record and offers a typed note. Only the person asked can answer; the database itself refuses anything else. The mockup says the same.
+- **One heading for adding someone.** Network has **Add a connection** with its three ways under it: **Scan their code**, **Scan a paper card**, **Type it in**.
+- **My cards is a stack**, like the mockup: the card in front is the one you share, the others show a strip with what they share, and tapping a strip brings that card forward. A new card comes to the front; the choice is remembered on the phone. **Share card** stays on the first screen with three cards.
+- **One Save on a person's page.** After recording it wasn't clear whether the key points were saved, and the note's own Save looked like the one to tap. Now one **Save** sits at the bottom of the page, always in view. It says what isn't saved yet, saves the key points and a typed note together, then says "Saved to your private notes" and shows the new note. Closing the page saves anything left unsaved.
+- **Next.js 16.4.6.** A patch release that fixes two cache advisories (in features Wasl doesn't use).
+

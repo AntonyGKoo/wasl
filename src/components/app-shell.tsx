@@ -38,6 +38,7 @@ import { ProfileView, WalletView, profileStrength } from "./wallet-view";
 import { RecallView, ScanModal } from "./recall-view";
 import { QrScanner } from "./qr-scanner";
 import { TonightsPeople, type Choice } from "./tonight";
+import { ConsentRequests } from "./consent-requests";
 import { ThemeSetting, ThemeToggle } from "./theme";
 import { onBack, screenOpened } from "@/lib/history";
 import { presentationCardToken } from "@/lib/presentation";
@@ -508,6 +509,8 @@ export function WaslApp() {
           }}
         />
       ) : null}
+      {/* someone asking to record a chat with you: the answer is yours */}
+      <ConsentRequests key={user.id} />
     </div>
   );
 }
@@ -548,7 +551,10 @@ function SettingsView({
         <section>
           <h3>Recording and location</h3>
           <div className="service-row">
-            <span>Ask both people before recording</span>
+            <span>
+              Recording only with a yes from the other person, on their own
+              phone in Wasl
+            </span>
             <span className="pill available">Always on</span>
           </div>
           <div className="service-row">

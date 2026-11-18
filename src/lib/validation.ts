@@ -105,6 +105,10 @@ export const importSchema = z.object({
 });
 export const favoriteSchema = z.object({ favorite: z.boolean() });
 export const tagsSchema = z.object({ tags: connectionSchema.shape.tags });
+// the other person's answer to "can I record our chat?", or either side ending it
+export const consentAnswerSchema = z.object({
+  answer: z.enum(["allow", "decline", "end"]),
+});
 const albumName = text(60).min(1, "Give the album a name.");
 export const albumSchema = z.object({
   name: albumName,

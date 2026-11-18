@@ -19,6 +19,7 @@ import {
 } from "@/lib/client";
 import { kindLabels, type Card, type PublicCard, type User } from "@/lib/types";
 import { Avatar, Brand, Button, Notice, ProfileLinks } from "./ui";
+import { ConsentRequests } from "./consent-requests";
 
 export function PublicShare({ token }: { token: string }) {
   const [card, setCard] = useState<PublicCard | null>(null);
@@ -371,6 +372,8 @@ export function PublicShare({ token }: { token: string }) {
           </Button>
         </div>
       ) : null}
+      {/* right after a swap the two people are together: a request to record can arrive here */}
+      {user ? <ConsentRequests /> : null}
     </div>
   );
 }

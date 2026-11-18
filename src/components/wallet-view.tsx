@@ -59,6 +59,24 @@ export function WalletView({
   const [deleting, setDeleting] = useState<Card | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // The cards sit in a stack like a wallet: the one in front is the one you share, the others
+  // show a strip with what they share. Tapping a strip brings that card to the front, and the
+  // choice is remembered on this phone.
+  const [frontId, setFrontId] = useState(() => {
+    try {
+      return localStorage.getItem("wasl.front-card") || "";
+    } catch {
+      return "";
+    }
+  });
+  const front = cards.find((c) => c.id === frontId) || cards[0];
+  const behind = cards.filter((c) => c.id !== front?.id);
+  function bringForward(id: string) {
+    setFrontId(id);
+    try {
+      localStorage.setItem("wasl.front-card", id);
+    } catch {}
+  }
   async function remove() {
     if (!deleting) return;
     setBusy(true);
@@ -103,50 +121,70 @@ export function WalletView({
             <Plus size={16} /> Create your first card
           </Button>
         </div>
-      ) : (
-        <div className="wallet-grid">
-          {cards.map((card) => (
-            <article className="wallet-item" key={card.id}>
-              <CardFace card={card} profile={user.profile} />
-              <div className="wallet-card-info">
-                <div>
-                  <h3>{card.label}</h3>
-                  <span>
-                    Shares {card.fields.length} details ·{" "}
-                    {card.token ? "link on" : "not shared yet"}
-                  </span>
-                </div>
-                <button
-                  className="icon-button"
-                  aria-label={`Edit ${card.label}`}
-                  onClick={() => setEditing(card)}
-                >
-                  <Pencil size={16} />
-                </button>
+      ) : front ? (
+        <section className="card-wallet">
+          <div
+            className="card-stack"
+            style={{ paddingTop: `calc(var(--band) * ${behind.length})` }}
+          >
+            {behind.map((card, i) => (
+              <button
+                key={card.id}
+                className={`stack-peek ${card.color}`}
+                style={{ top: `calc(var(--band) * ${i})`, zIndex: i + 1 }}
+                onClick={() => bringForward(card.id)}
+                aria-label={`Show your ${card.label} card`}
+              >
+                <span className="peek-shares">
+                  {card.fields.map((f) => shortField[f]).join(" · ")}
+                </span>
+                <span className="peek-name">{card.label}</span>
+              </button>
+            ))}
+            <div
+              className="stack-front"
+              key={front.id}
+              style={{ zIndex: behind.length + 1 }}
+            >
+              <CardFace card={front} profile={user.profile} />
+            </div>
+          </div>
+          <div className="stack-details">
+            <Button onClick={() => setSharing(front)}>
+              <QrCode size={16} /> Share card
+            </Button>
+            <Button variant="secondary" onClick={() => setEditing(front)}>
+              <Pencil size={15} /> Choose what it shares
+            </Button>
+            <div className="wallet-card-info">
+              <div>
+                <h3>{front.label}</h3>
+                <span>
+                  Shares {front.fields.length} details ·{" "}
+                  {front.token ? "link on" : "not shared yet"}
+                  {behind.length ? " · tap a card above to switch" : ""}
+                </span>
               </div>
-              <div className="wallet-card-actions">
-                <Button onClick={() => setSharing(card)}>
-                  <QrCode size={16} /> Share card
-                </Button>
-                <Button
-                  variant="ghost"
-                  aria-label={`Delete ${card.label}`}
-                  onClick={() => setDeleting(card)}
-                >
-                  <Trash2 size={15} />
-                </Button>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
+              <button
+                className="icon-button"
+                aria-label={`Delete ${front.label}`}
+                onClick={() => setDeleting(front)}
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
       {editing !== undefined ? (
         <CardForm
           card={editing || undefined}
           profile={user.profile}
           taken={cards.filter((c) => c.id !== editing?.id).map((c) => c.label)}
           onClose={() => setEditing(undefined)}
-          onSaved={() => {
+          onSaved={(saved) => {
+            // a new card comes to the front, ready to share
+            if (!editing) bringForward(saved.id);
             setEditing(undefined);
             onChanged();
           }}
@@ -236,6 +274,20 @@ export function CardFace({
     </div>
   );
 }
+// what a card in the stack shares, in a word each
+const shortField: Record<CardField, string> = {
+  name: "Name",
+  title: "Role",
+  company: "Company",
+  university: "University",
+  email: "Email",
+  phone: "Phone",
+  linkedin: "LinkedIn",
+  instagram: "Instagram",
+  website: "Website",
+  bio: "About",
+  photo: "Photo",
+};
 const kindHints: Record<Card["kind"], string> = {
   professional: "For work: your role, company and how to reach you.",
   event: "For events: share less, like your name and LinkedIn only.",
@@ -275,7 +327,7 @@ function CardForm({
   // names of the other cards, so a new one isn't called the same
   taken?: string[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (card: Card) => void;
 }) {
   const [label, setLabel] = useState(card?.label || "");
   const [kind, setKind] = useState<Card["kind"]>(card?.kind || "professional");
@@ -296,13 +348,12 @@ function CardForm({
       for (let n = 2; taken.includes(name); n++)
         name = `${kindLabels[kind]} ${n}`;
     try {
-      await api(`cards${card ? `/${card.id}` : ""}`, card ? "PUT" : "POST", {
-        label: name,
-        kind,
-        color,
-        fields,
-      });
-      onSaved();
+      const saved = await api<{ card: Card }>(
+        `cards${card ? `/${card.id}` : ""}`,
+        card ? "PUT" : "POST",
+        { label: name, kind, color, fields },
+      );
+      onSaved(saved.card);
     } catch (e) {
       setError((e as Error).message);
     } finally {

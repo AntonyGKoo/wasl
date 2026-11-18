@@ -1059,3 +1059,82 @@
 :where(:root[data-theme="dark"]) .next-step > span > span {
   color: var(--muted);
 }
+:where(:root[data-theme="dark"]) .add-option {
+  border: 1px solid var(--line);
+  background: #1b2027;
+  color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .add-option:hover {
+  border-color: var(--teal);
+}
+:where(:root[data-theme="dark"]) .add-option > svg {
+  color: var(--teal);
+}
+:where(:root[data-theme="dark"]) .add-option > span > span {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .stack-peek {
+  border: 0;
+  background: #167a82;
+  color: white;
+  box-shadow: 0 -4px 14px #0000004e;
+}
+:where(:root[data-theme="dark"]) .stack-peek.violet {
+  background: #7765a9;
+}
+:where(:root[data-theme="dark"]) .stack-peek.coral {
+  background: #bb7b63;
+}
+:where(:root[data-theme="dark"]) .stack-peek.ink {
+  background: #293c53;
+}
+:where(:root[data-theme="dark"]) .stack-front {
+  box-shadow: 0 -6px 18px #00000073;
+}
+:where(:root[data-theme="dark"]) .voice-panel.blocked {
+  border-color: #5b473f;
+  background: #3b2b22;
+}
+:where(:root[data-theme="dark"]) .voice-panel.agreed {
+  border-color: #455b56;
+  background: var(--teal-light);
+}
+:where(:root[data-theme="dark"]) .voice-panel.agreed strong svg {
+  color: var(--teal);
+}
+:where(:root[data-theme="dark"]) .consent-backdrop {
+  background: #172b4166;
+}
+:where(:root[data-theme="dark"]) .consent-ask {
+  background: #1b2027;
+  box-shadow: 0 20px 80px #3793afa0;
+  outline: none;
+}
+:where(:root[data-theme="dark"]) .consent-icon {
+  background: var(--teal-light);
+  color: var(--teal);
+}
+:where(:root[data-theme="dark"]) .consent-ask p {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .consent-ask ul {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .consent-live {
+  border: 1px solid var(--line);
+  background: #1b2027;
+  box-shadow: 0 8px 30px #3793af5f;
+}
+:where(:root[data-theme="dark"]) .save-bar {
+  border-top: 1px solid var(--line);
+  background: #1b2027;
+}
+:where(:root[data-theme="dark"]) .save-state {
+  color: var(--muted);
+}
+:where(:root[data-theme="dark"]) .save-bar.unsaved .save-state {
+  color: var(--ink);
+}
+:where(:root[data-theme="dark"]) .save-state svg {
+  color: var(--teal);
+}

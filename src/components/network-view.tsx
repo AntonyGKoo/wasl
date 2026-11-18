@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   ArrowLeftRight,
   ArrowRight,
@@ -20,6 +20,7 @@ import {
   Trash2,
   RefreshCw,
   Pencil,
+  PenLine,
   Download,
   Sparkles,
   Send,
@@ -41,6 +42,7 @@ import {
   suggestedTags,
   type Card,
   type Connection,
+  type Interaction,
   type Profile,
 } from "@/lib/types";
 import {
@@ -194,16 +196,32 @@ export function NetworkView({
               : "Everyone you meet, and what you talked about."}
           </p>
         </div>
-        <div className="row intro-actions">
-          <Button variant="secondary" onClick={onScanCode}>
-            <QrCode size={16} /> Scan their code
-          </Button>
-          <Button variant="secondary" onClick={onScan}>
-            <ScanLine size={16} /> Scan a card
-          </Button>
-          <Button onClick={onAdd}>
-            <Plus size={17} /> Add a connection
-          </Button>
+      </section>
+      {/* Three ways to add someone, under one heading, so it's clear they all do the same thing */}
+      <section className="add-connection" aria-labelledby="add-connection">
+        <h2 id="add-connection">Add a connection</h2>
+        <div className="add-options">
+          <button className="add-option" onClick={onScanCode}>
+            <QrCode size={20} aria-hidden="true" />
+            <span>
+              <strong>Scan their code</strong>
+              <span>They have Wasl</span>
+            </span>
+          </button>
+          <button className="add-option" onClick={onScan}>
+            <ScanLine size={20} aria-hidden="true" />
+            <span>
+              <strong>Scan a paper card</strong>
+              <span>Wasl reads it for you</span>
+            </span>
+          </button>
+          <button className="add-option" onClick={onAdd}>
+            <PenLine size={20} aria-hidden="true" />
+            <span>
+              <strong>Type it in</strong>
+              <span>Name and how you met</span>
+            </span>
+          </button>
         </div>
       </section>
       {samples.length ? (
@@ -407,17 +425,9 @@ export function NetworkView({
             </span>
             <h3>Start with one meaningful connection.</h3>
             <p>
-              Swap cards with someone, scan their paper card, or add them by
-              hand. Then save where you met and what you talked about.
+              Add someone with one of the three ways above. Then save where you
+              met and what you talked about.
             </p>
-            <div className="row center">
-              <Button variant="secondary" onClick={onScanCode}>
-                <QrCode size={16} /> Scan their code
-              </Button>
-              <Button onClick={onAdd}>
-                <Plus size={16} /> Add your first connection
-              </Button>
-            </div>
             <button
               className="text-button"
               disabled={sampleBusy}
@@ -926,10 +936,28 @@ export function ConnectionDetail({
   const [contact, setContact] = useState(initial);
   const [body, setBody] = useState("");
   const [noteDate, setNoteDate] = useState(today());
+  // key points from a recorded chat, waiting for Save like a typed note
+  const [points, setPoints] = useState("");
+  const [savedKey, setSavedKey] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const [fresh, setFresh] = useState<string[]>([]);
+  const noteBox = useRef<HTMLTextAreaElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [loaded, setLoaded] = useState(!!initial.notes);
+  // only someone on Wasl can be asked, on their own phone, whether a chat may be recorded
+  const canAsk =
+    contact.origin === "sample"
+      ? "sample"
+      : contact.source_share_id
+        ? "yes"
+        : "no";
+  const unsaved = [
+    points.trim() ? "key points" : "",
+    body.trim() ? "note" : "",
+  ].filter(Boolean);
   async function load() {
     try {
       const data = await api<{ connection: Connection }>(
@@ -945,32 +973,67 @@ export function ConnectionDetail({
   useEffect(() => {
     void load();
   }, [initial.id]);
-  async function addNote(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
+  // One Save for the whole page: the key points from a recording and a typed note go into
+  // your private notes together, and the page says so. Tags and the star save as you tap them.
+  async function saveAll() {
+    if (!unsaved.length) return true;
+    setSaving(true);
     setError("");
+    const added: string[] = [];
     try {
-      await api(`connections/${contact.id}/notes`, "POST", {
-        body,
-        happened_on: noteDate,
-      });
-      setBody("");
-      await load();
-      onChanged();
+      if (points.trim()) {
+        const { note } = await api<{ note: Interaction }>(
+          `connections/${contact.id}/notes`,
+          "POST",
+          { body: points.trim(), happened_on: today() },
+        );
+        added.push(note.id);
+        setPoints("");
+        setSavedKey((k) => k + 1);
+      }
+      if (body.trim()) {
+        const { note } = await api<{ note: Interaction }>(
+          `connections/${contact.id}/notes`,
+          "POST",
+          { body: body.trim(), happened_on: noteDate },
+        );
+        added.push(note.id);
+        setBody("");
+      }
+      return true;
     } catch (e) {
       setError((e as Error).message);
+      return false;
     } finally {
-      setBusy(false);
+      if (added.length) {
+        setFresh(added);
+        setJustSaved(true);
+        await load();
+        onChanged();
+      }
+      setSaving(false);
     }
   }
-  // key points from a recorded chat are saved like any other private note
-  async function saveVoiceNote(text: string) {
-    await api(`connections/${contact.id}/notes`, "POST", {
-      body: text,
-      happened_on: today(),
-    });
-    await load();
-    onChanged();
+  // the note that was just saved is shown where it landed
+  useEffect(() => {
+    if (!fresh.length) return;
+    const shown = setTimeout(
+      () =>
+        document
+          .querySelector(".timeline article.fresh")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+      60,
+    );
+    const quiet = setTimeout(() => setJustSaved(false), 5000);
+    return () => {
+      clearTimeout(shown);
+      clearTimeout(quiet);
+    };
+  }, [fresh]);
+  // closing the page (or going to edit the person) keeps what was written: it is saved first
+  async function close() {
+    if (unsaved.length && !(await saveAll())) return;
+    onClose();
   }
   // a memory can't be brought back, so deleting one takes a second tap
   const [doomed, setDoomed] = useState("");
@@ -1030,7 +1093,7 @@ export function ConnectionDetail({
     }
   }
   return (
-    <Modal title="Connection details" onClose={onClose} wide>
+    <Modal title="Connection details" onClose={() => void close()} wide>
       <div className="detail-profile">
         <Avatar
           name={contact.profile.name || "Contact"}
@@ -1073,7 +1136,9 @@ export function ConnectionDetail({
           </button>
           <button
             className="icon-button"
-            onClick={() => onEdit(contact)}
+            onClick={async () => {
+              if (await saveAll()) onEdit(contact);
+            }}
             aria-label="Edit connection"
           >
             <Pencil size={18} />
@@ -1121,31 +1186,40 @@ export function ConnectionDetail({
       <p className="private-copy">
         Only you can see these notes. They are never included in a shared card.
       </p>
-      <VoiceMemory name={contact.profile.name || ""} onSave={saveVoiceNote} />
-      <form onSubmit={addNote}>
-        <label>
-          <span>Add a note</span>
-          <textarea
-            placeholder="What did you talk about? What would you like to follow up on?"
-            value={body}
-            maxLength={5000}
-            required
-            onChange={(e) => setBody(e.target.value)}
-          />
-        </label>
-        <div className="note-actions">
-          <input
-            type="date"
-            aria-label="Note date"
-            value={noteDate}
-            required
-            onChange={(e) => setNoteDate(e.target.value)}
-          />
-          <Button type="submit" busy={busy}>
-            Save note
-          </Button>
-        </div>
-      </form>
+      <VoiceMemory
+        name={contact.profile.name || ""}
+        connectionId={contact.id}
+        canAsk={canAsk}
+        points={points}
+        onPoints={setPoints}
+        savedKey={savedKey}
+        onTypeNote={() => {
+          noteBox.current?.focus();
+          noteBox.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }}
+      />
+      <label>
+        <span>Add a note</span>
+        <textarea
+          ref={noteBox}
+          placeholder="What did you talk about? What would you like to follow up on?"
+          value={body}
+          maxLength={5000}
+          onChange={(e) => setBody(e.target.value)}
+        />
+      </label>
+      <label className="note-date">
+        <span>Note date</span>
+        <input
+          type="date"
+          value={noteDate}
+          required
+          onChange={(e) => setNoteDate(e.target.value || today())}
+        />
+      </label>
       {error ? <Notice error>{error}</Notice> : null}
       <div className="timeline">
         {!loaded ? (
@@ -1154,7 +1228,10 @@ export function ConnectionDetail({
           <p className="muted">Your story with this person starts here.</p>
         ) : (
           contact.notes.map((note) => (
-            <article key={note.id}>
+            <article
+              key={note.id}
+              className={fresh.includes(note.id) ? "fresh" : undefined}
+            >
               <div className="timeline-dot" />
               <div>
                 <time>{shortDate(note.happened_on)}</time>
@@ -1228,6 +1305,37 @@ export function ConnectionDetail({
             <Trash2 size={14} /> Delete connection
           </Button>
         )}
+      </div>
+      {/* one Save for the page, always in view at the bottom */}
+      <div className={`save-bar ${unsaved.length ? "unsaved" : ""}`}>
+        <span className="save-state" aria-live="polite">
+          {saving ? (
+            "Saving…"
+          ) : unsaved.length ? (
+            `Your ${unsaved.join(" and ")} ${unsaved.length === 1 && unsaved[0] === "note" ? "isn't" : "aren't"} saved yet`
+          ) : justSaved ? (
+            <>
+              <Check size={15} /> Saved to your private notes
+            </>
+          ) : (
+            "Everything here is saved"
+          )}
+        </span>
+        {/* bright only when there is something to save; otherwise it just says Saved */}
+        <Button
+          variant={unsaved.length || saving ? "primary" : "secondary"}
+          busy={saving}
+          disabled={!unsaved.length}
+          onClick={() => void saveAll()}
+        >
+          {unsaved.length || saving ? (
+            "Save"
+          ) : (
+            <>
+              <Check size={15} /> Saved
+            </>
+          )}
+        </Button>
       </div>
     </Modal>
   );

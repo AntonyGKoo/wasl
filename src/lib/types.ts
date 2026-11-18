@@ -89,6 +89,9 @@ export type Connection = {
   note_count?: number;
   version: number;
 };
+// a request to record a chat, as either person sees it
+export type ConsentState =
+  "asked" | "allowed" | "declined" | "ended" | "expired";
 export type Interaction = {
   id: string;
   connection_id: string;

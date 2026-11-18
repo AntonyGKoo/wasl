@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { handleApi } from "../src/server/api";
-import { database } from "../src/lib/db";
+import { asUser, database } from "../src/lib/db";
 import { parseContactText, readContactCode } from "../src/lib/contact-code";
 import { lexicalRecall } from "../src/server/recall";
 import { blankProfile, type Connection } from "../src/lib/types";
@@ -1172,4 +1172,203 @@ test("a place lookup that is turned away is tried once more, and the same spot i
     globalThis.fetch = real;
     delete process.env.WASL_PLACE_RETRY_MS;
   }
+});
+test("recording a chat needs a yes from the other person, on their own Wasl, and only they can give it", async () => {
+  process.env.WASL_DATA_DIR = await mkdtemp(
+    path.join(tmpdir(), "wasl-consent-"),
+  );
+  const origin = "http://localhost:3000";
+  const session = () => {
+    let cookie = "";
+    return async (route: string, method = "GET", body?: unknown) => {
+      const response = await handleApi(
+        new Request(`${origin}/api/${route}`, {
+          method,
+          headers: { origin, "content-type": "application/json", cookie },
+          body: body ? JSON.stringify(body) : undefined,
+        }),
+      );
+      const set = response.headers.get("set-cookie");
+      if (set) cookie = set.split(";")[0];
+      return { status: response.status, data: await response.json() };
+    };
+  };
+  const join = async (name: string) => {
+    const call = session();
+    const r = await call("auth/register", "POST", {
+      name,
+      email: `${Math.random().toString(36).slice(2)}@example.test`,
+      password: "test-password-123",
+    });
+    assert.equal(r.status, 201);
+    const me = (await call("session")).data.user;
+    return { call, id: me.id as string };
+  };
+  const mariam = await join("Mariam Ali");
+  const omar = await join("Omar Haddad");
+  const carol = await join("Carol Stranger");
+
+  // Omar saves Mariam's Wasl card: she is on Wasl, so she can be asked
+  const card = (await mariam.call("cards")).data.cards[0];
+  const token = (await mariam.call(`cards/${card.id}/share`, "POST", {})).data
+    .token;
+  const saved = await omar.call("connections/import", "POST", {
+    token,
+    met_on: "2026-11-18",
+  });
+  assert.equal(saved.status, 201);
+  const mariamId = saved.data.connection.id;
+
+  // nobody is asked until Omar asks
+  assert.deepEqual((await mariam.call("consents")).data.requests, []);
+  const asked = await omar.call(`connections/${mariamId}/consent`, "POST", {});
+  assert.equal(asked.status, 201);
+  assert.equal(asked.data.consent.state, "asked");
+  const id = asked.data.consent.id;
+
+  // the question shows on Mariam's phone, with who is asking, and nowhere else
+  const waiting = (await mariam.call("consents")).data.requests;
+  assert.equal(waiting.length, 1);
+  assert.equal(waiting[0].asker_name, "Omar Haddad");
+  assert.equal(waiting[0].state, "asked");
+  assert.deepEqual((await carol.call("consents")).data.requests, []);
+  assert.equal((await carol.call(`consents/${id}`)).status, 404);
+  assert.equal(
+    (await carol.call(`consents/${id}`, "POST", { answer: "allow" })).status,
+    404,
+  );
+
+  // Omar can't answer for her, through the API or straight in the database
+  assert.equal(
+    (await omar.call(`consents/${id}`, "POST", { answer: "allow" })).status,
+    403,
+  );
+  await assert.rejects(
+    asUser(omar.id, (tx) =>
+      tx.query("UPDATE consents SET status='allowed' WHERE id=$1", [id]),
+    ),
+    /only the person asked can answer/,
+  );
+  // nor make a request look like it came from someone else
+  await assert.rejects(
+    asUser(mariam.id, (tx) =>
+      tx.query("UPDATE consents SET asker_id=$2 WHERE id=$1", [id, carol.id]),
+    ),
+  );
+  assert.equal((await omar.call(`consents/${id}`)).data.consent.state, "asked");
+
+  // Mariam says yes: Omar's phone sees it, and her phone shows the recording is going
+  const yes = await mariam.call(`consents/${id}`, "POST", { answer: "allow" });
+  assert.equal(yes.status, 200);
+  assert.equal(yes.data.consent.state, "allowed");
+  assert.equal(
+    (await omar.call(`consents/${id}`)).data.consent.state,
+    "allowed",
+  );
+  assert.equal(
+    (await mariam.call("consents")).data.requests[0].state,
+    "allowed",
+  );
+  // a yes is given once; it can't be turned into a no afterwards, only ended
+  assert.equal(
+    (await mariam.call(`consents/${id}`, "POST", { answer: "decline" })).status,
+    409,
+  );
+  // she taps Stop on her phone: Omar's recording ends, and her phone shows nothing more
+  assert.equal(
+    (await mariam.call(`consents/${id}`, "POST", { answer: "end" })).status,
+    200,
+  );
+  assert.equal((await omar.call(`consents/${id}`)).data.consent.state, "ended");
+  assert.deepEqual((await mariam.call("consents")).data.requests, []);
+
+  // asking again is a new question; a no is a no
+  const again = (await omar.call(`connections/${mariamId}/consent`, "POST", {}))
+    .data.consent.id;
+  assert.notEqual(again, id);
+  await mariam.call(`consents/${again}`, "POST", { answer: "decline" });
+  assert.equal(
+    (await omar.call(`consents/${again}`)).data.consent.state,
+    "declined",
+  );
+  assert.equal(
+    (await mariam.call(`consents/${again}`, "POST", { answer: "allow" }))
+      .status,
+    409,
+  );
+
+  // no answer for a few minutes: the question times out and can't be said yes to later
+  // (when a request was made can't be changed, so the test turns that rule off a moment)
+  const late = (await omar.call(`connections/${mariamId}/consent`, "POST", {}))
+    .data.consent.id;
+  const db = await database();
+  await db.exec("ALTER TABLE consents DISABLE TRIGGER consent_rules");
+  await db.query(
+    "UPDATE consents SET created_at=now()-interval '4 minutes' WHERE id=$1",
+    [late],
+  );
+  await db.exec("ALTER TABLE consents ENABLE TRIGGER consent_rules");
+  assert.equal(
+    (await omar.call(`consents/${late}`)).data.consent.state,
+    "expired",
+  );
+  assert.deepEqual((await mariam.call("consents")).data.requests, []);
+  const tooLate = await mariam.call(`consents/${late}`, "POST", {
+    answer: "allow",
+  });
+  assert.equal(tooLate.status, 409);
+  assert.match(tooLate.data.error, /timed out/);
+
+  // asking again replaces a question that is still open
+  const first = (await omar.call(`connections/${mariamId}/consent`, "POST", {}))
+    .data.consent.id;
+  const second = (
+    await omar.call(`connections/${mariamId}/consent`, "POST", {})
+  ).data.consent.id;
+  assert.equal(
+    (await omar.call(`consents/${first}`)).data.consent.state,
+    "ended",
+  );
+  const open = (await mariam.call("consents")).data.requests;
+  assert.deepEqual(
+    open.map((r: { id: string }) => r.id),
+    [second],
+  );
+
+  // someone typed in by hand isn't on Wasl, and a sample person is made up: no one to ask
+  const typed = await omar.call("connections", "POST", {
+    profile: { ...blankProfile, name: "Paper Person" },
+    tags: [],
+    event: "",
+    place: "",
+    met_on: "2026-11-18",
+    favorite: false,
+  });
+  assert.equal(typed.status, 201);
+  const refused = await omar.call(
+    `connections/${typed.data.connection.id}/consent`,
+    "POST",
+    {},
+  );
+  assert.equal(refused.status, 409);
+  assert.match(refused.data.error, /Paper isn't on Wasl/);
+  assert.match(refused.data.error, /needs the Wasl app/);
+  await omar.call("sample-people", "POST");
+  const sample = (await omar.call("connections")).data.connections.find(
+    (c: Connection) => c.origin === "sample",
+  );
+  const made = await omar.call(`connections/${sample.id}/consent`, "POST", {});
+  assert.equal(made.status, 409);
+  assert.match(made.data.error, /sample person/);
+  // someone else's person can't be asked about
+  assert.equal(
+    (await carol.call(`connections/${mariamId}/consent`, "POST", {})).status,
+    404,
+  );
+  // a wrong answer is refused before anything happens
+  assert.equal(
+    (await mariam.call(`consents/${second}`, "POST", { answer: "maybe" }))
+      .status,
+    400,
+  );
 });
